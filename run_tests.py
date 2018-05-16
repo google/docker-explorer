@@ -70,8 +70,8 @@ class TestDEMain(unittest.TestCase):
     options = de_test_object.ParseArguments()
     usage_string = de_test_object._argument_parser.format_usage()
     expected_usage = (
-        'usage: de_tests.py [-h] [-r DOCKER_DIRECTORY] '
-        '{mount,list,history} ...\n')
+        'usage: {0} [-h] [-r DOCKER_DIRECTORY] '
+        '{{mount,list,history}} ...\n'.format(os.path.basename(__file__)))
     self.assertEqual(expected_usage, usage_string)
 
     de_test_object.ParseOptions(options)
