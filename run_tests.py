@@ -29,6 +29,9 @@ from lib import overlay
 from lib import storage
 
 
+# pylint: disable=missing-docstring
+# pylint: disable=protected-access
+
 class StorageTests(unittest.TestCase):
   """Tests methods in Storage class."""
 
