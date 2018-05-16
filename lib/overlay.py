@@ -25,6 +25,12 @@ class OverlayStorage(Storage):
   """This class implements OverlayFS storage specific methods."""
 
   STORAGE_METHOD = 'overlay'
+  LOWER_NAME = u'lower-id'
+  UPPER_NAME = u'upper'
+
+  def _ProcessLowerContents(self, lower):
+    return os.path.join(
+        self.docker_directory, self.STORAGE_METHOD, lower.strip(), 'root')
 
   def MakeMountCommands(self, container_id, mount_dir):
     """Generates the required shell commands to mount a container's ID.
@@ -41,11 +47,9 @@ class OverlayStorage(Storage):
     mount_id_path = os.path.join(
         self.docker_directory, self.STORAGE_METHOD, container_info.mount_id)
 
-    with open(os.path.join(mount_id_path, 'lower-id')) as lower_fd:
-      lower_dir = os.path.join(
-          self.docker_directory, self.STORAGE_METHOD, lower_fd.read().strip(),
-          'root')
-    upper_dir = os.path.join(mount_id_path, 'upper')
+    with open(os.path.join(mount_id_path, self.LOWER_NAME)) as lower_fd:
+      lower_dir = self._ProcessLowerContents(lower_fd.read())
+    upper_dir = os.path.join(mount_id_path, self.UPPER_NAME)
     work_dir = os.path.join(mount_id_path, 'work')
 
     cmd = (
@@ -53,3 +57,24 @@ class OverlayStorage(Storage):
         'workdir="{2:s}\" \"{3:s}\"').format(
             lower_dir, upper_dir, work_dir, mount_dir)
     return [cmd]
+
+
+class Overlay2Storage(OverlayStorage):
+  """A specialization for Overlay2.
+
+  See a description at
+  https://docs.docker.com/storage/storagedriver/overlayfs-driver/#how-the-overlay2-driver-works.
+  """
+
+  STORAGE_METHOD = u'overlay2'
+  LOWER_NAME = u'lower'
+  UPPER_NAME = u'diff'
+
+  def _ProcessLowerContents(self, lower):
+    # We need the full pathname to the lower dir.
+    # If multiple lower dirs are stacked, we process each of them separately.
+    lower_dir = ':'.join([
+        os.path.join(self.docker_directory, self.STORAGE_METHOD, lower_)
+        for lower_ in lower.strip().split(':')
+    ])
+    return lower_dir

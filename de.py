@@ -19,7 +19,6 @@ A tool to parse offline Docker installation.
 
 from __future__ import unicode_literals
 
-# pylint: disable=g-doc-args
 import argparse
 import codecs
 import os
@@ -81,10 +80,12 @@ class DockerExplorer(object):
       # Handles Docker engine storage versions 1.9 and below.
       return aufs.AufsStorage(
           docker_directory=self.docker_directory, docker_version=1)
-    elif os.path.isdir(os.path.join(self.docker_directory, 'aufs')):
-      return aufs.AufsStorage(docker_directory=self.docker_directory)
+    elif os.path.isdir(os.path.join(self.docker_directory, u'overlay2')):
+      return overlay.Overlay2Storage(docker_directory=self.docker_directory)
     elif os.path.isdir(os.path.join(self.docker_directory, 'overlay')):
       return overlay.OverlayStorage(docker_directory=self.docker_directory)
+    elif os.path.isdir(os.path.join(self.docker_directory, 'aufs')):
+      return aufs.AufsStorage(docker_directory=self.docker_directory)
     else:
       return None
 
