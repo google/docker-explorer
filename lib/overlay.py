@@ -18,7 +18,7 @@ from __future__ import unicode_literals
 
 import os
 
-from storage import Storage
+from lib.storage import Storage
 
 
 class OverlayStorage(Storage):
@@ -28,7 +28,15 @@ class OverlayStorage(Storage):
   LOWER_NAME = u'lower-id'
   UPPER_NAME = u'upper'
 
-  def _ProcessLowerContents(self, lower):
+  def _BuildLowerLayers(self, lower):
+    """Builds the mount command option for the 'lower' directory.
+
+    Args:
+      lower (str): the path to the lower directory.
+
+    Returns:
+      str: the mount command option for thr 'lower' directory.
+    """
     return os.path.join(
         self.docker_directory, self.STORAGE_METHOD, lower.strip(), 'root')
 
@@ -48,7 +56,7 @@ class OverlayStorage(Storage):
         self.docker_directory, self.STORAGE_METHOD, container_info.mount_id)
 
     with open(os.path.join(mount_id_path, self.LOWER_NAME)) as lower_fd:
-      lower_dir = self._ProcessLowerContents(lower_fd.read())
+      lower_dir = self._BuildLowerLayers(lower_fd.read())
     upper_dir = os.path.join(mount_id_path, self.UPPER_NAME)
     work_dir = os.path.join(mount_id_path, 'work')
 
@@ -70,9 +78,18 @@ class Overlay2Storage(OverlayStorage):
   LOWER_NAME = u'lower'
   UPPER_NAME = u'diff'
 
-  def _ProcessLowerContents(self, lower):
-    # We need the full pathname to the lower dir.
-    # If multiple lower dirs are stacked, we process each of them separately.
+  def _BuildLowerLayers(self, lower):
+    """Builds the mount command option for the 'lower' directory.
+
+    Args:
+      lower (str): the path to the lower directory.
+
+    Returns:
+      str: the mount command option for thr 'lower' directory.
+    """
+    # We need the full pathname to the lower directory.
+    # If multiple lower directories are stacked, we process each of them
+    # separately.
     lower_dir = ':'.join([
         os.path.join(self.docker_directory, self.STORAGE_METHOD, lower_)
         for lower_ in lower.strip().split(':')
