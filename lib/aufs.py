@@ -20,7 +20,7 @@ import glob
 import json
 import os
 
-from storage import Storage
+from lib.storage import Storage
 
 
 class ContainerNotFoundException(Exception):
@@ -141,5 +141,3 @@ class AufsStorage(Storage):
     commands.extend(self._MakeExtraVolumeCommands(container_info, mount_dir))
 
     return commands
-
-
