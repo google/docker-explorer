@@ -51,6 +51,7 @@ class DockerExplorer(object):
 
   def __init__(self):
     """Initializes the ContainerInfo class."""
+    self._argument_parser = None
     self.docker_directory = '/var/lib/docker'
     self.storage_object = None
 
@@ -86,8 +87,7 @@ class DockerExplorer(object):
       return overlay.OverlayStorage(docker_directory=self.docker_directory)
     elif os.path.isdir(os.path.join(self.docker_directory, 'aufs')):
       return aufs.AufsStorage(docker_directory=self.docker_directory)
-    else:
-      return None
+    return None
 
   def AddBasicOptions(self, argument_parser):
     """Adds the global options to the argument_parser.

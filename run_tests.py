@@ -29,6 +29,9 @@ from lib import overlay
 from lib import storage
 
 
+# pylint: disable=missing-docstring
+# pylint: disable=protected-access
+
 class StorageTests(unittest.TestCase):
   """Tests methods in Storage class."""
 
@@ -462,8 +465,8 @@ class TestOverlay2Storage(unittest.TestCase):
         '"test_data/docker/overlay2/l/OTFSLJCXWCECIG6FVNGRTWUZ7D:'
         'test_data/docker/overlay2/l/CH5A7XWSBP2DUPV7V47B7DOOGY":'
         '"test_data/docker/overlay2/'
-        '92fd3b3e7d6101bb701743c9518c45b0d036b898c8a3d7cae84e1a06e6829b53/diff",'
-        'workdir="test_data/docker/overlay2/'
+        '92fd3b3e7d6101bb701743c9518c45b0d036b898c8a3d7cae84e1a06e6829b53/diff"'
+        ',workdir="test_data/docker/overlay2/'
         '92fd3b3e7d6101bb701743c9518c45b0d036b898c8a3d7cae84e1a06e6829b53/work"'
         ' "/mnt"'
         )]

@@ -69,6 +69,8 @@ class ContainerInfo(object):
       self.start_timestamp = json_state.get('StartedAt', False)
     self.volumes = container_info_dict.get('Volumes', None)
 
+    self.mount_id = None
+
 
 class Storage(object):
   """This class provides tools to list and access containers metadata.
