@@ -18,7 +18,7 @@ from __future__ import unicode_literals
 
 import os
 
-from lib.storage import Storage
+from docker_explorer.lib.storage import Storage
 
 
 class OverlayStorage(Storage):
