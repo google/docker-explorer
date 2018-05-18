@@ -22,11 +22,12 @@ import shutil
 import sys
 import tarfile
 import unittest
-import de
 
-from lib import aufs
-from lib import overlay
-from lib import storage
+from docker_explorer import de
+
+from docker_explorer.lib import aufs
+from docker_explorer.lib import overlay
+from docker_explorer.lib import storage
 
 
 # pylint: disable=missing-docstring
@@ -73,9 +74,9 @@ class TestDEMain(unittest.TestCase):
     options = de_test_object.ParseArguments()
     usage_string = de_test_object._argument_parser.format_usage()
     expected_usage = (
-        'usage: {0} [-h] [-r DOCKER_DIRECTORY] '
-        '{{mount,list,history}} ...\n'.format(os.path.basename(__file__)))
-    self.assertEqual(expected_usage, usage_string)
+        r'usage: (setup.py|{0}) \[-h\] \[-r DOCKER_DIRECTORY\] '
+        '{{mount,list,history}} ...\n').format(os.path.basename(__file__))
+    self.assertRegexpMatches(usage_string, expected_usage)
 
     de_test_object.ParseOptions(options)
     self.assertEqual(expected_docker_root, options.docker_directory)
@@ -132,9 +133,10 @@ class TestAufsStorage(unittest.TestCase):
   def testGetContainerInfo(self):
 
     list_container_info = self.storage.GetAllContainersInfo()
+    list_container_info = sorted(list_container_info, key=lambda ci: ci.name)
     self.assertEqual(7, len(list_container_info))
 
-    container_info = list_container_info[4]
+    container_info = list_container_info[1]
 
     self.assertEqual('/dreamy_snyder', container_info.name)
     self.assertEqual('2017-02-13T16:45:05.629904159Z',
@@ -152,6 +154,8 @@ class TestAufsStorage(unittest.TestCase):
 
   def testGetRunningContainersList(self):
     running_containers = self.storage.GetContainersList(only_running=True)
+    running_containers = sorted(
+        running_containers, key=lambda ci: ci.container_id)
     self.assertEqual(1, len(running_containers))
     container = running_containers[0]
     self.assertEqual('/dreamy_snyder', container.name)
@@ -263,9 +267,10 @@ class TestOverlayStorage(unittest.TestCase):
   def testGetContainerInfo(self):
 
     list_container_info = self.storage.GetAllContainersInfo()
+    list_container_info = sorted(list_container_info, key=lambda ci: ci.name)
     self.assertEqual(6, len(list_container_info))
 
-    container_info = list_container_info[4]
+    container_info = list_container_info[0]
 
     self.assertEqual('/elastic_booth', container_info.name)
     self.assertEqual('2018-01-26T14:55:56.280943771Z',
@@ -283,6 +288,8 @@ class TestOverlayStorage(unittest.TestCase):
 
   def testGetRunningContainersList(self):
     running_containers = self.storage.GetContainersList(only_running=True)
+    running_containers = sorted(
+        running_containers, key=lambda ci: ci.container_id)
     self.assertEqual(1, len(running_containers))
     container = running_containers[0]
     self.assertEqual('/elastic_booth', container.name)
@@ -392,6 +399,7 @@ class TestOverlay2Storage(unittest.TestCase):
   def testGetContainerInfo(self):
 
     list_container_info = self.storage.GetAllContainersInfo()
+    list_container_info = sorted(list_container_info, key=lambda ci: ci.name)
     self.assertEqual(5, len(list_container_info))
 
     container_info = list_container_info[0]
@@ -411,6 +419,8 @@ class TestOverlay2Storage(unittest.TestCase):
 
   def testGetRunningContainersList(self):
     running_containers = self.storage.GetContainersList(only_running=True)
+    running_containers = sorted(
+        running_containers, key=lambda ci: ci.container_id)
     self.assertEqual(1, len(running_containers))
     container = running_containers[0]
     self.assertEqual('/festive_perlman', container.name)

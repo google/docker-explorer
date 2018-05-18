@@ -36,7 +36,7 @@ On a disk image mounted in
 `/mnt/root`:
 
 ```
-# python de.py -r /mnt/root/var/lib/docker list running_containers
+# de.py -r /mnt/root/var/lib/docker list running_containers
 Container id: 7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966 / Labels :
     Start date: 2017-02-13T16:45:05.785658046Z
     Image ID: 7968321274dc6b6171697c33df7815310468e694ac5be0ec03ff053bb135e768
@@ -62,7 +62,7 @@ On a disk image mounted in
 `/mnt/root`:
 
 ```
-# python de.py -r /tmp/ mount 7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966 /tmp
+# de.py -r /tmp/ mount 7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966 /tmp
 You'll needs the aufs-tools package. If you install aufs-tools, I can run these for you.
 ```
 
@@ -70,7 +70,7 @@ Whoops... Let's try again
 
 ```
 # apt-get install aufs-tools
-# python de.py -r /tmp/ mount 7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966 /tmp/test
+# de.py -r /tmp/ mount 7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966 /tmp/test
 mount -t aufs -o ro,br=/tmp/docker/aufs/diff/b16a494082bba0091e572b58ff80af1b7b5d28737a3eedbe01e73cd7f4e01d23=ro+wh none /tmp/test
 mount -t aufs -o ro,remount,append:/tmp/docker/aufs/diff/b16a494082bba0091e572b58ff80af1b7b5d28737a3eedbe01e73cd7f4e01d23-init=ro+wh none /tmp/test
 mount -t aufs -o ro,remount,append:/tmp/docker/aufs/diff/d1c54c46d331de21587a16397e8bd95bdbb1015e1a04797c76de128107da83ae=ro+wh none /tmp/test
@@ -96,7 +96,7 @@ On a disk image mounted in
 `/mnt/root`:
 
 ```
-# python de.py -r /mnt/root/var/lib/docker list repositories
+# de.py -r /mnt/root/var/lib/docker list repositories
 Listing repositories from file /tmp/docker/image/aufs/repositories.json
 {
     "Repositories": {
@@ -123,7 +123,7 @@ On a disk image mounted in
 `/mnt/root`:
 
 ```
-# python de.py -r /mnt/root/var/lib/docker history 7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966
+# de.py -r /mnt/root/var/lib/docker history 7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966
 --------------------------------------------------------------
 sha256:7968321274dc6b6171697c33df7815310468e694ac5be0ec03ff053bb135e768
         size : 0
