@@ -211,3 +211,6 @@ class DockerExplorer(object):
 
 if __name__ == '__main__':
   DockerExplorer().Main()
+
+if __name__ == '__main__':
+  main()
