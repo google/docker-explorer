@@ -17,7 +17,7 @@ de_long_description = (
     'installations')
 
 setup(
-    name='docker-explorer',
+    name='docker_explorer',
     version=de_version,
     description=de_description,
     long_description=de_long_description,
