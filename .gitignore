@@ -11,8 +11,8 @@
 # Specific auto-generated build files
 /.tox
 /__pycache__
+/*.egg-info
 /build
-/dfdatetime.egg-info
 /dist
 
 # Code review files
