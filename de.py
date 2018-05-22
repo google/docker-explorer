@@ -110,7 +110,7 @@ class DockerExplorer(object):
     """
     mount_parser = args.add_parser(
         'mount',
-        help=('Will generate the command to mount the AuFS at the ',
+        help=('Will generate the command to mount the AuFS at the '
               'corresponding container id'))
     mount_parser.add_argument(
         'container_id',
