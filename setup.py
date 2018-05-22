@@ -30,8 +30,6 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python',
     ],
-    entry_points={
-        'console_scripts': ['de.py=docker_explorer.de:main']
-    },
+    scripts=['docker_explorer/de.py'],
     test_suite="tests"
 )
