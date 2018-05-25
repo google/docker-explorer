@@ -24,15 +24,13 @@ import codecs
 import os
 import sys
 
-from lib import aufs
-from lib import overlay
+from docker_explorer.lib import aufs
+from docker_explorer.lib import overlay
 
 # This is to fix UnicodeEncodeError issues when python
 # suddenly changes the output encoding when sys.stdout is
 # piped into something else.
 sys.stdout = codecs.getwriter('utf8')(sys.stdout)
-
-MAX_ID_CHARS_TO_SHOW = 16
 
 
 class BadStorageException(Exception):
@@ -210,5 +208,9 @@ class DockerExplorer(object):
     else:
       raise ValueError('Unhandled command %s' % options.command)
 
+
 if __name__ == '__main__':
   DockerExplorer().Main()
+
+if __name__ == '__main__':
+  main()

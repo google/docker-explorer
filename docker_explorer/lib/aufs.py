@@ -20,14 +20,14 @@ import glob
 import json
 import os
 
-from lib.storage import Storage
+from docker_explorer.lib import storage
 
 
 class ContainerNotFoundException(Exception):
   """Raised when no container could be found."""
 
 
-class AufsStorage(Storage):
+class AufsStorage(storage.Storage):
   """This class implements AuFS storage specific methods."""
 
   STORAGE_METHOD = 'aufs'

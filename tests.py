@@ -22,31 +22,29 @@ import shutil
 import sys
 import tarfile
 import unittest
-import de
 
-from lib import aufs
-from lib import overlay
-from lib import storage
+from docker_explorer import de
+
+from docker_explorer.lib import aufs
+from docker_explorer.lib import overlay
+from docker_explorer.lib import storage
 
 
-# pylint: disable=missing-docstring
 # pylint: disable=protected-access
 
 class StorageTests(unittest.TestCase):
   """Tests methods in Storage class."""
 
   def testFormatDatetime(self):
+    """Tests the Storage.FormatDatetime function."""
     test_date = '2017-12-25T15:59:59.102938 msqedigrb msg'
     expected_time_str = '2017-12-25T15:59:59.102938'
     test_storage_object = storage.Storage()
     self.assertEqual(expected_time_str,
                      test_storage_object._FormatDatetime(test_date))
 
-
-class AufsStorageTests(unittest.TestCase):
-  """Tests helper methods in de.py."""
-
   def testPrettyPrintJSON(self):
+    """Tests the Storage.PrettyPrintJSON function."""
     test_storage_object = aufs.AufsStorage()
     test_dict = {'test': [{'dict1': {'key1': 'val1'}, 'dict2': None}]}
     test_json = json.dumps(test_dict)
@@ -57,10 +55,12 @@ class AufsStorageTests(unittest.TestCase):
                      test_storage_object._PrettyPrintJSON(test_json))
 
 
+
 class TestDEMain(unittest.TestCase):
   """Tests DockerExplorer object methods."""
 
   def testParseArguments(self):
+    """Tests the DockerExplorer.ParseArguments function."""
     de_test_object = de.DockerExplorer()
 
     prog = sys.argv[0]
@@ -73,9 +73,9 @@ class TestDEMain(unittest.TestCase):
     options = de_test_object.ParseArguments()
     usage_string = de_test_object._argument_parser.format_usage()
     expected_usage = (
-        'usage: {0} [-h] [-r DOCKER_DIRECTORY] '
-        '{{mount,list,history}} ...\n'.format(os.path.basename(__file__)))
-    self.assertEqual(expected_usage, usage_string)
+        r'usage: (setup.py|{0}) \[-h\] \[-r DOCKER_DIRECTORY\] '
+        '{{mount,list,history}} ...\n').format(os.path.basename(__file__))
+    self.assertRegexpMatches(usage_string, expected_usage)
 
     de_test_object.ParseOptions(options)
     self.assertEqual(expected_docker_root, options.docker_directory)
@@ -106,6 +106,7 @@ class TestAufsStorage(unittest.TestCase):
     shutil.rmtree(os.path.join('test_data', 'docker'))
 
   def testDetectStorage(self):
+    """Tests the DockerExplorer.DetectStorage function in a AUFS storage."""
     de_test_object = de.DockerExplorer()
 
     de_test_object.docker_directory = 'this_dir_shouldnt_exist'
@@ -129,12 +130,13 @@ class TestAufsStorage(unittest.TestCase):
     self.assertEqual('config.v2.json',
                      storage_object.container_config_filename)
 
-  def testGetContainerInfo(self):
-
+  def testGetAllContainersInfo(self):
+    """Tests the GetAllContainersInfo function on a AuFS storage."""
     list_container_info = self.storage.GetAllContainersInfo()
+    list_container_info = sorted(list_container_info, key=lambda ci: ci.name)
     self.assertEqual(7, len(list_container_info))
 
-    container_info = list_container_info[4]
+    container_info = list_container_info[1]
 
     self.assertEqual('/dreamy_snyder', container_info.name)
     self.assertEqual('2017-02-13T16:45:05.629904159Z',
@@ -146,12 +148,16 @@ class TestAufsStorage(unittest.TestCase):
     self.assertTrue(self.container_id, container_id)
 
   def testGetOrderedLayers(self):
+    """Tests the Storage.GetOrderedLayers function on a AUFS storage."""
     layers = self.storage.GetOrderedLayers(self.container_id)
     self.assertEqual(1, len(layers))
     self.assertEqual('sha256:{0:s}'.format(self.image_id), layers[0])
 
   def testGetRunningContainersList(self):
+    """Tests the Storage.GetContainersList function on a AUFS storage."""
     running_containers = self.storage.GetContainersList(only_running=True)
+    running_containers = sorted(
+        running_containers, key=lambda ci: ci.container_id)
     self.assertEqual(1, len(running_containers))
     container = running_containers[0]
     self.assertEqual('/dreamy_snyder', container.name)
@@ -160,7 +166,8 @@ class TestAufsStorage(unittest.TestCase):
     self.assertEqual('busybox', container.config_image_name)
     self.assertTrue(container.running)
 
-  def testListRunningContainers(self):
+  def testShowContainers(self):
+    """Tests the Storage.ShowContainers function on a AUFS storage."""
     result_string = self.storage.ShowContainers(only_running=True)
     expected_string = (
         'Container id: {0:s} / No Label\n'
@@ -170,13 +177,15 @@ class TestAufsStorage(unittest.TestCase):
     self.assertEqual(expected_string, result_string)
 
   def testGetLayerInfo(self):
+    """Tests the Storage.GetLayerInfo function on a AUFS storage."""
     layer_info = self.storage.GetLayerInfo(
         'sha256:{0:s}'.format(self.image_id))
     self.assertEqual('2017-01-13T22:13:54.401355854Z', layer_info['created'])
     self.assertEqual(['/bin/sh', '-c', '#(nop) ', 'CMD ["sh"]'],
                      layer_info['container_config']['Cmd'])
 
-  def testListRepositories(self):
+  def testShowRepositories(self):
+    """Tests the Storage.ShowRepositories function on a AUFS storage."""
     result_string = self.storage.ShowRepositories()
     expected_string = (
         'Listing repositories from file '
@@ -190,6 +199,7 @@ class TestAufsStorage(unittest.TestCase):
     self.assertEqual(expected_string, result_string)
 
   def testMakeMountCommands(self):
+    """Tests the Storage.MakeMountCommands function on a AUFS storage."""
     test_mount_dir = '/mnt'
     commands = self.storage.MakeMountCommands(
         self.container_id, test_mount_dir)
@@ -237,6 +247,7 @@ class TestOverlayStorage(unittest.TestCase):
     shutil.rmtree(os.path.join('test_data', 'docker'))
 
   def testDetectStorage(self):
+    """Tests the DockerExplorer.DetectStorage function on a Overlay storage."""
     de_test_object = de.DockerExplorer()
 
     de_test_object.docker_directory = 'this_dir_shouldnt_exist'
@@ -260,12 +271,13 @@ class TestOverlayStorage(unittest.TestCase):
     self.assertEqual('config.v2.json',
                      storage_object.container_config_filename)
 
-  def testGetContainerInfo(self):
-
+  def testGetAllContainersInfo(self):
+    """Tests the GetAllContainersInfo function on a Overlay storage."""
     list_container_info = self.storage.GetAllContainersInfo()
+    list_container_info = sorted(list_container_info, key=lambda ci: ci.name)
     self.assertEqual(6, len(list_container_info))
 
-    container_info = list_container_info[4]
+    container_info = list_container_info[0]
 
     self.assertEqual('/elastic_booth', container_info.name)
     self.assertEqual('2018-01-26T14:55:56.280943771Z',
@@ -277,12 +289,16 @@ class TestOverlayStorage(unittest.TestCase):
     self.assertTrue(self.container_id, container_id)
 
   def testGetOrderedLayers(self):
+    """Tests the Storage.GetOrderedLayers function on a Overlay storage."""
     layers = self.storage.GetOrderedLayers(self.container_id)
     self.assertEqual(1, len(layers))
     self.assertEqual('sha256:{0:s}'.format(self.image_id), layers[0])
 
   def testGetRunningContainersList(self):
+    """Tests the Storage.GetContainersList function on a Overlay storage."""
     running_containers = self.storage.GetContainersList(only_running=True)
+    running_containers = sorted(
+        running_containers, key=lambda ci: ci.container_id)
     self.assertEqual(1, len(running_containers))
     container = running_containers[0]
     self.assertEqual('/elastic_booth', container.name)
@@ -292,7 +308,8 @@ class TestOverlayStorage(unittest.TestCase):
 
     self.assertTrue(container.running)
 
-  def testListRunningContainers(self):
+  def testShowContainers(self):
+    """Tests the Storage.ShowContainers function on a Overlay storage."""
     result_string = self.storage.ShowContainers(only_running=True)
     expected_string = (
         'Container id: {0:s} / No Label\n'
@@ -303,13 +320,15 @@ class TestOverlayStorage(unittest.TestCase):
     self.assertEqual(expected_string, result_string)
 
   def testGetLayerInfo(self):
+    """Tests the Storage.GetLayerInfo function on a Overlay storage."""
     layer_info = self.storage.GetLayerInfo(
         'sha256:{0:s}'.format(self.image_id))
     self.assertEqual('2018-01-24T04:29:35.590938514Z', layer_info['created'])
     self.assertEqual(['/bin/sh', '-c', '#(nop) ', 'CMD ["sh"]'],
                      layer_info['container_config']['Cmd'])
 
-  def testListRepositories(self):
+  def testShowRepositories(self):
+    """Tests the Storage.GetLayerInfo function on a Overlay storage."""
     result_string = self.storage.ShowRepositories()
     self.maxDiff = None
     expected_string = (
@@ -328,6 +347,7 @@ class TestOverlayStorage(unittest.TestCase):
     self.assertEqual(expected_string, result_string)
 
   def testMakeMountCommands(self):
+    """Tests the Storage.MakeMountCommands function on a Overlay storage."""
     test_mount_dir = '/mnt'
     commands = self.storage.MakeMountCommands(
         self.container_id, test_mount_dir)
@@ -366,6 +386,7 @@ class TestOverlay2Storage(unittest.TestCase):
     shutil.rmtree(os.path.join('test_data', 'docker'))
 
   def testDetectStorage(self):
+    """Tests the DockerExplorer.DetectStorage function on a Overlay2 storage."""
     de_test_object = de.DockerExplorer()
 
     de_test_object.docker_directory = 'this_dir_shouldnt_exist'
@@ -389,9 +410,10 @@ class TestOverlay2Storage(unittest.TestCase):
     self.assertEqual('config.v2.json',
                      storage_object.container_config_filename)
 
-  def testGetContainerInfo(self):
-
+  def testGetAllContainersInfo(self):
+    """Tests the GetAllContainersInfo function on a Overlay2 storage."""
     list_container_info = self.storage.GetAllContainersInfo()
+    list_container_info = sorted(list_container_info, key=lambda ci: ci.name)
     self.assertEqual(5, len(list_container_info))
 
     container_info = list_container_info[0]
@@ -405,12 +427,16 @@ class TestOverlay2Storage(unittest.TestCase):
     self.assertTrue(self.container_id, container_id)
 
   def testGetOrderedLayers(self):
+    """Tests the Storage.GetOrderedLayers function on a Overlay2 storage."""
     layers = self.storage.GetOrderedLayers(self.container_id)
     self.assertEqual(1, len(layers))
     self.assertEqual('sha256:{0:s}'.format(self.image_id), layers[0])
 
   def testGetRunningContainersList(self):
+    """Tests the Storage.GetContainersList function on a Overlay2 storage."""
     running_containers = self.storage.GetContainersList(only_running=True)
+    running_containers = sorted(
+        running_containers, key=lambda ci: ci.container_id)
     self.assertEqual(1, len(running_containers))
     container = running_containers[0]
     self.assertEqual('/festive_perlman', container.name)
@@ -420,7 +446,8 @@ class TestOverlay2Storage(unittest.TestCase):
 
     self.assertTrue(container.running)
 
-  def testListRunningContainers(self):
+  def testShowContainers(self):
+    """Tests the Storage.ShowContainers function on a Overlay2 storage."""
     result_string = self.storage.ShowContainers(only_running=True)
     expected_string = (
         'Container id: {0:s} / No Label\n'
@@ -431,13 +458,15 @@ class TestOverlay2Storage(unittest.TestCase):
     self.assertEqual(expected_string, result_string)
 
   def testGetLayerInfo(self):
+    """Tests the Storage.GetLayerInfo function on a Overlay2 storage."""
     layer_info = self.storage.GetLayerInfo(
         'sha256:{0:s}'.format(self.image_id))
     self.assertEqual('2018-04-05T10:41:28.876407948Z', layer_info['created'])
     self.assertEqual(['/bin/sh', '-c', '#(nop) ', 'CMD ["sh"]'],
                      layer_info['container_config']['Cmd'])
 
-  def testListRepositories(self):
+  def testShowRepositories(self):
+    """Tests the Storage.ShowRepositories function on a Overlay2 storage."""
     result_string = self.storage.ShowRepositories()
     self.maxDiff = None
     expected_string = (
@@ -456,6 +485,7 @@ class TestOverlay2Storage(unittest.TestCase):
     self.assertEqual(expected_string, result_string)
 
   def testMakeMountCommands(self):
+    """Tests the Storage.MakeMountCommands function on a Overlay2 storage."""
     self.maxDiff = None
     test_mount_dir = '/mnt'
     commands = self.storage.MakeMountCommands(

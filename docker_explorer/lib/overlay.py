@@ -18,10 +18,10 @@ from __future__ import unicode_literals
 
 import os
 
-from lib.storage import Storage
+from docker_explorer.lib import storage
 
 
-class OverlayStorage(Storage):
+class OverlayStorage(storage.Storage):
   """This class implements OverlayFS storage specific methods."""
 
   STORAGE_METHOD = 'overlay'
