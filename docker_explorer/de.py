@@ -192,7 +192,7 @@ class DockerExplorer(object):
       print('Could not detect storage system. '
             'Make sure the docker directory ({0:s}) is correct. '
             'If it is correct, you might want to run this script'
-            ' with higher privileges.').format(self.docker_directory)
+            ' with higher privileges.'.format(self.docker_directory))
       sys.exit(1)
 
     if options.command == 'mount':
