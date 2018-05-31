@@ -14,7 +14,7 @@
 # limitations under the License.
 """Base class for a Docker Storage object."""
 
-from __future__ import unicode_literals
+from __future__ import print_function, unicode_literals
 
 from datetime import datetime
 import json
@@ -87,7 +87,7 @@ class Storage(object):
       docker_version (int): Docker storage version.
     """
     if docker_version not in [1, 2]:
-      print 'Unsupported Docker version number {0:d}'.format(docker_version)
+      print('Unsupported Docker version number {0:d}'.format(docker_version))
       sys.exit(1)
 
     self.docker_version = docker_version
@@ -135,11 +135,11 @@ class Storage(object):
     """
     container_ids_list = os.listdir(self.containers_directory)
     if not container_ids_list:
-      print ('Couldn\'t find any container configuration file (\'{0:s}\'). '
-             'Make sure the docker repository ({1:s}) is correct. '
-             'If it is correct, you might want to run this script'
-             ' with higher privileges.').format(
-                 self.container_config_filename, self.docker_directory)
+      print('Couldn\'t find any container configuration file (\'{0:s}\'). '
+            'Make sure the docker repository ({1:s}) is correct. '
+            'If it is correct, you might want to run this script'
+            ' with higher privileges.').format(
+                self.container_config_filename, self.docker_directory)
     container_info_list = [self.GetContainerInfo(x) for x in container_ids_list]
 
     return container_info_list
@@ -362,9 +362,9 @@ class Storage(object):
 
     commands = self.MakeMountCommands(container_id, mount_dir)
     for c in commands:
-      print c
-    print ('Do you want to mount this container Id: {0:s} on {1:s} ?\n'
-           '(ie: run these commands) [Y/n]').format(container_id, mount_dir)
+      print(c)
+    print('Do you want to mount this container Id: {0:s} on {1:s} ?\n'
+          '(ie: run these commands) [Y/n]').format(container_id, mount_dir)
     choice = raw_input().lower()
     if not choice or choice == 'y' or choice == 'yes':
       for c in commands:
@@ -381,21 +381,21 @@ class Storage(object):
     # TODO(romaing): Find a container_id from only the first few characters.
     for layer in self.GetOrderedLayers(container_id):
       layer_info = self.GetLayerInfo(layer)
-      print '--------------------------------------------------------------'
-      print layer
+      print('--------------------------------------------------------------')
+      print(layer)
       if layer_info is None:
-        print 'no info =('
+        print('no info =(')
       else:
         layer_size = self.GetLayerSize(layer)
         if layer_size > 0 or show_empty_layers or self.docker_version == 2:
-          print '\tsize : {0:d}'.format(layer_size)
-          print '\tcreated at : {0:s}'.format(
-              self._FormatDatetime(layer_info['created']))
+          print('\tsize : {0:d}'.format(layer_size))
+          print('\tcreated at : {0:s}'.format(
+              self._FormatDatetime(layer_info['created'])))
           container_cmd = layer_info['container_config'].get('Cmd', None)
           if container_cmd:
-            print '\twith command : {0:s}'.format(' '.join(container_cmd))
+            print('\twith command : {0:s}'.format(' '.join(container_cmd)))
           comment = layer_info.get('comment', None)
           if comment:
-            print '\tcomment : {0:s}'.format(comment)
+            print('\tcomment : {0:s}'.format(comment))
         else:
-          print 'Empty layer'
+          print('Empty layer')

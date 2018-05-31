@@ -17,7 +17,7 @@
 A tool to parse offline Docker installation.
 """
 
-from __future__ import unicode_literals
+from __future__ import print_function, unicode_literals
 
 import argparse
 import codecs
@@ -183,10 +183,10 @@ class DockerExplorer(object):
 
     self.storage_object = self.DetectStorage()
     if self.storage_object is None:
-      print ('Could not detect storage system. '
-             'Make sure the docker directory ({0:s}) is correct. '
-             'If it is correct, you might want to run this script'
-             ' with higher privileges.').format(self.docker_directory)
+      print('Could not detect storage system. '
+            'Make sure the docker directory ({0:s}) is correct. '
+            'If it is correct, you might want to run this script'
+            ' with higher privileges.').format(self.docker_directory)
       sys.exit(1)
 
     if options.command == 'mount':
@@ -199,11 +199,11 @@ class DockerExplorer(object):
 
     elif options.command == 'list':
       if options.what == 'all_containers':
-        print self.storage_object.ShowContainers()
+        print(self.storage_object.ShowContainers())
       elif options.what == 'running_containers':
-        print self.storage_object.ShowContainers(only_running=True)
+        print(self.storage_object.ShowContainers(only_running=True))
       elif options.what == 'repositories':
-        print self.storage_object.ShowRepositories()
+        print(self.storage_object.ShowRepositories())
 
     else:
       raise ValueError('Unhandled command %s' % options.command)
