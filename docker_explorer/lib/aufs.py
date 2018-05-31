@@ -14,7 +14,7 @@
 # limitations under the License.
 """Aufs Storage class."""
 
-from __future__ import unicode_literals
+from __future__ import print_function, unicode_literals
 
 import glob
 import json
@@ -110,8 +110,8 @@ class AufsStorage(storage.Storage):
         of the file system.
     """
     if not os.path.isfile('/sbin/mount.aufs'):
-      print ('Could not find /sbin/mount.aufs. Please install the aufs-tools '
-             'package.')
+      print('Could not find /sbin/mount.aufs. Please install the aufs-tools '
+            'package.')
 
     container_info = self.GetContainerInfo(container_id)
     mount_id = container_info.mount_id
