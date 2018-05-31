@@ -36,6 +36,10 @@ sys.stdout = codecs.getwriter('utf8')(sys.stdout)
 class BadStorageException(Exception):
   """Raised when the Storage method detection failed."""
 
+  def __init__(self, message):
+    super(BadStorageException, self).__init__(message)
+    self.message = message
+
 
 class DockerExplorer(object):
   """Main class for the DockerExplorer tool.
