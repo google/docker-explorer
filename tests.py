@@ -72,10 +72,8 @@ class TestDEMain(unittest.TestCase):
 
     options = de_test_object.ParseArguments()
     usage_string = de_test_object._argument_parser.format_usage()
-    expected_usage = (
-        r'usage: (setup.py|{0}) \[-h\] \[-r DOCKER_DIRECTORY\] '
-        '{{mount,list,history}} ...\n').format(os.path.basename(__file__))
-    self.assertRegexpMatches(usage_string, expected_usage)
+    expected_usage = '[-h] [-r DOCKER_DIRECTORY] {mount,list,history} ...\n'
+    self.assertTrue(expected_usage in usage_string)
 
     de_test_object.ParseOptions(options)
     self.assertEqual(expected_docker_root, options.docker_directory)
@@ -113,8 +111,8 @@ class TestAufsStorage(unittest.TestCase):
     expected_error_message = (
         '{0:s} is not a Docker directory\n'
         'Please specify the Docker\'s directory path.\n'
-        'hint: python {1:s} -r /var/lib/docker').format(
-            de_test_object.docker_directory, sys.argv[0])
+        'hint: de.py -r /var/lib/docker').format(
+            de_test_object.docker_directory)
 
     with self.assertRaises(de.BadStorageException) as err:
       de_test_object.DetectStorage()
@@ -254,8 +252,8 @@ class TestOverlayStorage(unittest.TestCase):
     expected_error_message = (
         '{0:s} is not a Docker directory\n'
         'Please specify the Docker\'s directory path.\n'
-        'hint: python {1:s} -r /var/lib/docker').format(
-            de_test_object.docker_directory, sys.argv[0])
+        'hint: de.py -r /var/lib/docker').format(
+            de_test_object.docker_directory)
 
     with self.assertRaises(de.BadStorageException) as err:
       de_test_object.DetectStorage()
@@ -393,8 +391,8 @@ class TestOverlay2Storage(unittest.TestCase):
     expected_error_message = (
         '{0:s} is not a Docker directory\n'
         'Please specify the Docker\'s directory path.\n'
-        'hint: python {1:s} -r /var/lib/docker').format(
-            de_test_object.docker_directory, sys.argv[0])
+        'hint: de.py -r /var/lib/docker').format(
+            de_test_object.docker_directory)
 
     with self.assertRaises(de.BadStorageException) as err:
       de_test_object.DetectStorage()
