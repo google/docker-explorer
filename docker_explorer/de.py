@@ -158,6 +158,7 @@ class DockerExplorer(object):
     self.AddBasicOptions(self._argument_parser)
 
     command_parser = self._argument_parser.add_subparsers(dest='command')
+    command_parser.required = True
     self.AddMountCommand(command_parser)
     self.AddListCommand(command_parser)
     self.AddHistoryCommand(command_parser)
