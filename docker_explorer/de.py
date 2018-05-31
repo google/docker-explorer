@@ -76,8 +76,7 @@ class DockerExplorer(object):
       error_msg = (
           '{0:s} is not a Docker directory\n'
           'Please specify the Docker\'s directory path.\n'
-          'hint: python {1:s} -r /var/lib/docker').format(
-              self.docker_directory, sys.argv[0])
+          'hint: de.py -r /var/lib/docker').format(self.docker_directory)
       raise BadStorageException(error_msg)
 
     if os.path.isfile(

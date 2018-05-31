@@ -111,8 +111,8 @@ class TestAufsStorage(unittest.TestCase):
     expected_error_message = (
         '{0:s} is not a Docker directory\n'
         'Please specify the Docker\'s directory path.\n'
-        'hint: python {1:s} -r /var/lib/docker').format(
-            de_test_object.docker_directory, sys.argv[0])
+        'hint: de.py -r /var/lib/docker').format(
+            de_test_object.docker_directory)
 
     with self.assertRaises(de.BadStorageException) as err:
       de_test_object.DetectStorage()
@@ -252,8 +252,8 @@ class TestOverlayStorage(unittest.TestCase):
     expected_error_message = (
         '{0:s} is not a Docker directory\n'
         'Please specify the Docker\'s directory path.\n'
-        'hint: python {1:s} -r /var/lib/docker').format(
-            de_test_object.docker_directory, sys.argv[0])
+        'hint: de.py -r /var/lib/docker').format(
+            de_test_object.docker_directory)
 
     with self.assertRaises(de.BadStorageException) as err:
       de_test_object.DetectStorage()
@@ -391,8 +391,8 @@ class TestOverlay2Storage(unittest.TestCase):
     expected_error_message = (
         '{0:s} is not a Docker directory\n'
         'Please specify the Docker\'s directory path.\n'
-        'hint: python {1:s} -r /var/lib/docker').format(
-            de_test_object.docker_directory, sys.argv[0])
+        'hint: de.py -r /var/lib/docker').format(
+            de_test_object.docker_directory)
 
     with self.assertRaises(de.BadStorageException) as err:
       de_test_object.DetectStorage()
