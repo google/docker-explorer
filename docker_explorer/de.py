@@ -27,10 +27,12 @@ import sys
 from docker_explorer.lib import aufs
 from docker_explorer.lib import overlay
 
-# This is to fix UnicodeEncodeError issues when python
-# suddenly changes the output encoding when sys.stdout is
-# piped into something else.
-sys.stdout = codecs.getwriter('utf8')(sys.stdout)
+
+if (sys.version_info < (3, 0)):
+  # This is to fix UnicodeEncodeError issues when python
+  # suddenly changes the output encoding when sys.stdout is
+  # piped into something else.
+  sys.stdout = codecs.getwriter('utf8')(sys.stdout)
 
 
 class BadStorageException(Exception):
