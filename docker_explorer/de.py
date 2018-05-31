@@ -39,6 +39,7 @@ class BadStorageException(Exception):
   """Raised when the Storage method detection failed."""
 
   def __init__(self, message):
+    super(BadStorageException, self).__init__(message)
     self.message = message
 
 
