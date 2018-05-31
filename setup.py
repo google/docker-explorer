@@ -31,5 +31,5 @@ setup(
         'Programming Language :: Python',
     ],
     scripts=['docker_explorer/de.py'],
-    test_suite="tests"
+    test_suite='tests'
 )
