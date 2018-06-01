@@ -53,7 +53,8 @@ class ContainerInfo(object):
     """
     self.container_id = container_id
 
-    container_info_dict = json.load(open(container_info_json_path))
+    with open(container_info_json_path) as container_info_json_file:
+      container_info_dict = json.load(container_info_json_file)
 
     json_config = container_info_dict.get('Config', None)
     if json_config:
@@ -204,7 +205,8 @@ class Storage(object):
       c_path = os.path.join(
           self.docker_directory, 'image', self.STORAGE_METHOD, 'layerdb',
           'mounts', container_id)
-      container_info.mount_id = open(os.path.join(c_path, 'mount-id')).read()
+      with open(os.path.join(c_path, 'mount-id')) as mount_id_file:
+        container_info.mount_id = mount_id_file.read()
 
     return container_info
 
@@ -307,8 +309,10 @@ class Storage(object):
           'content', hash_method, container_id)
     container_info = None
     if os.path.isfile(layer_info_path):
-      container_info = json.load(open(layer_info_path))
-    return container_info
+      with open(layer_info_path) as layer_info_file:
+        container_info = json.load(layer_info_file)
+        return container_info
+    return None
 
   def _MakeExtraVolumeCommands(self, container_info, mount_dir):
     """Generates the shell command to mount external Volumes if present.
@@ -381,6 +385,8 @@ class Storage(object):
     # TODO(romaing): Find a container_id from only the first few characters.
     for layer in self.GetOrderedLayers(container_id):
       layer_info = self.GetLayerInfo(layer)
+      if layer is None:
+        raise ValueError('Layer {0:s} does not exist'.format(layer))
       print('--------------------------------------------------------------')
       print(layer)
       if layer_info is None:
