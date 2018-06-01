@@ -386,7 +386,7 @@ class Storage(object):
     for layer in self.GetOrderedLayers(container_id):
       layer_info = self.GetLayerInfo(layer)
       if layer is None:
-        raise ValueError('Layer {0} does not exist'.format(layer))
+        raise ValueError('Layer {0:s} does not exist'.format(layer))
       print('--------------------------------------------------------------')
       print(layer)
       if layer_info is None:
