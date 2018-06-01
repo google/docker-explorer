@@ -106,13 +106,12 @@ class TestAufsStorage(unittest.TestCase):
   def testDetectStorage(self):
     """Tests the DockerExplorer.DetectStorage function in a AUFS storage."""
     de_test_object = de.DockerExplorer()
-
     de_test_object.docker_directory = 'this_dir_shouldnt_exist'
+
     expected_error_message = (
-        '{0:s} is not a Docker directory\n'
+        'this_dir_shouldnt_exist is not a Docker directory\n'
         'Please specify the Docker\'s directory path.\n'
-        'hint: de.py -r /var/lib/docker').format(
-            de_test_object.docker_directory)
+        'hint: de.py -r /var/lib/docker')
 
     with self.assertRaises(de.BadStorageException) as err:
       de_test_object.DetectStorage()
@@ -168,10 +167,13 @@ class TestAufsStorage(unittest.TestCase):
     """Tests the Storage.ShowContainers function on a AUFS storage."""
     result_string = self.storage.ShowContainers(only_running=True)
     expected_string = (
-        'Container id: {0:s} / No Label\n'
+        'Container id: '
+        '7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966 '
+        '/ No Label\n'
         '\tStart date: 2017-02-13T16:45:05.785658\n'
-        '\tImage ID: {1:s}\n'
-        '\tImage Name: busybox\n').format(self.container_id, self.image_id)
+        '\tImage ID: '
+        '7968321274dc6b6171697c33df7815310468e694ac5be0ec03ff053bb135e768\n'
+        '\tImage Name: busybox\n')
     self.assertEqual(expected_string, result_string)
 
   def testGetLayerInfo(self):
@@ -190,32 +192,31 @@ class TestAufsStorage(unittest.TestCase):
         'test_data/docker/image/aufs/repositories.json{\n'
         '    "Repositories": {\n'
         '        "busybox": {\n'
-        '            "busybox:latest": "sha256:%s"\n'
+        '            "busybox:latest": '
+        '"sha256:7968321274dc6b6171697c33df7815310468e694ac5be0ec03ff053bb135e7'
+        '68"\n'
         '        }\n'
         '    }\n'
-        '}')%self.image_id
+        '}')
     self.assertEqual(expected_string, result_string)
 
   def testMakeMountCommands(self):
     """Tests the Storage.MakeMountCommands function on a AUFS storage."""
-    test_mount_dir = '/mnt'
-    commands = self.storage.MakeMountCommands(
-        self.container_id, test_mount_dir)
+    commands = self.storage.MakeMountCommands(self.container_id, '/mnt')
     expected_commands = [
         ('mount -t aufs -o ro,br=test_data/docker/aufs/diff/test_data/docker/'
          'aufs/diff/'
          'b16a494082bba0091e572b58ff80af1b7b5d28737a3eedbe01e73cd7f4e01d23'
-         '=ro+wh none {0:s}').format(test_mount_dir),
+         '=ro+wh none /mnt'),
         ('mount -t aufs -o ro,remount,append:test_data/docker/aufs/diff/'
          'b16a494082bba0091e572b58ff80af1b7b5d28737a3eedbe01e73cd7f4e01d23'
-         '-init=ro+wh none {0:s}').format(test_mount_dir),
+         '-init=ro+wh none /mnt'),
         ('mount -t aufs -o ro,remount,append:test_data/docker/aufs/diff/'
          'd1c54c46d331de21587a16397e8bd95bdbb1015e1a04797c76de128107da83ae'
-         '=ro+wh none {0:s}').format(test_mount_dir),
+         '=ro+wh none /mnt'),
         ('mount --bind -o ro {0:s}/docker/volumes/'
          '28297de547b5473a9aff90aaab45ed108ebf019981b40c3c35c226f54c13ac0d/'
-         '_data {1:s}/var/jenkins_home').format(
-             os.path.abspath('test_data'), test_mount_dir)
+         '_data /mnt/var/jenkins_home').format(os.path.abspath('test_data'))
     ]
     self.assertEqual(expected_commands, commands)
 
@@ -250,10 +251,9 @@ class TestOverlayStorage(unittest.TestCase):
 
     de_test_object.docker_directory = 'this_dir_shouldnt_exist'
     expected_error_message = (
-        '{0:s} is not a Docker directory\n'
+        'this_dir_shouldnt_exist is not a Docker directory\n'
         'Please specify the Docker\'s directory path.\n'
-        'hint: de.py -r /var/lib/docker').format(
-            de_test_object.docker_directory)
+        'hint: de.py -r /var/lib/docker')
 
     with self.assertRaises(de.BadStorageException) as err:
       de_test_object.DetectStorage()
@@ -310,11 +310,13 @@ class TestOverlayStorage(unittest.TestCase):
     """Tests the Storage.ShowContainers function on a Overlay storage."""
     result_string = self.storage.ShowContainers(only_running=True)
     expected_string = (
-        'Container id: {0:s} / No Label\n'
+        'Container id: '
+        '5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a '
+        '/ No Label\n'
         '\tStart date: 2018-01-26T14:55:56.574924\n'
-        '\tImage ID: {1:s}\n'
-        '\tImage Name: busybox:latest\n').format(
-            self.container_id, self.image_id)
+        '\tImage ID: '
+        '5b0d59026729b68570d99bc4f3f7c31a2e4f2a5736435641565d93e7c25bd2c3\n'
+        '\tImage Name: busybox:latest\n')
     self.assertEqual(expected_string, result_string)
 
   def testGetLayerInfo(self):
@@ -334,21 +336,20 @@ class TestOverlayStorage(unittest.TestCase):
         'test_data/docker/image/overlay/repositories.json{\n'
         '    "Repositories": {\n'
         '        "busybox": {\n'
-        '            "busybox:latest": "sha256:%s", \n'
+        '            "busybox:latest": "sha256:'
+        '5b0d59026729b68570d99bc4f3f7c31a2e4f2a5736435641565d93e7c25bd2c3", \n'
         '            "busybox@sha256:1669a6aa7350e1cdd28f972ddad5aceba2912f589'
         'f19a090ac75b7083da748db": '
         '"sha256:5b0d59026729b68570d99bc4f3f7c31a2e4f2a5736435641565d93e7c25bd'
         '2c3"\n'
         '        }\n'
         '    }\n'
-        '}')%self.image_id
+        '}')
     self.assertEqual(expected_string, result_string)
 
   def testMakeMountCommands(self):
     """Tests the Storage.MakeMountCommands function on a Overlay storage."""
-    test_mount_dir = '/mnt'
-    commands = self.storage.MakeMountCommands(
-        self.container_id, test_mount_dir)
+    commands = self.storage.MakeMountCommands(self.container_id, '/mnt')
     expected_commands = [(
         'mount -t overlay overlay -o ro,lowerdir='
         '"test_data/docker/overlay/a94d714512251b0d8a9bfaacb832e0c6cb70f71cb71'
@@ -386,13 +387,12 @@ class TestOverlay2Storage(unittest.TestCase):
   def testDetectStorage(self):
     """Tests the DockerExplorer.DetectStorage function on a Overlay2 storage."""
     de_test_object = de.DockerExplorer()
-
     de_test_object.docker_directory = 'this_dir_shouldnt_exist'
+
     expected_error_message = (
-        '{0:s} is not a Docker directory\n'
+        'this_dir_shouldnt_exist is not a Docker directory\n'
         'Please specify the Docker\'s directory path.\n'
-        'hint: de.py -r /var/lib/docker').format(
-            de_test_object.docker_directory)
+        'hint: de.py -r /var/lib/docker')
 
     with self.assertRaises(de.BadStorageException) as err:
       de_test_object.DetectStorage()
@@ -448,11 +448,13 @@ class TestOverlay2Storage(unittest.TestCase):
     """Tests the Storage.ShowContainers function on a Overlay2 storage."""
     result_string = self.storage.ShowContainers(only_running=True)
     expected_string = (
-        'Container id: {0:s} / No Label\n'
+        'Container id: '
+        '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206 '
+        '/ No Label\n'
         '\tStart date: 2018-05-16T10:51:39.625989\n'
-        '\tImage ID: {1:s}\n'
-        '\tImage Name: busybox\n').format(
-            self.container_id, self.image_id)
+        '\tImage ID: '
+        '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7\n'
+        '\tImage Name: busybox\n')
     self.assertEqual(expected_string, result_string)
 
   def testGetLayerInfo(self):
@@ -472,22 +474,21 @@ class TestOverlay2Storage(unittest.TestCase):
         'test_data/docker/image/overlay2/repositories.json{\n'
         '    "Repositories": {\n'
         '        "busybox": {\n'
-        '            "busybox:latest": "sha256:%s", \n'
+        '            "busybox:latest": "sha256:'
+        '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7", \n'
         '            "busybox@sha256:58ac43b2cc92c687a32c8be6278e50a063579655fe'
         '3090125dcb2af0ff9e1a64": '
         '"sha256:8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8'
         'c7"\n'
         '        }\n'
         '    }\n'
-        '}')%self.image_id
+        '}')
     self.assertEqual(expected_string, result_string)
 
   def testMakeMountCommands(self):
     """Tests the Storage.MakeMountCommands function on a Overlay2 storage."""
     self.maxDiff = None
-    test_mount_dir = '/mnt'
-    commands = self.storage.MakeMountCommands(
-        self.container_id, test_mount_dir)
+    commands = self.storage.MakeMountCommands(self.container_id, '/mnt')
     expected_commands = [(
         'mount -t overlay overlay -o ro,lowerdir='
         '"test_data/docker/overlay2/l/OTFSLJCXWCECIG6FVNGRTWUZ7D:'
