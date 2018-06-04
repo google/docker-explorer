@@ -27,11 +27,10 @@ from docker_explorer import de
 
 from docker_explorer.lib import aufs
 from docker_explorer.lib import overlay
-from docker_explorer.lib import storage
 from docker_explorer.lib import utils
 
 
-# pylint: disable=protected-accesso
+# pylint: disable=protected-access
 
 class UtilsTests(unittest.TestCase):
   """Tests Utils methods."""
@@ -93,6 +92,7 @@ class TestAufsStorage(unittest.TestCase):
     cls.storage = de_test_object.storage_object
     cls.container_id = (
         '7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966')
+    cls.container = cls.storage.GetContainer(cls.container_id)
     cls.image_id = (
         '7968321274dc6b6171697c33df7815310468e694ac5be0ec03ff053bb135e768')
 
@@ -125,9 +125,9 @@ class TestAufsStorage(unittest.TestCase):
     self.assertEqual('config.v2.json',
                      storage_object.container_config_filename)
 
-  def testGetAllContainersInfo(self):
-    """Tests the GetAllContainersInfo function on a AuFS storage."""
-    list_container_info = self.storage.GetAllContainersInfo()
+  def testGetAllContainers(self):
+    """Tests the GetAllContainers function on a AuFS storage."""
+    list_container_info = self.storage.GetAllContainers()
     list_container_info = sorted(list_container_info, key=lambda ci: ci.name)
     self.assertEqual(7, len(list_container_info))
 
@@ -144,7 +144,7 @@ class TestAufsStorage(unittest.TestCase):
 
   def testGetOrderedLayers(self):
     """Tests the Storage.GetOrderedLayers function on a AUFS storage."""
-    layers = self.storage.GetOrderedLayers(self.container_id)
+    layers = self.storage.GetOrderedLayers(self.container)
     self.assertEqual(1, len(layers))
     self.assertEqual('sha256:{0:s}'.format(self.image_id), layers[0])
 
@@ -227,8 +227,7 @@ class TestAufsStorage(unittest.TestCase):
         '7968321274dc6b6171697c33df7815310468e694ac5be0ec03ff053bb135e768\n'
         '\tsize : 0\tcreated at : 2017-01-13T22:13:54.401355\t'
         'with command : /bin/sh -c #(nop)  CMD ["sh"]')
-    self.assertEqual(
-        expected_string, self.storage.GetHistory(self.container_id))
+    self.assertEqual(expected_string, self.storage.GetHistory(self.container))
 
 
 class TestOverlayStorage(unittest.TestCase):
@@ -249,6 +248,7 @@ class TestOverlayStorage(unittest.TestCase):
     cls.storage = de_test_object.storage_object
     cls.container_id = (
         '5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a')
+    cls.container = cls.storage.GetContainer(cls.container_id)
     cls.image_id = (
         '5b0d59026729b68570d99bc4f3f7c31a2e4f2a5736435641565d93e7c25bd2c3')
 
@@ -281,9 +281,9 @@ class TestOverlayStorage(unittest.TestCase):
     self.assertEqual('config.v2.json',
                      storage_object.container_config_filename)
 
-  def testGetAllContainersInfo(self):
-    """Tests the GetAllContainersInfo function on a Overlay storage."""
-    list_container_info = self.storage.GetAllContainersInfo()
+  def testGetAllContainers(self):
+    """Tests the GetAllContainers function on a Overlay storage."""
+    list_container_info = self.storage.GetAllContainers()
     list_container_info = sorted(list_container_info, key=lambda ci: ci.name)
     self.assertEqual(6, len(list_container_info))
 
@@ -300,7 +300,7 @@ class TestOverlayStorage(unittest.TestCase):
 
   def testGetOrderedLayers(self):
     """Tests the Storage.GetOrderedLayers function on a Overlay storage."""
-    layers = self.storage.GetOrderedLayers(self.container_id)
+    layers = self.storage.GetOrderedLayers(self.container)
     self.assertEqual(1, len(layers))
     self.assertEqual('sha256:{0:s}'.format(self.image_id), layers[0])
 
@@ -382,7 +382,7 @@ class TestOverlayStorage(unittest.TestCase):
         '\tsize : 0\tcreated at : 2018-01-24T04:29:35.590938\t'
         'with command : /bin/sh -c #(nop)  CMD ["sh"]')
     self.assertEqual(
-        expected_string, self.storage.GetHistory(self.container_id))
+        expected_string, self.storage.GetHistory(self.container))
 
 
 class TestOverlay2Storage(unittest.TestCase):
@@ -403,6 +403,7 @@ class TestOverlay2Storage(unittest.TestCase):
     cls.storage = de_test_object.storage_object
     cls.container_id = (
         '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206')
+    cls.container = cls.storage.GetContainer(cls.container_id)
     cls.image_id = (
         '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7')
 
@@ -435,9 +436,9 @@ class TestOverlay2Storage(unittest.TestCase):
     self.assertEqual('config.v2.json',
                      storage_object.container_config_filename)
 
-  def testGetAllContainersInfo(self):
-    """Tests the GetAllContainersInfo function on a Overlay2 storage."""
-    list_container_info = self.storage.GetAllContainersInfo()
+  def testGetAllContainers(self):
+    """Tests the GetAllContainers function on a Overlay2 storage."""
+    list_container_info = self.storage.GetAllContainers()
     list_container_info = sorted(list_container_info, key=lambda ci: ci.name)
     self.assertEqual(5, len(list_container_info))
 
@@ -453,7 +454,7 @@ class TestOverlay2Storage(unittest.TestCase):
 
   def testGetOrderedLayers(self):
     """Tests the Storage.GetOrderedLayers function on a Overlay2 storage."""
-    layers = self.storage.GetOrderedLayers(self.container_id)
+    layers = self.storage.GetOrderedLayers(self.container)
     self.assertEqual(1, len(layers))
     self.assertEqual('sha256:{0:s}'.format(self.image_id), layers[0])
 
@@ -538,7 +539,7 @@ class TestOverlay2Storage(unittest.TestCase):
         '\tsize : 0\tcreated at : 2018-04-05T10:41:28.876407\t'
         'with command : /bin/sh -c #(nop)  CMD ["sh"]')
     self.assertEqual(
-        expected_string, self.storage.GetHistory(self.container_id))
+        expected_string, self.storage.GetHistory(self.container))
 
 if __name__ == '__main__':
   unittest.main()

@@ -113,7 +113,7 @@ class AufsStorage(storage.Storage):
       print('Could not find /sbin/mount.aufs. Please install the aufs-tools '
             'package.')
 
-    container_info = self.GetContainerInfo(container_id)
+    container_info = self.GetContainer(container_id)
     mount_id = container_info.mount_id
 
     container_layers_filepath = os.path.join(

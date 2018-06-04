@@ -14,6 +14,7 @@
 # limitations under the License.
 """Base class for a Docker Storage object."""
 
+from __future__ import print_function, unicode_literals
 
 import json
 import os
@@ -69,17 +70,17 @@ class Storage(object):
 
     return container_info_list
 
-  def GetOrderedLayers(self, container):
-    """Returns an array of the sorted image ID for a container ID.
+  def GetOrderedLayers(self, container_obj):
+    """Returns an array of the sorted image ID for a container.
 
     Args:
-      container(Container): the container object.
+      container_obj(Container): the container object.
 
     Returns:
       list(str): a list of layer IDs (hashes).
     """
     layer_list = []
-    current_layer = container.container_id
+    current_layer = container_obj.container_id
     layer_path = os.path.join(self.docker_directory, 'graph', current_layer)
     if not os.path.isdir(layer_path):
       config_file_path = os.path.join(
@@ -300,18 +301,18 @@ class Storage(object):
         # TODO(romaing) this is quite unsafe, need to properly split args
         subprocess.call(c, shell=True)
 
-  def GetHistory(self, container, show_empty_layers=False):
+  def GetHistory(self, container_obj, show_empty_layers=False):
     """Returns a string representing the modification history of a container.
 
     Args:
-      container(Container): the container object.
+      container_obj(Container): the container object.
       show_empty_layers (bool): whether to display empty layers.
     Returns:
       str: the human readable history.
     """
     # TODO(romaing): Find a container_id from only the first few characters.
     history_str = ''
-    for layer in self.GetOrderedLayers(container.container_id):
+    for layer in self.GetOrderedLayers(container_obj):
       layer_info = self.GetLayerInfo(layer)
       if layer is None:
         raise ValueError('Layer {0:s} does not exist'.format(layer))
