@@ -22,11 +22,10 @@ class Container(object):
     name (str): the name of the container.
     running (boolean): True if the container is running.
     start_timestamp (str): the container's start timestamp.
+    storage_driver (str): the container's storage driver.
     volumes (list(tuple)): list of mount points to bind from host to the
       container. (Docker storage backend v1).
   """
-
-  STORAGE_METHOD = None
 
   def __init__(self, container_id, container_info_json_path):
     """Initializes the Container class.
@@ -53,6 +52,7 @@ class Container(object):
     if json_state:
       self.running = json_state.get('Running', False)
       self.start_timestamp = json_state.get('StartedAt', False)
+    self.storage_driver = json_config.get('Driver', None)
     self.volumes = container_info_dict.get('Volumes', None)
 
     self.mount_id = None
