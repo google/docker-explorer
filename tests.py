@@ -28,10 +28,11 @@ from docker_explorer import errors
 
 from docker_explorer.lib import aufs
 from docker_explorer.lib import overlay
+from docker_explorer.lib import storage
 from docker_explorer.lib import utils
 
 
-# pylint: disable=protected-access
+# pylint: disable=protected-accesso
 
 class UtilsTests(unittest.TestCase):
   """Tests Utils methods."""
