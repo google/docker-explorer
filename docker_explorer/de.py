@@ -210,6 +210,17 @@ class DockerExplorer(object):
       self.DetectStorage()
     print(self.storage_object.ShowRepositories())
 
+  def ShowHistory(self, container_id, show_empty_layers=False):
+    """Prints the history of the modifications of a container.
+
+    Args:
+      container_id (str): the ID of the container.
+      show_empty_layers (bool): whether to display empty layers.
+    """
+    if self.storage_object is None:
+      self.DetectStorage()
+    print(self.storage_object.GetHistory(container_id, show_empty_layers))
+
   def Main(self):
     """The main method for the DockerExplorer class.
 
@@ -226,9 +237,8 @@ class DockerExplorer(object):
       self.Mount(options.container_id, options.mountpoint)
 
     elif options.command == 'history':
-      self.storage_object.ShowHistory(
-          options.container_id,
-          show_empty_layers=options.show_empty)
+      self.ShowHistory(
+          options.container_id, show_empty_layers=options.show_empty)
 
     elif options.command == 'list':
       if options.what == 'all_containers':

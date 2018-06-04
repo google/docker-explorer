@@ -328,33 +328,39 @@ class Storage(object):
         # TODO(romaing) this is quite unsafe, need to properly split args
         subprocess.call(c, shell=True)
 
-  def ShowHistory(self, container_id, show_empty_layers=False):
-    """Prints the history of the modifications of a container.
+  def GetHistory(self, container_id, show_empty_layers=False):
+    """Returns a string representing the history of the modifications of a
+    container.
 
     Args:
       container_id (str): the ID of the container.
       show_empty_layers (bool): whether to display empty layers.
+    Returns:
+      str: the human readable history.
     """
     # TODO(romaing): Find a container_id from only the first few characters.
+    history_str = ''
     for layer in self.GetOrderedLayers(container_id):
       layer_info = self.GetLayerInfo(layer)
       if layer is None:
         raise ValueError('Layer {0:s} does not exist'.format(layer))
-      print('--------------------------------------------------------------')
-      print(layer)
+      history_str += '-------------------------------------------------------\n'
+      history_str += layer+'\n'
       if layer_info is None:
-        print('no info =(')
+        history_str += 'no info =('
       else:
         layer_size = self.GetLayerSize(layer)
         if layer_size > 0 or show_empty_layers or self.docker_version == 2:
-          print('\tsize : {0:d}'.format(layer_size))
-          print('\tcreated at : {0:s}'.format(
-              self._FormatDatetime(layer_info['created'])))
+          history_str += '\tsize : {0:d}'.format(layer_size)
+          history_str += '\tcreated at : {0:s}'.format(
+              self._FormatDatetime(layer_info['created']))
           container_cmd = layer_info['container_config'].get('Cmd', None)
           if container_cmd:
-            print('\twith command : {0:s}'.format(' '.join(container_cmd)))
+            history_str += '\twith command : {0:s}'.format(
+                ' '.join(container_cmd))
           comment = layer_info.get('comment', None)
           if comment:
-            print('\tcomment : {0:s}'.format(comment))
+            history_str += '\tcomment : {0:s}'.format(comment)
         else:
-          print('Empty layer')
+          history_str += 'Empty layer'
+    return history_str

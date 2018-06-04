@@ -222,6 +222,18 @@ class TestAufsStorage(unittest.TestCase):
     ]
     self.assertEqual(expected_commands, commands)
 
+  def testGetHistory(self):
+    """Tests the Storage.GetHistory function on a AUFS storage."""
+    self.maxDiff = None
+    expected_string = (
+        '-------------------------------------------------------\n'
+        'sha256:'
+        '7968321274dc6b6171697c33df7815310468e694ac5be0ec03ff053bb135e768\n'
+        '\tsize : 0\tcreated at : 2017-01-13T22:13:54.401355\t'
+        'with command : /bin/sh -c #(nop)  CMD ["sh"]')
+    self.assertEqual(
+        expected_string, self.storage.GetHistory(self.container_id))
+
 
 class TestOverlayStorage(unittest.TestCase):
   """Tests methods in the OverlayStorage object."""
@@ -363,6 +375,19 @@ class TestOverlayStorage(unittest.TestCase):
         'workdir="test_data/docker/overlay/974e2b994f9db74e1ddd6fc546843bc6592'
         '0e786612a388f25685acf84b3fed1/work" "/mnt"')]
     self.assertEqual(expected_commands, commands)
+
+  def testGetHistory(self):
+    """Tests the Storage.GetHistory function on a Overlay storage."""
+    self.maxDiff = None
+    expected_string = (
+        '-------------------------------------------------------\n'
+        'sha256:'
+        '5b0d59026729b68570d99bc4f3f7c31a2e4f2a5736435641565d93e7c25bd2c3\n'
+        '\tsize : 0\tcreated at : 2018-01-24T04:29:35.590938\t'
+        'with command : /bin/sh -c #(nop)  CMD ["sh"]')
+    self.assertEqual(
+        expected_string, self.storage.GetHistory(self.container_id))
+
 
 class TestOverlay2Storage(unittest.TestCase):
   """Tests methods in the Overlay2Storage object."""
@@ -506,6 +531,18 @@ class TestOverlay2Storage(unittest.TestCase):
         ' "/mnt"'
         )]
     self.assertEqual(expected_commands, commands)
+
+  def testGetHistory(self):
+    """Tests the Storage.GetHistory function on a Overlay2 storage."""
+    self.maxDiff = None
+    expected_string = (
+        '-------------------------------------------------------\n'
+        'sha256:'
+        '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7\n'
+        '\tsize : 0\tcreated at : 2018-04-05T10:41:28.876407\t'
+        'with command : /bin/sh -c #(nop)  CMD ["sh"]')
+    self.assertEqual(
+        expected_string, self.storage.GetHistory(self.container_id))
 
 if __name__ == '__main__':
   unittest.main()
