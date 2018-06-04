@@ -94,11 +94,12 @@ class DockerExplorer(object):
       self.storage_object = aufs.AufsStorage(
           docker_directory=self.docker_directory)
     if self.storage_object is None:
-      print('Could not detect storage system. '
-            'Make sure the docker directory ({0:s}) is correct. '
-            'If it is correct, you might want to run this script'
-            ' with higher privileges.'.format(self.docker_directory))
-      sys.exit(1)
+      err_message = (
+          'Could not detect storage system. '
+          'Make sure the docker directory ({0:s}) is correct. '
+          'If it is correct, you might want to run this script'
+          ' with higher privileges.'.format(self.docker_directory))
+      raise BadStorageException(err_message)
 
   def AddBasicOptions(self, argument_parser):
     """Adds the global options to the argument_parser.
