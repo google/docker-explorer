@@ -22,55 +22,7 @@ import os
 import subprocess
 import sys
 
-
-class ContainerInfo(object):
-  """Implements methods to access information about a Docker container.
-
-  Attributes:
-    config_image_name (str): the name of the container's image (eg: 'busybox').
-    config_labels (list(str)): labels attached to the container.
-    container_id (str): the ID of the container.
-    creation_timestamp (str): the container's creation timestamp.
-    image_id (str): the ID of the container's image.
-    mount_points (list(dict)): list of mount points to bind from host to the
-      container. (Docker storage backend v2).
-    name (str): the name of the container.
-    running (boolean): True if the container is running.
-    start_timestamp (str): the container's start timestamp.
-    volumes (list(tuple)): list of mount points to bind from host to the
-      container. (Docker storage backend v1).
-  """
-
-  STORAGE_METHOD = None
-
-  def __init__(self, container_id, container_info_json_path):
-    """Initializes the ContainerInfo class.
-
-    Args:
-      container_id (str): the container ID.
-      container_info_json_path (str): the path to the JSON file containing the
-        container's information.
-    """
-    self.container_id = container_id
-
-    with open(container_info_json_path) as container_info_json_file:
-      container_info_dict = json.load(container_info_json_file)
-
-    json_config = container_info_dict.get('Config', None)
-    if json_config:
-      self.config_image_name = json_config.get('Image', None)
-      self.config_labels = json_config.get('Labels', None)
-    self.creation_timestamp = container_info_dict.get('Created', None)
-    self.image_id = container_info_dict.get('Image', None)
-    self.mount_points = container_info_dict.get('MountPoints', None)
-    self.name = container_info_dict.get('Name', '')
-    json_state = container_info_dict.get('State', None)
-    if json_state:
-      self.running = json_state.get('Running', False)
-      self.start_timestamp = json_state.get('StartedAt', False)
-    self.volumes = container_info_dict.get('Volumes', None)
-
-    self.mount_id = None
+from docker_explorer.lib import container
 
 
 class Storage(object):
@@ -132,7 +84,7 @@ class Storage(object):
     """Gets a list containing information about all containers.
 
     Returns:
-      list (dict): the list of ContainerInfo objects.
+      list (dict): the list of Container objects.
     """
     container_ids_list = os.listdir(self.containers_directory)
     if not container_ids_list:
@@ -194,12 +146,13 @@ class Storage(object):
       container_id (str): the ID of the container.
 
     Returns:
-      ContainerInfo: the container's info.
+      Container: the container's info.
     """
     container_info_json_path = os.path.join(
         self.containers_directory, container_id, self.container_config_filename)
     if os.path.isfile(container_info_json_path):
-      container_info = ContainerInfo(container_id, container_info_json_path)
+      container_info = container.Container(
+          container_id, container_info_json_path)
 
     if self.docker_version == 2:
       c_path = os.path.join(
