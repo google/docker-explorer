@@ -40,7 +40,7 @@ class BadStorageException(Exception):
     """Constructor for a BadStorageException.
 
     Args:
-      message(str): the error message.
+      message (str): the error message.
     """
     super(BadStorageException, self).__init__(message)
     self.message = message
@@ -84,7 +84,7 @@ class DockerExplorer(object):
       # Handles Docker engine storage versions 1.9 and below.
       self.storage_object = aufs.AufsStorage(
           docker_directory=self.docker_directory, docker_version=1)
-    elif os.path.isdir(os.path.join(self.docker_directory, u'overlay2')):
+    elif os.path.isdir(os.path.join(self.docker_directory, 'overlay2')):
       self.storage_object = overlay.Overlay2Storage(
           docker_directory=self.docker_directory)
     elif os.path.isdir(os.path.join(self.docker_directory, 'overlay')):
@@ -199,7 +199,7 @@ class DockerExplorer(object):
     """Displays the running containers.
 
     Args:
-      only_running(bool): Whether we display only running Containers.
+      only_running (bool): Whether we display only running Containers.
     """
     if self.storage_object is None:
       self.DetectStorage()
@@ -212,7 +212,7 @@ class DockerExplorer(object):
     print(self.storage_object.ShowRepositories())
 
   def ShowHistory(self, container_id, show_empty_layers=False):
-    """Prints the history of the modifications of a container.
+    """Prints the modification history of a container.
 
     Args:
       container_id (str): the ID of the container.

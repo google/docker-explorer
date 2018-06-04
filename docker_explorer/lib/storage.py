@@ -167,7 +167,7 @@ class Storage(object):
     """Returns a list of container ids which were running.
 
     Args:
-      only_running(bool): Whether we return only running Containers.
+      only_running (bool): Whether we return only running Containers.
     Returns:
       list(dict): list of Containers information objects.
     """
@@ -199,7 +199,7 @@ class Storage(object):
     """Returns a string describing the running containers.
 
     Args:
-      only_running(bool): Whether we display only running Containers.
+      only_running (bool): Whether we display only running Containers.
     Returns:
       str: the string displaying information about running containers.
     """
@@ -329,8 +329,7 @@ class Storage(object):
         subprocess.call(c, shell=True)
 
   def GetHistory(self, container_id, show_empty_layers=False):
-    """Returns a string representing the history of the modifications of a
-    container.
+    """Returns a string representing the modification history of a container.
 
     Args:
       container_id (str): the ID of the container.
