@@ -35,4 +35,3 @@ def PrettyPrintJSON(string):
   """
   return json.dumps(
       json.loads(string), sort_keys=True, indent=4, separators=(', ', ': '))
-
