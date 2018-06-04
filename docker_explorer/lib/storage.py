@@ -325,7 +325,7 @@ class Storage(object):
         if layer_size > 0 or show_empty_layers or self.docker_version == 2:
           history_str += '\tsize : {0:d}'.format(layer_size)
           history_str += '\tcreated at : {0:s}'.format(
-              utils.FormatDatetime(layer_info['created'])))
+              utils.FormatDatetime(layer_info['created']))
           container_cmd = layer_info['container_config'].get('Cmd', None)
           if container_cmd:
             history_str += '\twith command : {0:s}'.format(
