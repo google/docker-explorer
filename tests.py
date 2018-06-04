@@ -93,7 +93,8 @@ class TestAufsStorage(unittest.TestCase):
 
     de_test_object = de.DockerExplorer()
     de_test_object.docker_directory = docker_directory_path
-    cls.storage = de_test_object.DetectStorage()
+    de_test_object.DetectStorage()
+    cls.storage = de_test_object.storage_object
     cls.container_id = (
         '7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966')
     cls.image_id = (
@@ -118,7 +119,8 @@ class TestAufsStorage(unittest.TestCase):
     self.assertEqual(expected_error_message, err.exception.message)
 
     de_test_object.docker_directory = os.path.join('test_data', 'docker')
-    storage_object = de_test_object.DetectStorage()
+    de_test_object.DetectStorage()
+    storage_object = de_test_object.storage_object
     self.assertIsNotNone(storage_object)
     self.assertIsInstance(storage_object, aufs.AufsStorage)
     self.assertEqual(storage_object.STORAGE_METHOD, 'aufs')
@@ -220,6 +222,18 @@ class TestAufsStorage(unittest.TestCase):
     ]
     self.assertEqual(expected_commands, commands)
 
+  def testGetHistory(self):
+    """Tests the Storage.GetHistory function on a AUFS storage."""
+    self.maxDiff = None
+    expected_string = (
+        '-------------------------------------------------------\n'
+        'sha256:'
+        '7968321274dc6b6171697c33df7815310468e694ac5be0ec03ff053bb135e768\n'
+        '\tsize : 0\tcreated at : 2017-01-13T22:13:54.401355\t'
+        'with command : /bin/sh -c #(nop)  CMD ["sh"]')
+    self.assertEqual(
+        expected_string, self.storage.GetHistory(self.container_id))
+
 
 class TestOverlayStorage(unittest.TestCase):
   """Tests methods in the OverlayStorage object."""
@@ -235,7 +249,8 @@ class TestOverlayStorage(unittest.TestCase):
 
     de_test_object = de.DockerExplorer()
     de_test_object.docker_directory = docker_directory_path
-    cls.storage = de_test_object.DetectStorage()
+    de_test_object.DetectStorage()
+    cls.storage = de_test_object.storage_object
     cls.container_id = (
         '5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a')
     cls.image_id = (
@@ -260,7 +275,8 @@ class TestOverlayStorage(unittest.TestCase):
     self.assertEqual(expected_error_message, err.exception.message)
 
     de_test_object.docker_directory = os.path.join('test_data', 'docker')
-    storage_object = de_test_object.DetectStorage()
+    de_test_object.DetectStorage()
+    storage_object = de_test_object.storage_object
     self.assertIsNotNone(storage_object)
     self.assertIsInstance(storage_object, overlay.OverlayStorage)
     self.assertEqual(storage_object.STORAGE_METHOD, 'overlay')
@@ -360,6 +376,19 @@ class TestOverlayStorage(unittest.TestCase):
         '0e786612a388f25685acf84b3fed1/work" "/mnt"')]
     self.assertEqual(expected_commands, commands)
 
+  def testGetHistory(self):
+    """Tests the Storage.GetHistory function on a Overlay storage."""
+    self.maxDiff = None
+    expected_string = (
+        '-------------------------------------------------------\n'
+        'sha256:'
+        '5b0d59026729b68570d99bc4f3f7c31a2e4f2a5736435641565d93e7c25bd2c3\n'
+        '\tsize : 0\tcreated at : 2018-01-24T04:29:35.590938\t'
+        'with command : /bin/sh -c #(nop)  CMD ["sh"]')
+    self.assertEqual(
+        expected_string, self.storage.GetHistory(self.container_id))
+
+
 class TestOverlay2Storage(unittest.TestCase):
   """Tests methods in the Overlay2Storage object."""
 
@@ -374,7 +403,8 @@ class TestOverlay2Storage(unittest.TestCase):
 
     de_test_object = de.DockerExplorer()
     de_test_object.docker_directory = docker_directory_path
-    cls.storage = de_test_object.DetectStorage()
+    de_test_object.DetectStorage()
+    cls.storage = de_test_object.storage_object
     cls.container_id = (
         '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206')
     cls.image_id = (
@@ -399,7 +429,8 @@ class TestOverlay2Storage(unittest.TestCase):
     self.assertEqual(expected_error_message, err.exception.message)
 
     de_test_object.docker_directory = os.path.join('test_data', 'docker')
-    storage_object = de_test_object.DetectStorage()
+    de_test_object.DetectStorage()
+    storage_object = de_test_object.storage_object
     self.assertIsNotNone(storage_object)
     self.assertIsInstance(storage_object, overlay.OverlayStorage)
     self.assertEqual(storage_object.STORAGE_METHOD, 'overlay2')
@@ -500,6 +531,18 @@ class TestOverlay2Storage(unittest.TestCase):
         ' "/mnt"'
         )]
     self.assertEqual(expected_commands, commands)
+
+  def testGetHistory(self):
+    """Tests the Storage.GetHistory function on a Overlay2 storage."""
+    self.maxDiff = None
+    expected_string = (
+        '-------------------------------------------------------\n'
+        'sha256:'
+        '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7\n'
+        '\tsize : 0\tcreated at : 2018-04-05T10:41:28.876407\t'
+        'with command : /bin/sh -c #(nop)  CMD ["sh"]')
+    self.assertEqual(
+        expected_string, self.storage.GetHistory(self.container_id))
 
 if __name__ == '__main__':
   unittest.main()
