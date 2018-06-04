@@ -63,14 +63,11 @@ class DockerExplorer(object):
     self.storage_object = None
 
   def DetectStorage(self):
-    """Detects the storage backend. Only AuFS is currently supported.
+    """Detects the storage backend.
 
     More info :
     https://docs.docker.com/engine/userguide/storagedriver/
     http://jpetazzo.github.io/assets/2015-06-04-deep-dive-into-docker-storage-drivers.html#60
-
-    Returns:
-      Storage: a Storage object.
 
     Raises:
       BadStorageException: If the storage backend couldn't be detected.
@@ -85,15 +82,23 @@ class DockerExplorer(object):
     if os.path.isfile(
         os.path.join(self.docker_directory, 'repositories-aufs')):
       # Handles Docker engine storage versions 1.9 and below.
-      return aufs.AufsStorage(
+      self.storage_object = aufs.AufsStorage(
           docker_directory=self.docker_directory, docker_version=1)
     elif os.path.isdir(os.path.join(self.docker_directory, u'overlay2')):
-      return overlay.Overlay2Storage(docker_directory=self.docker_directory)
+      self.storage_object = overlay.Overlay2Storage(
+          docker_directory=self.docker_directory)
     elif os.path.isdir(os.path.join(self.docker_directory, 'overlay')):
-      return overlay.OverlayStorage(docker_directory=self.docker_directory)
+      self.storage_object = overlay.OverlayStorage(
+          docker_directory=self.docker_directory)
     elif os.path.isdir(os.path.join(self.docker_directory, 'aufs')):
-      return aufs.AufsStorage(docker_directory=self.docker_directory)
-    return None
+      self.storage_object = aufs.AufsStorage(
+          docker_directory=self.docker_directory)
+    if self.storage_object is None:
+      print('Could not detect storage system. '
+            'Make sure the docker directory ({0:s}) is correct. '
+            'If it is correct, you might want to run this script'
+            ' with higher privileges.'.format(self.docker_directory))
+      sys.exit(1)
 
   def AddBasicOptions(self, argument_parser):
     """Adds the global options to the argument_parser.
@@ -178,6 +183,33 @@ class DockerExplorer(object):
 
     self.docker_directory = os.path.abspath(options.docker_directory)
 
+  def Mount(self, container_id, mountpoint):
+    """Mounts the specified container's filesystem.
+
+    Args:
+      container_id (str): the ID of the container.
+      mountpoint (str): the path to the destination mount point.
+    """
+    if self.storage_object is None:
+      self.DetectStorage()
+    self.storage_object.Mount(container_id, mountpoint)
+
+  def ShowContainers(self, only_running=False):
+    """Displays the running containers.
+
+    Args:
+      only_running(bool): Whether we display only running Containers.
+    """
+    if self.storage_object is None:
+      self.DetectStorage()
+    print(self.storage_object.ShowContainers(only_running=only_running))
+
+  def ShowRepositories(self):
+    """Displays information about the images in the Docker repository."""
+    if self.storage_object is None:
+      self.DetectStorage()
+    print(self.storage_object.ShowRepositories())
+
   def Main(self):
     """The main method for the DockerExplorer class.
 
@@ -189,16 +221,9 @@ class DockerExplorer(object):
     options = self.ParseArguments()
     self.ParseOptions(options)
 
-    self.storage_object = self.DetectStorage()
-    if self.storage_object is None:
-      print('Could not detect storage system. '
-            'Make sure the docker directory ({0:s}) is correct. '
-            'If it is correct, you might want to run this script'
-            ' with higher privileges.'.format(self.docker_directory))
-      sys.exit(1)
 
     if options.command == 'mount':
-      self.storage_object.Mount(options.container_id, options.mountpoint)
+      self.Mount(options.container_id, options.mountpoint)
 
     elif options.command == 'history':
       self.storage_object.ShowHistory(
@@ -207,11 +232,11 @@ class DockerExplorer(object):
 
     elif options.command == 'list':
       if options.what == 'all_containers':
-        print(self.storage_object.ShowContainers())
+        self.ShowContainers()
       elif options.what == 'running_containers':
-        print(self.storage_object.ShowContainers(only_running=True))
+        self.ShowContainers(only_running=True)
       elif options.what == 'repositories':
-        print(self.storage_object.ShowRepositories())
+        self.ShowRepositories()
 
     else:
       raise ValueError('Unhandled command %s' % options.command)

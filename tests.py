@@ -93,7 +93,8 @@ class TestAufsStorage(unittest.TestCase):
 
     de_test_object = de.DockerExplorer()
     de_test_object.docker_directory = docker_directory_path
-    cls.storage = de_test_object.DetectStorage()
+    de_test_object.DetectStorage()
+    cls.storage = de_test_object.storage_object
     cls.container_id = (
         '7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966')
     cls.image_id = (
@@ -118,7 +119,8 @@ class TestAufsStorage(unittest.TestCase):
     self.assertEqual(expected_error_message, err.exception.message)
 
     de_test_object.docker_directory = os.path.join('test_data', 'docker')
-    storage_object = de_test_object.DetectStorage()
+    de_test_object.DetectStorage()
+    storage_object = de_test_object.storage_object
     self.assertIsNotNone(storage_object)
     self.assertIsInstance(storage_object, aufs.AufsStorage)
     self.assertEqual(storage_object.STORAGE_METHOD, 'aufs')
@@ -235,7 +237,8 @@ class TestOverlayStorage(unittest.TestCase):
 
     de_test_object = de.DockerExplorer()
     de_test_object.docker_directory = docker_directory_path
-    cls.storage = de_test_object.DetectStorage()
+    de_test_object.DetectStorage()
+    cls.storage = de_test_object.storage_object
     cls.container_id = (
         '5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a')
     cls.image_id = (
@@ -260,7 +263,8 @@ class TestOverlayStorage(unittest.TestCase):
     self.assertEqual(expected_error_message, err.exception.message)
 
     de_test_object.docker_directory = os.path.join('test_data', 'docker')
-    storage_object = de_test_object.DetectStorage()
+    de_test_object.DetectStorage()
+    storage_object = de_test_object.storage_object
     self.assertIsNotNone(storage_object)
     self.assertIsInstance(storage_object, overlay.OverlayStorage)
     self.assertEqual(storage_object.STORAGE_METHOD, 'overlay')
@@ -374,7 +378,8 @@ class TestOverlay2Storage(unittest.TestCase):
 
     de_test_object = de.DockerExplorer()
     de_test_object.docker_directory = docker_directory_path
-    cls.storage = de_test_object.DetectStorage()
+    de_test_object.DetectStorage()
+    cls.storage = de_test_object.storage_object
     cls.container_id = (
         '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206')
     cls.image_id = (
@@ -399,7 +404,8 @@ class TestOverlay2Storage(unittest.TestCase):
     self.assertEqual(expected_error_message, err.exception.message)
 
     de_test_object.docker_directory = os.path.join('test_data', 'docker')
-    storage_object = de_test_object.DetectStorage()
+    de_test_object.DetectStorage()
+    storage_object = de_test_object.storage_object
     self.assertIsNotNone(storage_object)
     self.assertIsInstance(storage_object, overlay.OverlayStorage)
     self.assertEqual(storage_object.STORAGE_METHOD, 'overlay2')
