@@ -300,7 +300,7 @@ class Storage(object):
         # TODO(romaing) this is quite unsafe, need to properly split args
         subprocess.call(c, shell=True)
 
-  def GetHistory(self, container_id, show_empty_layers=False):
+  def GetHistory(self, container, show_empty_layers=False):
     """Returns a string representing the modification history of a container.
 
     Args:
@@ -311,7 +311,7 @@ class Storage(object):
     """
     # TODO(romaing): Find a container_id from only the first few characters.
     history_str = ''
-    for layer in self.GetOrderedLayers(container_id):
+    for layer in self.GetOrderedLayers(container.container_id):
       layer_info = self.GetLayerInfo(layer)
       if layer is None:
         raise ValueError('Layer {0:s} does not exist'.format(layer))
