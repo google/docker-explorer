@@ -51,7 +51,7 @@ class OverlayStorage(storage.Storage):
       list: a list commands that needs to be run to mount the container's view
         of the file system.
     """
-    container_info = self.GetContainerInfo(container_id)
+    container_info = self.GetContainer(container_id)
     mount_id_path = os.path.join(
         self.docker_directory, self.STORAGE_METHOD, container_info.mount_id)
 

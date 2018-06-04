@@ -52,11 +52,11 @@ class Storage(object):
     if self.docker_version == 1:
       self.container_config_filename = 'config.json'
 
-  def GetAllContainersInfo(self):
+  def GetAllContainers(self):
     """Gets a list containing information about all containers.
 
     Returns:
-      list (dict): the list of Container objects.
+      list (dict[Container]): the list of Container objects.
     """
     container_ids_list = os.listdir(self.containers_directory)
     if not container_ids_list:
@@ -65,21 +65,21 @@ class Storage(object):
             'If it is correct, you might want to run this script'
             ' with higher privileges.').format(
                 self.container_config_filename, self.docker_directory)
-    container_info_list = [self.GetContainerInfo(x) for x in container_ids_list]
+    container_info_list = [self.GetContainer(x) for x in container_ids_list]
 
     return container_info_list
 
-  def GetOrderedLayers(self, container_id):
+  def GetOrderedLayers(self, container):
     """Returns an array of the sorted image ID for a container ID.
 
     Args:
-      container_id (str): the ID of the container.
+      container(Container): the container object.
 
     Returns:
       list(str): a list of layer IDs (hashes).
     """
     layer_list = []
-    current_layer = container_id
+    current_layer = container.container_id
     layer_path = os.path.join(self.docker_directory, 'graph', current_layer)
     if not os.path.isdir(layer_path):
       config_file_path = os.path.join(
@@ -111,8 +111,8 @@ class Storage(object):
 
     return layer_list
 
-  def GetContainerInfo(self, container_id):
-    """Returns a dictionary containing the container_id setting.
+  def GetContainer(self, container_id):
+    """Returns a Container object given a container_id.
 
     Args:
       container_id (str): the ID of the container.
@@ -144,7 +144,7 @@ class Storage(object):
       list(dict): list of Containers information objects.
     """
     containers_info_list = sorted(
-        self.GetAllContainersInfo(), key=lambda x: x.start_timestamp)
+        self.GetAllContainers(), key=lambda x: x.start_timestamp)
     if only_running:
       containers_info_list = [x for x in containers_info_list if x.running]
     return containers_info_list
@@ -304,7 +304,7 @@ class Storage(object):
     """Returns a string representing the modification history of a container.
 
     Args:
-      container_id (str): the ID of the container.
+      container(Container): the container object.
       show_empty_layers (bool): whether to display empty layers.
     Returns:
       str: the human readable history.
