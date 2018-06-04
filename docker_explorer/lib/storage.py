@@ -14,15 +14,14 @@
 # limitations under the License.
 """Base class for a Docker Storage object."""
 
-from __future__ import print_function, unicode_literals
 
-from datetime import datetime
 import json
 import os
 import subprocess
 import sys
 
 from docker_explorer.lib import container
+from docker_explorer.lib import utils
 
 
 class Storage(object):
@@ -52,33 +51,6 @@ class Storage(object):
     self.container_config_filename = 'config.v2.json'
     if self.docker_version == 1:
       self.container_config_filename = 'config.json'
-
-  def _FormatDatetime(self, timestamp):
-    """Formats a Docker timestamp.
-
-    Args:
-      timestamp (str): the Docker timestamp.
-
-    Returns:
-      str: Human readable timestamp.
-    """
-    try:
-      time = datetime.strptime(timestamp[0:26], '%Y-%m-%dT%H:%M:%S.%f')
-    except ValueError:
-      time = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%SZ')
-    return time.isoformat()
-
-  def _PrettyPrintJSON(self, string):
-    """Generates a easy to read representation of a JSON string.
-
-    Args:
-      string (str): JSON string.
-
-    Returns:
-      str: pretty printed JSON string.
-    """
-    return json.dumps(
-        json.loads(string), sort_keys=True, indent=4, separators=(', ', ': '))
 
   def GetAllContainersInfo(self):
     """Gets a list containing information about all containers.
@@ -193,7 +165,7 @@ class Storage(object):
         'Listing repositories from file {0:s}').format(repositories_file_path)
     with open(repositories_file_path) as rf:
       s = rf.read()
-    return result_string + self._PrettyPrintJSON(s)
+    return result_string + utils.PrettyPrintJSON(s)
 
   def ShowContainers(self, only_running=False):
     """Returns a string describing the running containers.
@@ -219,7 +191,7 @@ class Storage(object):
         result_string += 'Container id: {0:s} / No Label\n'.format(
             container_info.container_id)
       result_string += '\tStart date: {0:s}\n'.format(
-          self._FormatDatetime(container_info.start_timestamp))
+          utils.FormatDatetime(container_info.start_timestamp))
       result_string += '\tImage ID: {0:s}\n'.format(image_id)
       result_string += '\tImage Name: {0:s}\n'.format(
           container_info.config_image_name)
@@ -352,7 +324,7 @@ class Storage(object):
         if layer_size > 0 or show_empty_layers or self.docker_version == 2:
           history_str += '\tsize : {0:d}'.format(layer_size)
           history_str += '\tcreated at : {0:s}'.format(
-              self._FormatDatetime(layer_info['created']))
+              utils.FormatDatetime(layer_info['created'])))
           container_cmd = layer_info['container_config'].get('Cmd', None)
           if container_cmd:
             history_str += '\twith command : {0:s}'.format(

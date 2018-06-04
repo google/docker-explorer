@@ -28,32 +28,28 @@ from docker_explorer import de
 from docker_explorer.lib import aufs
 from docker_explorer.lib import overlay
 from docker_explorer.lib import storage
+from docker_explorer.lib import utils
 
 
-# pylint: disable=protected-access
+# pylint: disable=protected-accesso
 
-class StorageTests(unittest.TestCase):
-  """Tests methods in Storage class."""
+class UtilsTests(unittest.TestCase):
+  """Tests Utils methods."""
 
   def testFormatDatetime(self):
-    """Tests the Storage.FormatDatetime function."""
+    """Tests the utils.FormatDatetime function."""
     test_date = '2017-12-25T15:59:59.102938 msqedigrb msg'
     expected_time_str = '2017-12-25T15:59:59.102938'
-    test_storage_object = storage.Storage()
-    self.assertEqual(expected_time_str,
-                     test_storage_object._FormatDatetime(test_date))
+    self.assertEqual(expected_time_str, utils.FormatDatetime(test_date))
 
   def testPrettyPrintJSON(self):
-    """Tests the Storage.PrettyPrintJSON function."""
-    test_storage_object = aufs.AufsStorage()
+    """Tests the utils.PrettyPrintJSON function."""
     test_dict = {'test': [{'dict1': {'key1': 'val1'}, 'dict2': None}]}
     test_json = json.dumps(test_dict)
     expected_string = ('{\n    "test": [\n        {\n            "dict1": {\n'
                        '                "key1": "val1"\n            }, \n'
                        '            "dict2": null\n        }\n    ]\n}')
-    self.assertEqual(expected_string,
-                     test_storage_object._PrettyPrintJSON(test_json))
-
+    self.assertEqual(expected_string, utils.PrettyPrintJSON(test_json))
 
 
 class TestDEMain(unittest.TestCase):
