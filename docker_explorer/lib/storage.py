@@ -14,6 +14,7 @@
 # limitations under the License.
 """Base class for a Docker Storage object."""
 
+from __future__ import print_function, unicode_literals
 
 import json
 import os
@@ -302,7 +303,7 @@ class Storage(object):
     """Returns a string representing the modification history of a container.
 
     Args:
-      container_obj (Container): the container object.
+      container (Container): the container object.
       show_empty_layers (bool): whether to display empty layers.
     Returns:
       str: the human readable history.
