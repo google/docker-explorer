@@ -57,7 +57,7 @@ class Storage(object):
     """Gets a list containing information about all containers.
 
     Returns:
-      list (dict[Container]): the list of Container objects.
+      list(Container): the list of Container objects.
     """
     container_ids_list = os.listdir(self.containers_directory)
     if not container_ids_list:
@@ -142,7 +142,7 @@ class Storage(object):
     Args:
       only_running (bool): Whether we return only running Containers.
     Returns:
-      list(dict): list of Containers information objects.
+      list(Container): list of Containers information objects.
     """
     containers_info_list = sorted(
         self.GetAllContainers(), key=lambda x: x.start_timestamp)
