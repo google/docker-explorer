@@ -51,9 +51,9 @@ class OverlayStorage(storage.Storage):
       list: a list commands that needs to be run to mount the container's view
         of the file system.
     """
-    container_info = self.GetContainer(container_id)
+    container_object = self.GetContainer(container_id)
     mount_id_path = os.path.join(
-        self.docker_directory, self.STORAGE_METHOD, container_info.mount_id)
+        self.docker_directory, self.STORAGE_METHOD, container_object.mount_id)
 
     with open(os.path.join(mount_id_path, self.LOWER_NAME)) as lower_fd:
       lower_dir = self._BuildLowerLayers(lower_fd.read())

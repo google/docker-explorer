@@ -127,19 +127,19 @@ class TestAufsStorage(unittest.TestCase):
 
   def testGetAllContainers(self):
     """Tests the GetAllContainers function on a AuFS storage."""
-    list_container_info = self.storage.GetAllContainers()
-    list_container_info = sorted(list_container_info, key=lambda ci: ci.name)
-    self.assertEqual(7, len(list_container_info))
+    containers_list = self.storage.GetAllContainers()
+    containers_list = sorted(containers_list, key=lambda ci: ci.name)
+    self.assertEqual(7, len(containers_list))
 
-    container_info = list_container_info[1]
+    container_obj = containers_list[1]
 
-    self.assertEqual('/dreamy_snyder', container_info.name)
+    self.assertEqual('/dreamy_snyder', container_obj.name)
     self.assertEqual('2017-02-13T16:45:05.629904159Z',
-                     container_info.creation_timestamp)
-    self.assertEqual('busybox', container_info.config_image_name)
-    self.assertTrue(container_info.running)
+                     container_obj.creation_timestamp)
+    self.assertEqual('busybox', container_obj.config_image_name)
+    self.assertTrue(container_obj.running)
 
-    container_id = container_info.container_id
+    container_id = container_obj.container_id
     self.assertTrue(self.container_id, container_id)
 
   def testGetOrderedLayers(self):
@@ -283,19 +283,19 @@ class TestOverlayStorage(unittest.TestCase):
 
   def testGetAllContainers(self):
     """Tests the GetAllContainers function on a Overlay storage."""
-    list_container_info = self.storage.GetAllContainers()
-    list_container_info = sorted(list_container_info, key=lambda ci: ci.name)
-    self.assertEqual(6, len(list_container_info))
+    containers_list = self.storage.GetAllContainers()
+    containers_list = sorted(containers_list, key=lambda ci: ci.name)
+    self.assertEqual(6, len(containers_list))
 
-    container_info = list_container_info[0]
+    container_obj = containers_list[0]
 
-    self.assertEqual('/elastic_booth', container_info.name)
+    self.assertEqual('/elastic_booth', container_obj.name)
     self.assertEqual('2018-01-26T14:55:56.280943771Z',
-                     container_info.creation_timestamp)
-    self.assertEqual('busybox:latest', container_info.config_image_name)
-    self.assertTrue(container_info.running)
+                     container_obj.creation_timestamp)
+    self.assertEqual('busybox:latest', container_obj.config_image_name)
+    self.assertTrue(container_obj.running)
 
-    container_id = container_info.container_id
+    container_id = container_obj.container_id
     self.assertTrue(self.container_id, container_id)
 
   def testGetOrderedLayers(self):
@@ -438,18 +438,18 @@ class TestOverlay2Storage(unittest.TestCase):
 
   def testGetAllContainers(self):
     """Tests the GetAllContainers function on a Overlay2 storage."""
-    list_container_info = self.storage.GetAllContainers()
-    list_container_info = sorted(list_container_info, key=lambda ci: ci.name)
-    self.assertEqual(5, len(list_container_info))
+    containers_list = self.storage.GetAllContainers()
+    containers_list = sorted(containers_list, key=lambda ci: ci.name)
+    self.assertEqual(5, len(containers_list))
 
-    container_info = list_container_info[0]
+    container_obj = containers_list[0]
 
-    self.assertEqual('/festive_perlman', container_info.name)
+    self.assertEqual('/festive_perlman', container_obj.name)
     self.assertEqual('2018-05-16T10:51:39.271019533Z',
-                     container_info.creation_timestamp)
-    self.assertEqual('busybox', container_info.config_image_name)
-    self.assertTrue(container_info.running)
-    container_id = container_info.container_id
+                     container_obj.creation_timestamp)
+    self.assertEqual('busybox', container_obj.config_image_name)
+    self.assertTrue(container_obj.running)
+    container_id = container_obj.container_id
     self.assertTrue(self.container_id, container_id)
 
   def testGetOrderedLayers(self):
