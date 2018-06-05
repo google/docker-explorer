@@ -165,8 +165,8 @@ class Storage(object):
     result_string = (
         'Listing repositories from file {0:s}').format(repositories_file_path)
     with open(repositories_file_path) as rf:
-      s = rf.read()
-    return result_string + utils.PrettyPrintJSON(s)
+      repositories_string = rf.read()
+    return result_string + utils.PrettyPrintJSON(repositories_string)
 
   def ShowContainers(self, only_running=False):
     """Returns a string describing the running containers.
