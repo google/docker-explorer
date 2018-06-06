@@ -66,9 +66,7 @@ class Storage(object):
             'If it is correct, you might want to run this script'
             ' with higher privileges.').format(
                 self.container_config_filename, self.docker_directory)
-    containers_list = [self.GetContainer(x) for x in container_ids_list]
-
-    return containers_list
+    return [self.GetContainer(x) for x in container_ids_list]
 
   def GetOrderedLayers(self, container_obj):
     """Returns an array of the sorted image ID for a container.
@@ -305,7 +303,7 @@ class Storage(object):
     """Returns a string representing the modification history of a container.
 
     Args:
-      container_obj(Container): the container object.
+      container_obj (Container): the container object.
       show_empty_layers (bool): whether to display empty layers.
     Returns:
       str: the human readable history.
