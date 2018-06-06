@@ -53,21 +53,6 @@ class Storage(object):
     if self.docker_version == 1:
       self.container_config_filename = 'config.json'
 
-  def GetAllContainers(self):
-    """Gets a list containing information about all containers.
-
-    Returns:
-      list(Container): the list of Container objects.
-    """
-    container_ids_list = os.listdir(self.containers_directory)
-    if not container_ids_list:
-      print('Couldn\'t find any container configuration file (\'{0:s}\'). '
-            'Make sure the docker repository ({1:s}) is correct. '
-            'If it is correct, you might want to run this script'
-            ' with higher privileges.').format(
-                self.container_config_filename, self.docker_directory)
-    return [self.GetContainer(x) for x in container_ids_list]
-
   def GetOrderedLayers(self, container_object):
     """Returns an array of the sorted image ID for a container.
 
@@ -103,43 +88,6 @@ class Storage(object):
 
     return layer_list
 
-  def GetContainer(self, container_id):
-    """Returns a Container object given a container_id.
-
-    Args:
-      container_id (str): the ID of the container.
-
-    Returns:
-      Container: the container's info.
-    """
-    container_info_json_path = os.path.join(
-        self.containers_directory, container_id, self.container_config_filename)
-    if os.path.isfile(container_info_json_path):
-      container_obj = container.Container(container_info_json_path)
-
-    if self.docker_version == 2:
-      c_path = os.path.join(
-          self.docker_directory, 'image', self.STORAGE_METHOD, 'layerdb',
-          'mounts', container_id)
-      with open(os.path.join(c_path, 'mount-id')) as mount_id_file:
-        container_obj.mount_id = mount_id_file.read()
-
-    return container_obj
-
-  def GetContainersList(self, only_running=False):
-    """Returns a list of container ids which were running.
-
-    Args:
-      only_running (bool): Whether we return only running Containers.
-    Returns:
-      list(Container): list of Containers information objects.
-    """
-    containers_info_list = sorted(
-        self.GetAllContainers(), key=lambda x: x.start_timestamp)
-    if only_running:
-      containers_info_list = [x for x in containers_info_list if x.running]
-    return containers_info_list
-
   def ShowRepositories(self):
     """Returns information about the images in the Docker repository.
 
@@ -158,36 +106,6 @@ class Storage(object):
       repositories_string = rf.read()
     return result_string + utils.PrettyPrintJSON(repositories_string)
 
-  def ShowContainers(self, only_running=False):
-    """Returns a string describing the running containers.
-
-    Args:
-      only_running (bool): Whether we display only running Containers.
-    Returns:
-      str: the string displaying information about running containers.
-    """
-    result_string = ''
-    for container_obj in self.GetContainersList(only_running=only_running):
-      image_id = container_obj.image_id
-      if self.docker_version == 2:
-        image_id = image_id.split(':')[1]
-
-      if container_obj.config_labels:
-        labels_list = ['{0:s}: {1:s}'.format(k, v) for (k, v) in
-                       container_obj.config_labels.items()]
-        labels_str = ', '.join(labels_list)
-        result_string += 'Container id: {0:s} / Labels : {1:s}\n'.format(
-            container_obj.container_id, labels_str)
-      else:
-        result_string += 'Container id: {0:s} / No Label\n'.format(
-            container_obj.container_id)
-      result_string += '\tStart date: {0:s}\n'.format(
-          utils.FormatDatetime(container_obj.start_timestamp))
-      result_string += '\tImage ID: {0:s}\n'.format(image_id)
-      result_string += '\tImage Name: {0:s}\n'.format(
-          container_obj.config_image_name)
-
-    return result_string
 
   def GetLayerSize(self, container_id):
     """Returns the size of the layer.
