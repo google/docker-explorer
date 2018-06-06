@@ -24,6 +24,7 @@ import tarfile
 import unittest
 
 from docker_explorer import de
+from docker_explorer import errors
 
 from docker_explorer.lib import aufs
 from docker_explorer.lib import overlay
@@ -110,7 +111,7 @@ class TestAufsStorage(unittest.TestCase):
         'Please specify the Docker\'s directory path.\n'
         'hint: de.py -r /var/lib/docker')
 
-    with self.assertRaises(de.BadStorageException) as err:
+    with self.assertRaises(errors.BadStorageException) as err:
       de_test_object.DetectStorage()
     self.assertEqual(expected_error_message, err.exception.message)
 
@@ -266,7 +267,7 @@ class TestOverlayStorage(unittest.TestCase):
         'Please specify the Docker\'s directory path.\n'
         'hint: de.py -r /var/lib/docker')
 
-    with self.assertRaises(de.BadStorageException) as err:
+    with self.assertRaises(errors.BadStorageException) as err:
       de_test_object.DetectStorage()
     self.assertEqual(expected_error_message, err.exception.message)
 
@@ -421,7 +422,7 @@ class TestOverlay2Storage(unittest.TestCase):
         'Please specify the Docker\'s directory path.\n'
         'hint: de.py -r /var/lib/docker')
 
-    with self.assertRaises(de.BadStorageException) as err:
+    with self.assertRaises(errors.BadStorageException) as err:
       de_test_object.DetectStorage()
     self.assertEqual(expected_error_message, err.exception.message)
 
