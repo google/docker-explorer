@@ -98,11 +98,11 @@ class AufsStorage(storage.Storage):
             return '{0:s}:{1:s}'.format(name, version)
     return 'not found'
 
-  def MakeMountCommands(self, container_id, mount_dir):
+  def MakeMountCommands(self, container_object, mount_dir):
     """Generates the required shell commands to mount a container's ID.
 
     Args:
-      container_id (str): the container ID to mount.
+      container_object (Container): the container object to mount.
       mount_dir (str): the path to the target mount point.
 
     Returns:
@@ -113,7 +113,6 @@ class AufsStorage(storage.Storage):
       print('Could not find /sbin/mount.aufs. Please install the aufs-tools '
             'package.')
 
-    container_object = self.GetContainer(container_id)
     mount_id = container_object.mount_id
 
     container_layers_filepath = os.path.join(

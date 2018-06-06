@@ -17,6 +17,7 @@
 from __future__ import print_function, unicode_literals
 
 import json
+import os
 
 from docker_explorer import errors
 
@@ -40,13 +41,13 @@ class Container(object):
       container. (Docker storage backend v1).
   """
 
-  def __init__(self, container_info_json_path):
+  def __init__(self, docker_directory, container_id, docker_version=2):
     """Initializes the Container class.
 
     Args:
+      docker_directory (str): the absolute path to the Docker directory.
       container_id (str): the container ID.
-      container_info_json_path (str): the path to the JSON file containing the
-        container's information.
+      docker_version (int): (Optional) the version of the Docker storage module.
 
     Raises:
       errors.BadContainerException: if there was an error with parsing
@@ -77,13 +78,22 @@ class Container(object):
       self.config_labels = json_config.get('Labels', None)
     self.creation_timestamp = container_info_dict.get('Created', None)
     self.image_id = container_info_dict.get('Image', None)
+    self.mount_id = None
     self.mount_points = container_info_dict.get('MountPoints', None)
     self.name = container_info_dict.get('Name', '')
     json_state = container_info_dict.get('State', None)
     if json_state:
       self.running = json_state.get('Running', False)
       self.start_timestamp = json_state.get('StartedAt', False)
-    self.storage_driver = json_config.get('Driver', None)
+    self.storage_driver = container_info_dict.get('Driver', None)
+    if self.storage_driver is None:
+      raise errors.BadContainerException('TODO')
     self.volumes = container_info_dict.get('Volumes', None)
 
-    self.mount_id = None
+    if docker_version == 2:
+      c_path = os.path.join(
+          self.docker_directory, 'image', self.storage_driver, 'layerdb',
+          'mounts', container_id)
+      with open(os.path.join(c_path, 'mount-id')) as mount_id_file:
+        self.mount_id = mount_id_file.read()
+

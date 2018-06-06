@@ -25,8 +25,10 @@ import os
 import sys
 
 from docker_explorer import errors
+from docker_explorer.lib import container
 from docker_explorer.lib import aufs
 from docker_explorer.lib import overlay
+from docker_explorer.lib import utils
 
 # This is to fix UnicodeEncodeError issues when python
 # suddenly changes the output encoding when sys.stdout is
@@ -47,19 +49,22 @@ class DockerExplorer(object):
   def __init__(self):
     """Initializes the ContainerInfo class."""
     self._argument_parser = None
-    self.docker_directory = '/var/lib/docker'
+    self.container_config_filename = 'config.v2.json'
+    self.containers_directory = None
+    self.docker_directory = None
+    self.docker_version = 2
     self.storage_object = None
 
-  def DetectStorage(self):
-    """Detects the storage backend.
+  def _SetDockerDirectory(self, docker_path):
+    """Sets the Docker main directory.
 
-    More info :
-    https://docs.docker.com/engine/userguide/storagedriver/
-    http://jpetazzo.github.io/assets/2015-06-04-deep-dive-into-docker-storage-drivers.html#60
+    Args:
+      docker_path(str): the absolute path to the docker directory.
 
     Raises:
       errors.BadStorageException: If the storage backend couldn't be detected.
     """
+    self.docker_directory = docker_path
     if not os.path.isdir(self.docker_directory):
       err_message = (
           '{0:s} is not a Docker directory\n'
@@ -72,7 +77,8 @@ class DockerExplorer(object):
 
     if os.path.isfile(
         os.path.join(self.docker_directory, 'repositories-aufs')):
-      # Handles Docker engine storage versions 1.9 and below.
+      # TODO: check this agains other storages in version 1.9 and below
+      self.docker_version = 1
       self.storage_object = aufs.AufsStorage(
           docker_directory=self.docker_directory, docker_version=1)
     elif os.path.isdir(os.path.join(self.docker_directory, 'overlay2')):
@@ -167,13 +173,26 @@ class DockerExplorer(object):
     return opts
 
   def ParseOptions(self, options):
-    """Parses the command line options.
+    """Parses the command line options."""
+    self.docker_directory = os.path.abspath(options.docker_directory)
+
+  def GetContainer(self, container_id):
+    """Returns a Container object given a container_id.
+
+    Args:
+      container_id (str): the ID of the container.
+    Returns:
+      Container: the container's info.
+    """
+    return container.Container(
+        self.docker_directory, container_id, docker_version=self.docker_version)
+
+  def GetAllContainers(self):
+    """Gets a list containing information about all containers.
 
     Returns:
-      Namespace: the populated namespace.
+      list(Container): the list of Container objects.
     """
-<<<<<<< Updated upstream
-=======
     container_ids_list = os.listdir(self.containers_directory)
     if not container_ids_list:
       print('Couldn\'t find any container configuration file (\'{0:s}\'). '
@@ -184,10 +203,18 @@ class DockerExplorer(object):
     return [self.GetContainer(cid) for cid in container_ids_list]
 
   def GetContainersList(self, only_running=False):
-    """Returns a list of container ids which were running.
->>>>>>> Stashed changes
+    """Returns a list of container ids which were running, sorted by start date.
 
-    self.docker_directory = os.path.abspath(options.docker_directory)
+    Args:
+      only_running (bool): Whether we return only running Containers.
+    Returns:
+      list(Container): list of Containers information objects.
+    """
+    containers_list = sorted(
+        self.GetAllContainers(), key=lambda x: x.start_timestamp)
+    if only_running:
+      containers_list = [x for x in containers_list if x.running]
+    return containers_list
 
   def Mount(self, container_id, mountpoint):
     """Mounts the specified container's filesystem.
@@ -196,12 +223,6 @@ class DockerExplorer(object):
       container_id (str): the ID of the container.
       mountpoint (str): the path to the destination mount point.
     """
-<<<<<<< Updated upstream
-    if self.storage_object is None:
-      self.DetectStorage()
-    self.storage_object.Mount(container_id, mountpoint)
-
-=======
     container_object = self.GetContainer(container_id)
     self.storage_object.Mount(container_object, mountpoint)
 
@@ -236,21 +257,16 @@ class DockerExplorer(object):
 
     return result_string
 
->>>>>>> Stashed changes
   def ShowContainers(self, only_running=False):
     """Displays the running containers.
 
     Args:
       only_running (bool): Whether we display only running Containers.
     """
-    if self.storage_object is None:
-      self.DetectStorage()
     print(self.storage_object.ShowContainers(only_running=only_running))
 
   def ShowRepositories(self):
     """Displays information about the images in the Docker repository."""
-    if self.storage_object is None:
-      self.DetectStorage()
     print(self.storage_object.ShowRepositories())
 
   def ShowHistory(self, container_id, show_empty_layers=False):
@@ -260,8 +276,6 @@ class DockerExplorer(object):
       container_id (str): the ID of the container.
       show_empty_layers (bool): whether to display empty layers.
     """
-    if self.storage_object is None:
-      self.DetectStorage()
     print(self.storage_object.GetHistory(container_id, show_empty_layers))
 
   def Main(self):
@@ -274,6 +288,8 @@ class DockerExplorer(object):
     """
     options = self.ParseArguments()
     self.ParseOptions(options)
+
+    self._SetDockerDirectory(self.docker_directory)
 
 
     if options.command == 'mount':
