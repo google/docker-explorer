@@ -113,8 +113,8 @@ class AufsStorage(storage.Storage):
       print('Could not find /sbin/mount.aufs. Please install the aufs-tools '
             'package.')
 
-    container_info = self.GetContainerInfo(container_id)
-    mount_id = container_info.mount_id
+    container_object = self.GetContainer(container_id)
+    mount_id = container_object.mount_id
 
     container_layers_filepath = os.path.join(
         self.docker_directory, self.STORAGE_METHOD, 'layers', mount_id)
@@ -138,6 +138,6 @@ class AufsStorage(storage.Storage):
             'mount -t aufs -o ro,remount,append:{0:s}=ro+wh none {1:s}'.format(
                 mountpoint_path, mount_dir))
 
-    commands.extend(self._MakeExtraVolumeCommands(container_info, mount_dir))
+    commands.extend(self._MakeExtraVolumeCommands(container_object, mount_dir))
 
     return commands

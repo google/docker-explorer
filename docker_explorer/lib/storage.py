@@ -53,11 +53,11 @@ class Storage(object):
     if self.docker_version == 1:
       self.container_config_filename = 'config.json'
 
-  def GetAllContainersInfo(self):
+  def GetAllContainers(self):
     """Gets a list containing information about all containers.
 
     Returns:
-      list (dict): the list of Container objects.
+      list(Container): the list of Container objects.
     """
     container_ids_list = os.listdir(self.containers_directory)
     if not container_ids_list:
@@ -66,21 +66,19 @@ class Storage(object):
             'If it is correct, you might want to run this script'
             ' with higher privileges.').format(
                 self.container_config_filename, self.docker_directory)
-    container_info_list = [self.GetContainerInfo(x) for x in container_ids_list]
+    return [self.GetContainer(x) for x in container_ids_list]
 
-    return container_info_list
-
-  def GetOrderedLayers(self, container_id):
-    """Returns an array of the sorted image ID for a container ID.
+  def GetOrderedLayers(self, container_obj):
+    """Returns an array of the sorted image ID for a container.
 
     Args:
-      container_id (str): the ID of the container.
+      container_obj(Container): the container object.
 
     Returns:
       list(str): a list of layer IDs (hashes).
     """
     layer_list = []
-    current_layer = container_id
+    current_layer = container_obj.container_id
     layer_path = os.path.join(self.docker_directory, 'graph', current_layer)
     if not os.path.isdir(layer_path):
       config_file_path = os.path.join(
@@ -112,8 +110,8 @@ class Storage(object):
 
     return layer_list
 
-  def GetContainerInfo(self, container_id):
-    """Returns a dictionary containing the container_id setting.
+  def GetContainer(self, container_id):
+    """Returns a Container object given a container_id.
 
     Args:
       container_id (str): the ID of the container.
@@ -124,7 +122,7 @@ class Storage(object):
     container_info_json_path = os.path.join(
         self.containers_directory, container_id, self.container_config_filename)
     if os.path.isfile(container_info_json_path):
-      container_info = container.Container(
+      container_obj = container.Container(
           container_id, container_info_json_path)
 
     if self.docker_version == 2:
@@ -132,9 +130,9 @@ class Storage(object):
           self.docker_directory, 'image', self.STORAGE_METHOD, 'layerdb',
           'mounts', container_id)
       with open(os.path.join(c_path, 'mount-id')) as mount_id_file:
-        container_info.mount_id = mount_id_file.read()
+        container_obj.mount_id = mount_id_file.read()
 
-    return container_info
+    return container_obj
 
   def GetContainersList(self, only_running=False):
     """Returns a list of container ids which were running.
@@ -142,10 +140,10 @@ class Storage(object):
     Args:
       only_running (bool): Whether we return only running Containers.
     Returns:
-      list(dict): list of Containers information objects.
+      list(Container): list of Containers information objects.
     """
     containers_info_list = sorted(
-        self.GetAllContainersInfo(), key=lambda x: x.start_timestamp)
+        self.GetAllContainers(), key=lambda x: x.start_timestamp)
     if only_running:
       containers_info_list = [x for x in containers_info_list if x.running]
     return containers_info_list
@@ -177,25 +175,25 @@ class Storage(object):
       str: the string displaying information about running containers.
     """
     result_string = ''
-    for container_info in self.GetContainersList(only_running=only_running):
-      image_id = container_info.image_id
+    for container_obj in self.GetContainersList(only_running=only_running):
+      image_id = container_obj.image_id
       if self.docker_version == 2:
         image_id = image_id.split(':')[1]
 
-      if container_info.config_labels:
+      if container_obj.config_labels:
         labels_list = ['{0:s}: {1:s}'.format(k, v) for (k, v) in
-                       container_info.config_labels.items()]
+                       container_obj.config_labels.items()]
         labels_str = ', '.join(labels_list)
         result_string += 'Container id: {0:s} / Labels : {1:s}\n'.format(
-            container_info.container_id, labels_str)
+            container_obj.container_id, labels_str)
       else:
         result_string += 'Container id: {0:s} / No Label\n'.format(
-            container_info.container_id)
+            container_obj.container_id)
       result_string += '\tStart date: {0:s}\n'.format(
-          utils.FormatDatetime(container_info.start_timestamp))
+          utils.FormatDatetime(container_obj.start_timestamp))
       result_string += '\tImage ID: {0:s}\n'.format(image_id)
       result_string += '\tImage Name: {0:s}\n'.format(
-          container_info.config_image_name)
+          container_obj.config_image_name)
 
     return result_string
 
@@ -233,18 +231,18 @@ class Storage(object):
       layer_info_path = os.path.join(
           self.docker_directory, 'image', self.STORAGE_METHOD, 'imagedb',
           'content', hash_method, container_id)
-    container_info = None
+    layer_info = None
     if os.path.isfile(layer_info_path):
       with open(layer_info_path) as layer_info_file:
-        container_info = json.load(layer_info_file)
-        return container_info
+        layer_info = json.load(layer_info_file)
+        return layer_info
     return None
 
-  def _MakeExtraVolumeCommands(self, container_info, mount_dir):
+  def _MakeExtraVolumeCommands(self, container_obj, mount_dir):
     """Generates the shell command to mount external Volumes if present.
 
     Args:
-      container_info (dict): the container's metadata.
+      container_obj (Container): the container object.
       mount_dir (str): the destination mount_point.
 
     Returns:
@@ -254,7 +252,7 @@ class Storage(object):
     extra_commands = []
     if self.docker_version == 1:
       # 'Volumes'
-      container_volumes = container_info.volumes
+      container_volumes = container_obj.volumes
       if container_volumes:
         for mountpoint, storage in container_volumes.items():
           mountpoint_ihp = mountpoint.lstrip(os.path.sep)
@@ -265,7 +263,7 @@ class Storage(object):
               storage_path, volume_mountpoint))
     elif self.docker_version == 2:
       # 'MountPoints'
-      container_mount_points = container_info.mount_points
+      container_mount_points = container_obj.mount_points
       if container_mount_points:
         for _, storage_info in container_mount_points.items():
           src_mount_ihp = storage_info['Source']
@@ -301,18 +299,18 @@ class Storage(object):
         # TODO(romaing) this is quite unsafe, need to properly split args
         subprocess.call(c, shell=True)
 
-  def GetHistory(self, container_id, show_empty_layers=False):
+  def GetHistory(self, container_obj, show_empty_layers=False):
     """Returns a string representing the modification history of a container.
 
     Args:
-      container_id (str): the ID of the container.
+      container_obj (Container): the container object.
       show_empty_layers (bool): whether to display empty layers.
     Returns:
       str: the human readable history.
     """
     # TODO(romaing): Find a container_id from only the first few characters.
     history_str = ''
-    for layer in self.GetOrderedLayers(container_id):
+    for layer in self.GetOrderedLayers(container_obj):
       layer_info = self.GetLayerInfo(layer)
       if layer is None:
         raise ValueError('Layer {0:s} does not exist'.format(layer))
