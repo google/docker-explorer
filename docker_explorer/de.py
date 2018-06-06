@@ -263,7 +263,7 @@ class DockerExplorer(object):
     Args:
       only_running (bool): Whether we display only running Containers.
     """
-    print(self.storage_object.ShowContainers(only_running=only_running))
+    print(self.GetContainersString(only_running=only_running))
 
   def ShowRepositories(self):
     """Displays information about the images in the Docker repository."""
