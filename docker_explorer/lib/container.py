@@ -96,4 +96,3 @@ class Container(object):
           'mounts', container_id)
       with open(os.path.join(c_path, 'mount-id')) as mount_id_file:
         self.mount_id = mount_id_file.read()
-

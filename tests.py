@@ -216,7 +216,8 @@ class TestAufsStorage(StorageTestCase):
     container_id = (
         '7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966')
     container_obj = self.de_object.GetContainer(container_id)
-    commands = self.de_object.storage_object.MakeMountCommands(container_obj, '/mnt')
+    commands = self.de_object.storage_object.MakeMountCommands(
+        container_obj, '/mnt')
     expected_commands = [
         ('mount -t aufs -o ro,br=test_data/docker/aufs/diff/test_data/docker/'
          'aufs/diff/'
@@ -247,7 +248,8 @@ class TestAufsStorage(StorageTestCase):
         '\tsize : 0\tcreated at : 2017-01-13T22:13:54.401355\t'
         'with command : /bin/sh -c #(nop)  CMD ["sh"]')
     self.assertEqual(
-        expected_string, self.de_object.storage_object.GetHistory(container_obj))
+        expected_string,
+        self.de_object.storage_object.GetHistory(container_obj))
 
 
 class TestOverlayStorage(StorageTestCase):
@@ -348,7 +350,8 @@ class TestOverlayStorage(StorageTestCase):
     container_id = (
         '5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a')
     container_obj = self.de_object.GetContainer(container_id)
-    commands = self.de_object.storage_object.MakeMountCommands(container_obj, '/mnt')
+    commands = self.de_object.storage_object.MakeMountCommands(
+        container_obj, '/mnt')
     expected_commands = [(
         'mount -t overlay overlay -o ro,lowerdir='
         '"test_data/docker/overlay/a94d714512251b0d8a9bfaacb832e0c6cb70f71cb71'
@@ -371,7 +374,9 @@ class TestOverlayStorage(StorageTestCase):
         '5b0d59026729b68570d99bc4f3f7c31a2e4f2a5736435641565d93e7c25bd2c3\n'
         '\tsize : 0\tcreated at : 2018-01-24T04:29:35.590938\t'
         'with command : /bin/sh -c #(nop)  CMD ["sh"]')
-    self.assertEqual(expected_string, self.de_object.storage_object.GetHistory(container_obj))
+    self.assertEqual(
+        expected_string,
+        self.de_object.storage_object.GetHistory(container_obj))
 
 
 class TestOverlay2Storage(StorageTestCase):
@@ -473,7 +478,8 @@ class TestOverlay2Storage(StorageTestCase):
     container_id = (
         '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206')
     container_obj = self.de_object.GetContainer(container_id)
-    commands = self.de_object.storage_object.MakeMountCommands(container_obj, '/mnt')
+    commands = self.de_object.storage_object.MakeMountCommands(
+        container_obj, '/mnt')
     expected_commands = [(
         'mount -t overlay overlay -o ro,lowerdir='
         '"test_data/docker/overlay2/l/OTFSLJCXWCECIG6FVNGRTWUZ7D:'
@@ -498,7 +504,9 @@ class TestOverlay2Storage(StorageTestCase):
         '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7\n'
         '\tsize : 0\tcreated at : 2018-04-05T10:41:28.876407\t'
         'with command : /bin/sh -c #(nop)  CMD ["sh"]')
-    self.assertEqual(expected_string, self.de_object.storage_object.GetHistory(container_obj))
+    self.assertEqual(
+        expected_string,
+        self.de_object.storage_object.GetHistory(container_obj))
 
 del StorageTestCase
 

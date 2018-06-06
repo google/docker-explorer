@@ -21,7 +21,6 @@ import os
 import subprocess
 import sys
 
-from docker_explorer.lib import container
 from docker_explorer.lib import utils
 
 
