@@ -18,6 +18,8 @@ from __future__ import print_function, unicode_literals
 
 import json
 
+from docker_explorer import errors
+
 
 class Container(object):
   """Implements methods to access information about a Docker container.
@@ -38,19 +40,29 @@ class Container(object):
       container. (Docker storage backend v1).
   """
 
-  def __init__(self, container_id, container_info_json_path):
+  def __init__(self, container_info_json_path):
     """Initializes the Container class.
 
     Args:
       container_id (str): the container ID.
       container_info_json_path (str): the path to the JSON file containing the
         container's information.
+
+    Raises:
+      errors.BadContainerException: if there was an error with parsing
+        container_info_json_path
     """
-    self.container_id = container_id
 
     with open(container_info_json_path) as container_info_json_file:
       container_info_dict = json.load(container_info_json_file)
 
+    if container_info_dict is None:
+      raise errors.BadContainerException(
+          'Could not load container configuration file {0}'.format(
+              container_info_json_path)
+      )
+
+    self.container_id = container_info_dict.get('ID', None)
     json_config = container_info_dict.get('Config', None)
     if json_config:
       self.config_image_name = json_config.get('Image', None)

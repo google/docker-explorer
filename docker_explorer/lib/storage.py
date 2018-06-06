@@ -122,8 +122,7 @@ class Storage(object):
     container_info_json_path = os.path.join(
         self.containers_directory, container_id, self.container_config_filename)
     if os.path.isfile(container_info_json_path):
-      container_obj = container.Container(
-          container_id, container_info_json_path)
+      container_obj = container.Container(container_info_json_path)
 
     if self.docker_version == 2:
       c_path = os.path.join(
