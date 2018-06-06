@@ -202,8 +202,8 @@ class Storage(object):
     for c in commands:
       print(c)
     print('Do you want to mount this container Id: {0:s} on {1:s} ?\n'
-          '(ie: run these commands) [Y/n]').format(
-              container_object.container_id, mount_dir)
+          '(ie: run these commands) [Y/n]'.format(
+              container_object.container_id, mount_dir))
     choice = raw_input().lower()
     if not choice or choice == 'y' or choice == 'yes':
       for c in commands:
