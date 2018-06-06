@@ -75,34 +75,34 @@ class TestDEMain(unittest.TestCase):
     self.assertEqual(expected_docker_root, options.docker_directory)
 
 
-class TestAufsStorage(unittest.TestCase):
-  """Tests methods in the Storage object."""
-
-  @classmethod
-  def setUpClass(cls):
-    docker_directory_path = os.path.join('test_data', 'docker')
-    if not os.path.isdir(docker_directory_path):
-      docker_tar = os.path.join('test_data', 'aufs.tgz')
-      tar = tarfile.open(docker_tar, 'r:gz')
-      tar.extractall('test_data')
-      tar.close()
-
-    de_test_object = de.DockerExplorer()
-    de_test_object.docker_directory = docker_directory_path
-    de_test_object.DetectStorage()
-    cls.storage = de_test_object.storage_object
-    cls.container_id = (
-        '7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966')
-    cls.container = cls.storage.GetContainer(cls.container_id)
-    cls.image_id = (
-        '7968321274dc6b6171697c33df7815310468e694ac5be0ec03ff053bb135e768')
+class StorageTestCase(unittest.TestCase):
+  """ lol """
 
   @classmethod
   def tearDownClass(cls):
     shutil.rmtree(os.path.join('test_data', 'docker'))
 
+  @classmethod
+  def _setup(cls, driver, container_id, image_id):
+    cls.driver = driver
+    docker_directory_path = os.path.join('test_data', 'docker')
+    if not os.path.isdir(docker_directory_path):
+      docker_tar = os.path.join('test_data', cls.driver+'.tgz')
+      tar = tarfile.open(docker_tar, 'r:gz')
+      tar.extractall('test_data')
+      tar.close()
+    de_test_object = de.DockerExplorer()
+    de_test_object.docker_directory = docker_directory_path
+    de_test_object.DetectStorage()
+
+    cls.container_id = container_id
+    cls.image_id = image_id
+
+    cls.storage = de_test_object.storage_object
+    cls.container = cls.storage.GetContainer(cls.container_id)
+
   def testDetectStorage(self):
-    """Tests the DockerExplorer.DetectStorage function in a AUFS storage."""
+    """Tests the DockerExplorer.DetectStorage function."""
     de_test_object = de.DockerExplorer()
     de_test_object.docker_directory = 'this_dir_shouldnt_exist'
 
@@ -119,12 +119,26 @@ class TestAufsStorage(unittest.TestCase):
     de_test_object.DetectStorage()
     storage_object = de_test_object.storage_object
     self.assertIsNotNone(storage_object)
-    self.assertIsInstance(storage_object, aufs.AufsStorage)
-    self.assertEqual(storage_object.STORAGE_METHOD, 'aufs')
+    self.assertIsInstance(storage_object, self.STORAGE_CLASS)
+    self.assertEqual(storage_object.STORAGE_METHOD, self.driver)
 
     self.assertEqual(2, storage_object.docker_version)
     self.assertEqual('config.v2.json',
                      storage_object.container_config_filename)
+
+
+class TestAufsStorage(StorageTestCase):
+  """Tests methods in the Storage object."""
+
+  @classmethod
+  def setUpClass(cls):
+    cls._setup(
+        'aufs',
+        '7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966',
+        '7968321274dc6b6171697c33df7815310468e694ac5be0ec03ff053bb135e768')
+
+    cls.STORAGE_CLASS = aufs.AufsStorage
+
 
   def testGetAllContainers(self):
     """Tests the GetAllContainers function on a AuFS storage."""
@@ -231,56 +245,16 @@ class TestAufsStorage(unittest.TestCase):
     self.assertEqual(expected_string, self.storage.GetHistory(self.container))
 
 
-class TestOverlayStorage(unittest.TestCase):
+class TestOverlayStorage(StorageTestCase):
   """Tests methods in the OverlayStorage object."""
 
   @classmethod
   def setUpClass(cls):
-    docker_directory_path = os.path.join('test_data', 'docker')
-    if not os.path.isdir(docker_directory_path):
-      docker_tar = os.path.join('test_data', 'overlay.tgz')
-      tar = tarfile.open(docker_tar, 'r:gz')
-      tar.extractall('test_data')
-      tar.close()
-
-    de_test_object = de.DockerExplorer()
-    de_test_object.docker_directory = docker_directory_path
-    de_test_object.DetectStorage()
-    cls.storage = de_test_object.storage_object
-    cls.container_id = (
-        '5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a')
-    cls.container = cls.storage.GetContainer(cls.container_id)
-    cls.image_id = (
+    cls._setup(
+        'overlay',
+        '5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a',
         '5b0d59026729b68570d99bc4f3f7c31a2e4f2a5736435641565d93e7c25bd2c3')
-
-  @classmethod
-  def tearDownClass(cls):
-    shutil.rmtree(os.path.join('test_data', 'docker'))
-
-  def testDetectStorage(self):
-    """Tests the DockerExplorer.DetectStorage function on a Overlay storage."""
-    de_test_object = de.DockerExplorer()
-
-    de_test_object.docker_directory = 'this_dir_shouldnt_exist'
-    expected_error_message = (
-        'this_dir_shouldnt_exist is not a Docker directory\n'
-        'Please specify the Docker\'s directory path.\n'
-        'hint: de.py -r /var/lib/docker')
-
-    with self.assertRaises(errors.BadStorageException) as err:
-      de_test_object.DetectStorage()
-    self.assertEqual(expected_error_message, err.exception.message)
-
-    de_test_object.docker_directory = os.path.join('test_data', 'docker')
-    de_test_object.DetectStorage()
-    storage_object = de_test_object.storage_object
-    self.assertIsNotNone(storage_object)
-    self.assertIsInstance(storage_object, overlay.OverlayStorage)
-    self.assertEqual(storage_object.STORAGE_METHOD, 'overlay')
-
-    self.assertEqual(2, storage_object.docker_version)
-    self.assertEqual('config.v2.json',
-                     storage_object.container_config_filename)
+    cls.STORAGE_CLASS = overlay.OverlayStorage
 
   def testGetAllContainers(self):
     """Tests the GetAllContainers function on a Overlay storage."""
@@ -386,56 +360,16 @@ class TestOverlayStorage(unittest.TestCase):
         expected_string, self.storage.GetHistory(self.container))
 
 
-class TestOverlay2Storage(unittest.TestCase):
+class TestOverlay2Storage(StorageTestCase):
   """Tests methods in the Overlay2Storage object."""
 
   @classmethod
   def setUpClass(cls):
-    docker_directory_path = os.path.join('test_data', 'docker')
-    if not os.path.isdir(docker_directory_path):
-      docker_tar = os.path.join('test_data', 'overlay2.tgz')
-      tar = tarfile.open(docker_tar, 'r:gz')
-      tar.extractall('test_data')
-      tar.close()
-
-    de_test_object = de.DockerExplorer()
-    de_test_object.docker_directory = docker_directory_path
-    de_test_object.DetectStorage()
-    cls.storage = de_test_object.storage_object
-    cls.container_id = (
-        '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206')
-    cls.container = cls.storage.GetContainer(cls.container_id)
-    cls.image_id = (
+    cls._setup(
+        'overlay2',
+        '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206',
         '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7')
-
-  @classmethod
-  def tearDownClass(cls):
-    shutil.rmtree(os.path.join('test_data', 'docker'))
-
-  def testDetectStorage(self):
-    """Tests the DockerExplorer.DetectStorage function on a Overlay2 storage."""
-    de_test_object = de.DockerExplorer()
-    de_test_object.docker_directory = 'this_dir_shouldnt_exist'
-
-    expected_error_message = (
-        'this_dir_shouldnt_exist is not a Docker directory\n'
-        'Please specify the Docker\'s directory path.\n'
-        'hint: de.py -r /var/lib/docker')
-
-    with self.assertRaises(errors.BadStorageException) as err:
-      de_test_object.DetectStorage()
-    self.assertEqual(expected_error_message, err.exception.message)
-
-    de_test_object.docker_directory = os.path.join('test_data', 'docker')
-    de_test_object.DetectStorage()
-    storage_object = de_test_object.storage_object
-    self.assertIsNotNone(storage_object)
-    self.assertIsInstance(storage_object, overlay.OverlayStorage)
-    self.assertEqual(storage_object.STORAGE_METHOD, 'overlay2')
-
-    self.assertEqual(2, storage_object.docker_version)
-    self.assertEqual('config.v2.json',
-                     storage_object.container_config_filename)
+    cls.STORAGE_CLASS = overlay.Overlay2Storage
 
   def testGetAllContainers(self):
     """Tests the GetAllContainers function on a Overlay2 storage."""
@@ -541,6 +475,8 @@ class TestOverlay2Storage(unittest.TestCase):
         'with command : /bin/sh -c #(nop)  CMD ["sh"]')
     self.assertEqual(
         expected_string, self.storage.GetHistory(self.container))
+
+del(StorageTestCase)
 
 if __name__ == '__main__':
   unittest.main()
