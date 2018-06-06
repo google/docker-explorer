@@ -67,6 +67,9 @@ class DockerExplorer(object):
           'hint: de.py -r /var/lib/docker').format(self.docker_directory)
       raise errors.BadStorageException(err_message)
 
+    self.containers_directory = os.path.join(
+        self.docker_directory, 'containers')
+
     if os.path.isfile(
         os.path.join(self.docker_directory, 'repositories-aufs')):
       # Handles Docker engine storage versions 1.9 and below.
@@ -169,6 +172,20 @@ class DockerExplorer(object):
     Returns:
       Namespace: the populated namespace.
     """
+<<<<<<< Updated upstream
+=======
+    container_ids_list = os.listdir(self.containers_directory)
+    if not container_ids_list:
+      print('Couldn\'t find any container configuration file (\'{0:s}\'). '
+            'Make sure the docker repository ({1:s}) is correct. '
+            'If it is correct, you might want to run this script'
+            ' with higher privileges.').format(
+                self.container_config_filename, self.docker_directory)
+    return [self.GetContainer(cid) for cid in container_ids_list]
+
+  def GetContainersList(self, only_running=False):
+    """Returns a list of container ids which were running.
+>>>>>>> Stashed changes
 
     self.docker_directory = os.path.abspath(options.docker_directory)
 
@@ -179,10 +196,47 @@ class DockerExplorer(object):
       container_id (str): the ID of the container.
       mountpoint (str): the path to the destination mount point.
     """
+<<<<<<< Updated upstream
     if self.storage_object is None:
       self.DetectStorage()
     self.storage_object.Mount(container_id, mountpoint)
 
+=======
+    container_object = self.GetContainer(container_id)
+    self.storage_object.Mount(container_object, mountpoint)
+
+  def GetContainersString(self, only_running=False):
+    """Returns a string describing the running containers.
+
+    Args:
+      only_running (bool): Whether we display only running Containers.
+    Returns:
+      str: the string displaying information about running containers.
+    """
+    result_string = ''
+    for container_object in self.GetContainersList(only_running=only_running):
+      image_id = container_object.image_id
+      if self.docker_version == 2:
+        image_id = image_id.split(':')[1]
+
+      if container_object.config_labels:
+        labels_list = ['{0:s}: {1:s}'.format(k, v) for (k, v) in
+                       container_object.config_labels.items()]
+        labels_str = ', '.join(labels_list)
+        result_string += 'Container id: {0:s} / Labels : {1:s}\n'.format(
+            container_object.container_id, labels_str)
+      else:
+        result_string += 'Container id: {0:s} / No Label\n'.format(
+            container_object.container_id)
+      result_string += '\tStart date: {0:s}\n'.format(
+          utils.FormatDatetime(container_object.start_timestamp))
+      result_string += '\tImage ID: {0:s}\n'.format(image_id)
+      result_string += '\tImage Name: {0:s}\n'.format(
+          container_object.config_image_name)
+
+    return result_string
+
+>>>>>>> Stashed changes
   def ShowContainers(self, only_running=False):
     """Displays the running containers.
 

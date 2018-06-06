@@ -68,27 +68,20 @@ class Storage(object):
                 self.container_config_filename, self.docker_directory)
     return [self.GetContainer(x) for x in container_ids_list]
 
-  def GetOrderedLayers(self, container_obj):
+  def GetOrderedLayers(self, container_object):
     """Returns an array of the sorted image ID for a container.
 
     Args:
-      container_obj(Container): the container object.
+      container_object(Container): the container object.
 
     Returns:
       list(str): a list of layer IDs (hashes).
     """
     layer_list = []
-    current_layer = container_obj.container_id
+    current_layer = container_object.container_id
     layer_path = os.path.join(self.docker_directory, 'graph', current_layer)
     if not os.path.isdir(layer_path):
-      config_file_path = os.path.join(
-          self.containers_directory, current_layer,
-          self.container_config_filename)
-      if not os.path.isfile(config_file_path):
-        return []
-      with open(config_file_path) as config_file:
-        json_dict = json.load(config_file)
-        current_layer = json_dict.get('Image', None)
+      current_layer = container_object.image_id
 
     while current_layer is not None:
       layer_list.append(current_layer)
@@ -237,11 +230,11 @@ class Storage(object):
         return layer_info
     return None
 
-  def _MakeExtraVolumeCommands(self, container_obj, mount_dir):
+  def _MakeExtraVolumeCommands(self, container_object, mount_dir):
     """Generates the shell command to mount external Volumes if present.
 
     Args:
-      container_obj (Container): the container object.
+      container_object (Container): the container object.
       mount_dir (str): the destination mount_point.
 
     Returns:
@@ -251,7 +244,7 @@ class Storage(object):
     extra_commands = []
     if self.docker_version == 1:
       # 'Volumes'
-      container_volumes = container_obj.volumes
+      container_volumes = container_object.volumes
       if container_volumes:
         for mountpoint, storage in container_volumes.items():
           mountpoint_ihp = mountpoint.lstrip(os.path.sep)
@@ -262,7 +255,7 @@ class Storage(object):
               storage_path, volume_mountpoint))
     elif self.docker_version == 2:
       # 'MountPoints'
-      container_mount_points = container_obj.mount_points
+      container_mount_points = container_object.mount_points
       if container_mount_points:
         for _, storage_info in container_mount_points.items():
           src_mount_ihp = storage_info['Source']
@@ -279,37 +272,37 @@ class Storage(object):
 
     return extra_commands
 
-  def Mount(self, container_id, mount_dir):
+  def Mount(self, container_object, mount_dir):
     """Mounts the specified container's filesystem.
 
     Args:
-      container_id (str): the ID of the container.
+      container_object (Container): the container.
       mount_dir (str): the path to the destination mount point
     """
 
-    commands = self.MakeMountCommands(container_id, mount_dir)
+    commands = self.MakeMountCommands(container_object, mount_dir)
     for c in commands:
       print(c)
     print('Do you want to mount this container Id: {0:s} on {1:s} ?\n'
-          '(ie: run these commands) [Y/n]').format(container_id, mount_dir)
+          '(ie: run these commands) [Y/n]').format(
+              container_object.container_id, mount_dir)
     choice = raw_input().lower()
     if not choice or choice == 'y' or choice == 'yes':
       for c in commands:
         # TODO(romaing) this is quite unsafe, need to properly split args
         subprocess.call(c, shell=True)
 
-  def GetHistory(self, container_obj, show_empty_layers=False):
+  def GetHistory(self, container_object, show_empty_layers=False):
     """Returns a string representing the modification history of a container.
 
     Args:
-      container (Container): the container object.
+      container_object (Container): the container object.
       show_empty_layers (bool): whether to display empty layers.
     Returns:
       str: the human readable history.
     """
-    # TODO(romaing): Find a container_id from only the first few characters.
     history_str = ''
-    for layer in self.GetOrderedLayers(container_obj):
+    for layer in self.GetOrderedLayers(container_object):
       layer_info = self.GetLayerInfo(layer)
       if layer is None:
         raise ValueError('Layer {0:s} does not exist'.format(layer))

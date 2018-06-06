@@ -52,7 +52,15 @@ class Container(object):
       errors.BadContainerException: if there was an error with parsing
         container_info_json_path
     """
+    self.container_config_filename = 'config.v2.json'
+    if docker_version == 1:
+      self.container_config_filename = 'config.json'
 
+    self.docker_directory = docker_directory
+
+    container_info_json_path = os.path.join(
+        self.docker_directory, 'containers', container_id,
+        self.container_config_filename)
     with open(container_info_json_path) as container_info_json_file:
       container_info_dict = json.load(container_info_json_file)
 

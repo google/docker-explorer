@@ -40,18 +40,17 @@ class OverlayStorage(storage.Storage):
     return os.path.join(
         self.docker_directory, self.STORAGE_METHOD, lower.strip(), 'root')
 
-  def MakeMountCommands(self, container_id, mount_dir):
+  def MakeMountCommands(self, container_object, mount_dir):
     """Generates the required shell commands to mount a container's ID.
 
     Args:
-      container_id (str): the container ID to mount.
+      container_object (Container): the container object.
       mount_dir (str): the path to the target mount point.
 
     Returns:
       list: a list commands that needs to be run to mount the container's view
         of the file system.
     """
-    container_object = self.GetContainer(container_id)
     mount_id_path = os.path.join(
         self.docker_directory, self.STORAGE_METHOD, container_object.mount_id)
 
