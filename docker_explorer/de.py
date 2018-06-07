@@ -24,6 +24,7 @@ import codecs
 import os
 import sys
 
+from docker_explorer import errors
 from docker_explorer.lib import aufs
 from docker_explorer.lib import overlay
 
@@ -31,19 +32,6 @@ from docker_explorer.lib import overlay
 # suddenly changes the output encoding when sys.stdout is
 # piped into something else.
 sys.stdout = codecs.getwriter('utf8')(sys.stdout)
-
-
-class BadStorageException(Exception):
-  """Raised when the Storage method detection failed."""
-
-  def __init__(self, message):
-    """Constructor for a BadStorageException.
-
-    Args:
-      message (str): the error message.
-    """
-    super(BadStorageException, self).__init__(message)
-    self.message = message
 
 
 class DockerExplorer(object):
@@ -70,14 +58,14 @@ class DockerExplorer(object):
     http://jpetazzo.github.io/assets/2015-06-04-deep-dive-into-docker-storage-drivers.html#60
 
     Raises:
-      BadStorageException: If the storage backend couldn't be detected.
+      errors.BadStorageException: If the storage backend couldn't be detected.
     """
     if not os.path.isdir(self.docker_directory):
-      error_msg = (
+      err_message = (
           '{0:s} is not a Docker directory\n'
           'Please specify the Docker\'s directory path.\n'
           'hint: de.py -r /var/lib/docker').format(self.docker_directory)
-      raise BadStorageException(error_msg)
+      raise errors.BadStorageException(err_message)
 
     if os.path.isfile(
         os.path.join(self.docker_directory, 'repositories-aufs')):
@@ -99,7 +87,7 @@ class DockerExplorer(object):
           'Make sure the docker directory ({0:s}) is correct. '
           'If it is correct, you might want to run this script'
           ' with higher privileges.'.format(self.docker_directory))
-      raise BadStorageException(err_message)
+      raise errors.BadStorageException(err_message)
 
   def AddBasicOptions(self, argument_parser):
     """Adds the global options to the argument_parser.
