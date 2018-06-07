@@ -20,20 +20,13 @@ A tool to parse offline Docker installation.
 from __future__ import print_function, unicode_literals
 
 import argparse
-import codecs
 import os
-import sys
 
 from docker_explorer import errors
 from docker_explorer.lib import container
 from docker_explorer.lib import aufs
 from docker_explorer.lib import overlay
 from docker_explorer.lib import utils
-
-# This is to fix UnicodeEncodeError issues when python
-# suddenly changes the output encoding when sys.stdout is
-# piped into something else.
-sys.stdout = codecs.getwriter('utf8')(sys.stdout)
 
 
 class DockerExplorer(object):
