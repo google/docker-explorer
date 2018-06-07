@@ -90,7 +90,7 @@ class TestDEMain(unittest.TestCase):
 
 
 class StorageTestCase(unittest.TestCase):
-  """ lol """
+  """Base class for tests of different Storage implementations."""
 
   @classmethod
   def tearDownClass(cls):
