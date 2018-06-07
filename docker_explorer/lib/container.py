@@ -87,7 +87,9 @@ class Container(object):
       self.start_timestamp = json_state.get('StartedAt', False)
     self.storage_driver = container_info_dict.get('Driver', None)
     if self.storage_driver is None:
-      raise errors.BadContainerException('TODO')
+      raise errors.BadContainerException(
+          '{0} container config file lacks Driver key'.format(
+              container_info_json_path))
     self.volumes = container_info_dict.get('Volumes', None)
 
     if docker_version == 2:
