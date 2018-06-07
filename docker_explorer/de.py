@@ -107,7 +107,7 @@ class DockerExplorer(object):
   def AddMountCommand(self, args):
     """Adds the mount command to the argument_parser.
 
-    args:
+    Args:
       args (argument_parser): the argument parser to add the command to.
     """
     mount_parser = args.add_parser(
@@ -174,8 +174,9 @@ class DockerExplorer(object):
 
     Args:
       container_id (str): the ID of the container.
+
     Returns:
-      Container: the container's info.
+      container.Container: the container object.
     """
     return container.Container(
         self.docker_directory, container_id, docker_version=self.docker_version)
@@ -196,10 +197,11 @@ class DockerExplorer(object):
     return [self.GetContainer(cid) for cid in container_ids_list]
 
   def GetContainersList(self, only_running=False):
-    """Returns a list of container ids which were running, sorted by start date.
+    """Returns a list of Container objects, sorted by start time.
 
     Args:
       only_running (bool): Whether we return only running Containers.
+
     Returns:
       list(Container): list of Containers information objects.
     """
@@ -224,6 +226,7 @@ class DockerExplorer(object):
 
     Args:
       only_running (bool): Whether we display only running Containers.
+
     Returns:
       str: the string displaying information about running containers.
     """

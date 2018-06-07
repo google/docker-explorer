@@ -50,7 +50,7 @@ class Container(object):
       docker_version (int): (Optional) the version of the Docker storage module.
 
     Raises:
-      errors.BadContainerException: if there was an error with parsing
+      errors.BadContainerException: if there was an error when parsing
         container_info_json_path
     """
     self.container_config_filename = 'config.v2.json'

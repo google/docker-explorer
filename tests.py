@@ -75,7 +75,8 @@ class TestDEMain(unittest.TestCase):
     self.assertEqual(expected_docker_root, options.docker_directory)
 
   def testDetectStorageFail(self):
-    """Tests that the DockerExplorer.DetectStorage function fails."""
+    """Tests that the DockerExplorer.DetectStorage function fails on
+    Docker directory."""
     de_object = de.DockerExplorer()
     de_object.docker_directory = 'this_dir_shouldnt_exist'
 
