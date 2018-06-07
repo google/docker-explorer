@@ -61,11 +61,11 @@ class DockerExplorer(object):
       errors.BadStorageException: If the storage backend couldn't be detected.
     """
     if not os.path.isdir(self.docker_directory):
-      error_msg = (
+      err_message = (
           '{0:s} is not a Docker directory\n'
           'Please specify the Docker\'s directory path.\n'
           'hint: de.py -r /var/lib/docker').format(self.docker_directory)
-      raise errors.BadStorageException(error_msg)
+      raise errors.BadStorageException(err_message)
 
     if os.path.isfile(
         os.path.join(self.docker_directory, 'repositories-aufs')):
