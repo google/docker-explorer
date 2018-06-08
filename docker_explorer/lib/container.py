@@ -20,6 +20,7 @@ import json
 import os
 
 from docker_explorer import errors
+from docker_explorer.lib import utils
 
 
 class Container(object):
@@ -53,8 +54,9 @@ class Container(object):
       errors.BadContainerException: if there was an error when parsing
         container_info_json_path
     """
+    self.docker_version = docker_version
     self.container_config_filename = 'config.v2.json'
-    if docker_version == 1:
+    if self.docker_version == 1:
       self.container_config_filename = 'config.json'
 
     self.docker_directory = docker_directory
@@ -92,9 +94,113 @@ class Container(object):
               container_info_json_path))
     self.volumes = container_info_dict.get('Volumes', None)
 
-    if docker_version == 2:
+    if self.docker_version == 2:
       c_path = os.path.join(
           self.docker_directory, 'image', self.storage_driver, 'layerdb',
           'mounts', container_id)
       with open(os.path.join(c_path, 'mount-id')) as mount_id_file:
         self.mount_id = mount_id_file.read()
+
+  def GetLayerSize(self, layer_id):
+    """Returns the size of the layer.
+
+    Args:
+      layer_id (str): the layer id to get the size of.
+
+    Returns:
+      int: the size of the layer in bytes.
+    """
+    size = 0
+    if self.docker_version == 1:
+      path = os.path.join(self.docker_directory, 'graph',
+                          layer_id, 'layersize')
+      size = int(open(path).read())
+    # TODO(romaing) Add docker storage v2 support
+    return size
+
+  def GetLayerInfo(self, layer_id):
+    """Gets a docker FS layer information.
+
+    Returns:
+      dict: the container information.
+    """
+    if self.docker_version == 1:
+      layer_info_path = os.path.join(
+          self.docker_directory, 'graph', layer_id, 'json')
+    elif self.docker_version == 2:
+      hash_method, layer_id = layer_id.split(':')
+      layer_info_path = os.path.join(
+          self.docker_directory, 'image', self.storage_driver, 'imagedb',
+          'content', hash_method, layer_id)
+    layer_info = None
+    if os.path.isfile(layer_info_path):
+      with open(layer_info_path) as layer_info_file:
+        layer_info = json.load(layer_info_file)
+        return layer_info
+    return None
+
+  def GetOrderedLayers(self):
+    """Returns an array of the sorted image ID for a container.
+
+    Returns:
+      list(str): a list of layer IDs (hashes).
+    """
+    layer_list = []
+    current_layer = self.container_id
+    layer_path = os.path.join(self.docker_directory, 'graph', current_layer)
+    if not os.path.isdir(layer_path):
+      current_layer = self.image_id
+
+    while current_layer is not None:
+      layer_list.append(current_layer)
+      if self.docker_version == 1:
+        layer_info_path = os.path.join(
+            self.docker_directory, 'graph', current_layer, 'json')
+        with open(layer_info_path) as layer_info_file:
+          layer_info = json.load(layer_info_file)
+          current_layer = layer_info.get('parent', None)
+      elif self.docker_version == 2:
+        hash_method, layer_id = current_layer.split(':')
+        parent_layer_path = os.path.join(
+            self.docker_directory, 'image', self.storage_driver, 'imagedb',
+            'metadata', hash_method, layer_id, 'parent')
+        if not os.path.isfile(parent_layer_path):
+          break
+        with open(parent_layer_path) as parent_layer_file:
+          current_layer = parent_layer_file.read().strip()
+
+    return layer_list
+
+  def GetHistory(self, show_empty_layers=False):
+    """Returns a string representing the modification history of the container.
+
+    Args:
+      show_empty_layers (bool): whether to display empty layers.
+    Returns:
+      str: the human readable history.
+    """
+    history_str = ''
+    for layer in self.GetOrderedLayers():
+      layer_info = self.GetLayerInfo(layer)
+      if layer is None:
+        raise ValueError('Layer {0:s} does not exist'.format(layer))
+      history_str += '-------------------------------------------------------\n'
+      history_str += layer+'\n'
+      if layer_info is None:
+        history_str += 'no info =('
+      else:
+        layer_size = self.GetLayerSize(layer)
+        if layer_size > 0 or show_empty_layers or self.docker_version == 2:
+          history_str += '\tsize : {0:d}'.format(layer_size)
+          history_str += '\tcreated at : {0:s}'.format(
+              utils.FormatDatetime(layer_info['created']))
+          container_cmd = layer_info['container_config'].get('Cmd', None)
+          if container_cmd:
+            history_str += '\twith command : {0:s}'.format(
+                ' '.join(container_cmd))
+          comment = layer_info.get('comment', None)
+          if comment:
+            history_str += '\tcomment : {0:s}'.format(comment)
+        else:
+          history_str += 'Empty layer'
+    return history_str

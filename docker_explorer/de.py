@@ -273,7 +273,7 @@ class DockerExplorer(object):
       show_empty_layers (bool): whether to display empty layers.
     """
     container_object = self.GetContainer(container_id)
-    print(self.storage_object.GetHistory(container_object, show_empty_layers))
+    print(container_object.GetHistory(show_empty_layers))
 
   def Main(self):
     """The main method for the DockerExplorer class.
