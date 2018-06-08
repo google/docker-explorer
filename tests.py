@@ -76,7 +76,7 @@ class TestDEMain(unittest.TestCase):
 
   def testDetectStorageFail(self):
     """Tests that the DockerExplorer.DetectStorage function fails on
-    Docker directory."""
+    non-existing Docker directory."""
     de_object = de.DockerExplorer()
     de_object.docker_directory = 'this_dir_shouldnt_exist'
 
