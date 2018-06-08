@@ -21,7 +21,6 @@ import os
 import subprocess
 import sys
 
-from docker_explorer.lib import container
 from docker_explorer.lib import utils
 
 
@@ -53,42 +52,20 @@ class Storage(object):
     if self.docker_version == 1:
       self.container_config_filename = 'config.json'
 
-  def GetAllContainers(self):
-    """Gets a list containing information about all containers.
-
-    Returns:
-      list(Container): the list of Container objects.
-    """
-    container_ids_list = os.listdir(self.containers_directory)
-    if not container_ids_list:
-      print('Couldn\'t find any container configuration file (\'{0:s}\'). '
-            'Make sure the docker repository ({1:s}) is correct. '
-            'If it is correct, you might want to run this script'
-            ' with higher privileges.').format(
-                self.container_config_filename, self.docker_directory)
-    return [self.GetContainer(x) for x in container_ids_list]
-
-  def GetOrderedLayers(self, container_obj):
+  def GetOrderedLayers(self, container_object):
     """Returns an array of the sorted image ID for a container.
 
     Args:
-      container_obj(Container): the container object.
+      container_object(Container): the container object.
 
     Returns:
       list(str): a list of layer IDs (hashes).
     """
     layer_list = []
-    current_layer = container_obj.container_id
+    current_layer = container_object.container_id
     layer_path = os.path.join(self.docker_directory, 'graph', current_layer)
     if not os.path.isdir(layer_path):
-      config_file_path = os.path.join(
-          self.containers_directory, current_layer,
-          self.container_config_filename)
-      if not os.path.isfile(config_file_path):
-        return []
-      with open(config_file_path) as config_file:
-        json_dict = json.load(config_file)
-        current_layer = json_dict.get('Image', None)
+      current_layer = container_object.image_id
 
     while current_layer is not None:
       layer_list.append(current_layer)
@@ -110,44 +87,6 @@ class Storage(object):
 
     return layer_list
 
-  def GetContainer(self, container_id):
-    """Returns a Container object given a container_id.
-
-    Args:
-      container_id (str): the ID of the container.
-
-    Returns:
-      Container: the container's info.
-    """
-    container_info_json_path = os.path.join(
-        self.containers_directory, container_id, self.container_config_filename)
-    if os.path.isfile(container_info_json_path):
-      container_obj = container.Container(
-          container_id, container_info_json_path)
-
-    if self.docker_version == 2:
-      c_path = os.path.join(
-          self.docker_directory, 'image', self.STORAGE_METHOD, 'layerdb',
-          'mounts', container_id)
-      with open(os.path.join(c_path, 'mount-id')) as mount_id_file:
-        container_obj.mount_id = mount_id_file.read()
-
-    return container_obj
-
-  def GetContainersList(self, only_running=False):
-    """Returns a list of container ids which were running.
-
-    Args:
-      only_running (bool): Whether we return only running Containers.
-    Returns:
-      list(Container): list of Containers information objects.
-    """
-    containers_info_list = sorted(
-        self.GetAllContainers(), key=lambda x: x.start_timestamp)
-    if only_running:
-      containers_info_list = [x for x in containers_info_list if x.running]
-    return containers_info_list
-
   def ShowRepositories(self):
     """Returns information about the images in the Docker repository.
 
@@ -166,36 +105,6 @@ class Storage(object):
       repositories_string = rf.read()
     return result_string + utils.PrettyPrintJSON(repositories_string)
 
-  def ShowContainers(self, only_running=False):
-    """Returns a string describing the running containers.
-
-    Args:
-      only_running (bool): Whether we display only running Containers.
-    Returns:
-      str: the string displaying information about running containers.
-    """
-    result_string = ''
-    for container_obj in self.GetContainersList(only_running=only_running):
-      image_id = container_obj.image_id
-      if self.docker_version == 2:
-        image_id = image_id.split(':')[1]
-
-      if container_obj.config_labels:
-        labels_list = ['{0:s}: {1:s}'.format(k, v) for (k, v) in
-                       container_obj.config_labels.items()]
-        labels_str = ', '.join(labels_list)
-        result_string += 'Container id: {0:s} / Labels : {1:s}\n'.format(
-            container_obj.container_id, labels_str)
-      else:
-        result_string += 'Container id: {0:s} / No Label\n'.format(
-            container_obj.container_id)
-      result_string += '\tStart date: {0:s}\n'.format(
-          utils.FormatDatetime(container_obj.start_timestamp))
-      result_string += '\tImage ID: {0:s}\n'.format(image_id)
-      result_string += '\tImage Name: {0:s}\n'.format(
-          container_obj.config_image_name)
-
-    return result_string
 
   def GetLayerSize(self, container_id):
     """Returns the size of the layer.
@@ -238,11 +147,11 @@ class Storage(object):
         return layer_info
     return None
 
-  def _MakeExtraVolumeCommands(self, container_obj, mount_dir):
+  def _MakeExtraVolumeCommands(self, container_object, mount_dir):
     """Generates the shell command to mount external Volumes if present.
 
     Args:
-      container_obj (Container): the container object.
+      container_object (Container): the container object.
       mount_dir (str): the destination mount_point.
 
     Returns:
@@ -252,7 +161,7 @@ class Storage(object):
     extra_commands = []
     if self.docker_version == 1:
       # 'Volumes'
-      container_volumes = container_obj.volumes
+      container_volumes = container_object.volumes
       if container_volumes:
         for mountpoint, storage in container_volumes.items():
           mountpoint_ihp = mountpoint.lstrip(os.path.sep)
@@ -263,7 +172,7 @@ class Storage(object):
               storage_path, volume_mountpoint))
     elif self.docker_version == 2:
       # 'MountPoints'
-      container_mount_points = container_obj.mount_points
+      container_mount_points = container_object.mount_points
       if container_mount_points:
         for _, storage_info in container_mount_points.items():
           src_mount_ihp = storage_info['Source']
@@ -280,37 +189,37 @@ class Storage(object):
 
     return extra_commands
 
-  def Mount(self, container_id, mount_dir):
+  def Mount(self, container_object, mount_dir):
     """Mounts the specified container's filesystem.
 
     Args:
-      container_id (str): the ID of the container.
+      container_object (Container): the container.
       mount_dir (str): the path to the destination mount point
     """
 
-    commands = self.MakeMountCommands(container_id, mount_dir)
+    commands = self.MakeMountCommands(container_object, mount_dir)
     for c in commands:
       print(c)
     print('Do you want to mount this container Id: {0:s} on {1:s} ?\n'
-          '(ie: run these commands) [Y/n]').format(container_id, mount_dir)
+          '(ie: run these commands) [Y/n]'.format(
+              container_object.container_id, mount_dir))
     choice = raw_input().lower()
     if not choice or choice == 'y' or choice == 'yes':
       for c in commands:
         # TODO(romaing) this is quite unsafe, need to properly split args
         subprocess.call(c, shell=True)
 
-  def GetHistory(self, container_obj, show_empty_layers=False):
+  def GetHistory(self, container_object, show_empty_layers=False):
     """Returns a string representing the modification history of a container.
 
     Args:
-      container_obj (Container): the container object.
+      container_object (Container): the container object.
       show_empty_layers (bool): whether to display empty layers.
     Returns:
       str: the human readable history.
     """
-    # TODO(romaing): Find a container_id from only the first few characters.
     history_str = ''
-    for layer in self.GetOrderedLayers(container_obj):
+    for layer in self.GetOrderedLayers(container_object):
       layer_info = self.GetLayerInfo(layer)
       if layer is None:
         raise ValueError('Layer {0:s} does not exist'.format(layer))
