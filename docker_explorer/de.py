@@ -272,7 +272,8 @@ class DockerExplorer(object):
       container_id (str): the ID of the container.
       show_empty_layers (bool): whether to display empty layers.
     """
-    print(self.storage_object.GetHistory(container_id, show_empty_layers))
+    container_object = self.storage_object.GetContainer(container_id)
+    print(self.storage_object.GetHistory(container_object, show_empty_layers))
 
   def Main(self):
     """The main method for the DockerExplorer class.
