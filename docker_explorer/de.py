@@ -24,8 +24,7 @@ import os
 
 from docker_explorer import errors
 from docker_explorer.lib import container
-from docker_explorer.lib import aufs
-from docker_explorer.lib import overlay
+from docker_explorer.lib import storage
 from docker_explorer.lib import utils
 
 
@@ -72,16 +71,16 @@ class DockerExplorer(object):
         os.path.join(self.docker_directory, 'repositories-aufs')):
       # TODO: check this agains other storages in version 1.9 and below
       self.docker_version = 1
-      self.storage_object = aufs.AufsStorage(
+      self.storage_object = storage.AufsStorage(
           docker_directory=self.docker_directory, docker_version=1)
     elif os.path.isdir(os.path.join(self.docker_directory, 'overlay2')):
-      self.storage_object = overlay.Overlay2Storage(
+      self.storage_object = storage.Overlay2Storage(
           docker_directory=self.docker_directory)
     elif os.path.isdir(os.path.join(self.docker_directory, 'overlay')):
-      self.storage_object = overlay.OverlayStorage(
+      self.storage_object = storage.OverlayStorage(
           docker_directory=self.docker_directory)
     elif os.path.isdir(os.path.join(self.docker_directory, 'aufs')):
-      self.storage_object = aufs.AufsStorage(
+      self.storage_object = storage.AufsStorage(
           docker_directory=self.docker_directory)
     if self.storage_object is None:
       err_message = (

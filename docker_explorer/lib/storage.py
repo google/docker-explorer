@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Base class for a Docker Storage object."""
+"""Base class for a Docker BaseStorage object."""
 
 from __future__ import print_function, unicode_literals
 
@@ -23,7 +23,7 @@ import sys
 from docker_explorer.lib import utils
 
 
-class Storage(object):
+class BaseStorage(object):
   """This class provides tools to list and access containers metadata.
 
   Every method provided is agnostic of the implementation used (AuFS,
@@ -31,7 +31,7 @@ class Storage(object):
   """
 
   def __init__(self, docker_directory='/var/lib/docker', docker_version=2):
-    """Initialized a Storage object.
+    """Initialized a BaseStorage object.
 
     Args:
       docker_directory (str): Path to the Docker root directory.
@@ -68,6 +68,18 @@ class Storage(object):
     with open(repositories_file_path) as rf:
       repositories_string = rf.read()
     return result_string + utils.PrettyPrintJSON(repositories_string)
+
+  def MakeMountCommands(self, container_object, mount_dir):
+    """Generates the required shell commands to mount a container's ID.
+
+    Args:
+      container_object (Container): the container object to mount.
+      mount_dir (str): the path to the target mount point.
+
+    Raises:
+      NotImplementedError: if this method is not implemented.
+    """
+    raise NotImplementedError('Please implement MakeMountCommands()')
 
   def _MakeExtraVolumeCommands(self, container_object, mount_dir):
     """Generates the shell command to mount external Volumes if present.
@@ -130,3 +142,137 @@ class Storage(object):
       for c in commands:
         # TODO(romaing) this is quite unsafe, need to properly split args
         subprocess.call(c, shell=True)
+
+class AufsStorage(BaseStorage):
+  """This class implements AuFS storage specific methods."""
+
+  STORAGE_METHOD = 'aufs'
+
+  def __init__(self, docker_directory='/var/lib/docker', docker_version=2):
+    """Initializes the AufsStorage class.
+
+    Args:
+      docker_directory (str): Path to the Docker root directory.
+      docker_version (int): Docker storage version.
+    """
+
+    super(AufsStorage, self).__init__(
+        docker_directory=docker_directory, docker_version=docker_version)
+
+  def MakeMountCommands(self, container_object, mount_dir):
+    """Generates the required shell commands to mount a container's ID.
+
+    Args:
+      container_object (Container): the container object to mount.
+      mount_dir (str): the path to the target mount point.
+
+    Returns:
+      list: a list commands that needs to be run to mount the container's view
+        of the file system.
+    """
+    if not os.path.isfile('/sbin/mount.aufs'):
+      print('Could not find /sbin/mount.aufs. Please install the aufs-tools '
+            'package.')
+
+    mount_id = container_object.mount_id
+
+    container_layers_filepath = os.path.join(
+        self.docker_directory, self.STORAGE_METHOD, 'layers', mount_id)
+    container_id = os.path.join(
+        self.docker_directory, self.STORAGE_METHOD, 'diff', mount_id)
+    if self.docker_version == 1:
+      container_layers_filepath = os.path.join(
+          self.docker_directory, self.STORAGE_METHOD, 'layers', container_id)
+
+    commands = []
+    mountpoint_path = os.path.join(
+        self.docker_directory, self.STORAGE_METHOD, 'diff', container_id)
+    commands.append('mount -t aufs -o ro,br={0:s}=ro+wh none {1:s}'.format(
+        mountpoint_path, mount_dir))
+    with open(container_layers_filepath) as container_layers_file:
+      layers = container_layers_file.read().split()
+      for layer in layers:
+        mountpoint_path = os.path.join(
+            self.docker_directory, self.STORAGE_METHOD, 'diff', layer)
+        commands.append(
+            'mount -t aufs -o ro,remount,append:{0:s}=ro+wh none {1:s}'.format(
+                mountpoint_path, mount_dir))
+
+    commands.extend(self._MakeExtraVolumeCommands(container_object, mount_dir))
+
+    return commands
+
+
+class OverlayStorage(BaseStorage):
+  """This class implements OverlayFS storage specific methods."""
+
+  STORAGE_METHOD = 'overlay'
+  LOWER_NAME = u'lower-id'
+  UPPER_NAME = u'upper'
+
+  def _BuildLowerLayers(self, lower):
+    """Builds the mount command option for the 'lower' directory.
+
+    Args:
+      lower (str): the path to the lower directory.
+
+    Returns:
+      str: the mount command option for thr 'lower' directory.
+    """
+    return os.path.join(
+        self.docker_directory, self.STORAGE_METHOD, lower.strip(), 'root')
+
+  def MakeMountCommands(self, container_object, mount_dir):
+    """Generates the required shell commands to mount a container's ID.
+
+    Args:
+      container_object (Container): the container object.
+      mount_dir (str): the path to the target mount point.
+
+    Returns:
+      list: a list commands that needs to be run to mount the container's view
+        of the file system.
+    """
+    mount_id_path = os.path.join(
+        self.docker_directory, self.STORAGE_METHOD, container_object.mount_id)
+
+    with open(os.path.join(mount_id_path, self.LOWER_NAME)) as lower_fd:
+      lower_dir = self._BuildLowerLayers(lower_fd.read())
+    upper_dir = os.path.join(mount_id_path, self.UPPER_NAME)
+    work_dir = os.path.join(mount_id_path, 'work')
+
+    cmd = (
+        'mount -t overlay overlay -o ro,lowerdir=\"{0:s}\":"{1:s}\",'
+        'workdir="{2:s}\" \"{3:s}\"').format(
+            lower_dir, upper_dir, work_dir, mount_dir)
+    return [cmd]
+
+
+class Overlay2Storage(OverlayStorage):
+  """A specialization for Overlay2.
+
+  See a description at
+  https://docs.docker.com/storage/storagedriver/overlayfs-driver/#how-the-overlay2-driver-works.
+  """
+
+  STORAGE_METHOD = u'overlay2'
+  LOWER_NAME = u'lower'
+  UPPER_NAME = u'diff'
+
+  def _BuildLowerLayers(self, lower):
+    """Builds the mount command option for the 'lower' directory.
+
+    Args:
+      lower (str): the path to the lower directory.
+
+    Returns:
+      str: the mount command option for thr 'lower' directory.
+    """
+    # We need the full pathname to the lower directory.
+    # If multiple lower directories are stacked, we process each of them
+    # separately.
+    lower_dir = ':'.join([
+        os.path.join(self.docker_directory, self.STORAGE_METHOD, lower_)
+        for lower_ in lower.strip().split(':')
+    ])
+    return lower_dir
