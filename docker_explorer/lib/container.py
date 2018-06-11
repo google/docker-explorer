@@ -18,6 +18,7 @@ from __future__ import print_function, unicode_literals
 
 import json
 import os
+import subprocess
 
 from docker_explorer import errors
 from docker_explorer.lib import storage
