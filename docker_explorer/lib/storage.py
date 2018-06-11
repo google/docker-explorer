@@ -20,8 +20,6 @@ import os
 import subprocess
 import sys
 
-from docker_explorer.lib import utils
-
 
 class BaseStorage(object):
   """This class provides tools to list and access containers metadata.
@@ -50,24 +48,6 @@ class BaseStorage(object):
     self.container_config_filename = 'config.v2.json'
     if self.docker_version == 1:
       self.container_config_filename = 'config.json'
-
-  def ShowRepositories(self):
-    """Returns information about the images in the Docker repository.
-
-    Returns:
-      str: human readable information about image repositories.
-    """
-    repositories_file_path = os.path.join(
-        self.docker_directory, 'image', self.STORAGE_METHOD,
-        'repositories.json')
-    if self.docker_version == 1:
-      repositories_file_path = os.path.join(
-          self.docker_directory, 'repositories-aufs')
-    result_string = (
-        'Listing repositories from file {0:s}').format(repositories_file_path)
-    with open(repositories_file_path) as rf:
-      repositories_string = rf.read()
-    return result_string + utils.PrettyPrintJSON(repositories_string)
 
   def MakeMountCommands(self, container_object, mount_dir):
     """Generates the required shell commands to mount a container given its ID.

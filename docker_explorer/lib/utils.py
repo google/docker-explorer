@@ -44,5 +44,6 @@ def PrettyPrintJSON(string):
   Returns:
     str: pretty printed JSON string.
   """
-  return json.dumps(
+  pretty_json = json.dumps(
       json.loads(string), sort_keys=True, indent=4, separators=(', ', ': '))
+  return pretty_json + '\n'
