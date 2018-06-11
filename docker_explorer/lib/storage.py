@@ -103,25 +103,6 @@ class BaseStorage(object):
 
     return extra_commands
 
-  def Mount(self, container_object, mount_dir):
-    """Mounts the specified container's filesystem.
-
-    Args:
-      container_object (Container): the container.
-      mount_dir (str): the path to the destination mount point
-    """
-
-    commands = self.MakeMountCommands(container_object, mount_dir)
-    for c in commands:
-      print(c)
-    print('Do you want to mount this container Id: {0:s} on {1:s} ?\n'
-          '(ie: run these commands) [Y/n]'.format(
-              container_object.container_id, mount_dir))
-    choice = raw_input().lower()
-    if not choice or choice == 'y' or choice == 'yes':
-      for c in commands:
-        # TODO(romaing) this is quite unsafe, need to properly split args
-        subprocess.call(c, shell=True)
 
 class AufsStorage(BaseStorage):
   """This class implements AuFS storage specific methods."""
