@@ -24,7 +24,6 @@ import os
 
 from docker_explorer import errors
 from docker_explorer.lib import container
-from docker_explorer.lib import storage
 from docker_explorer.lib import utils
 
 
@@ -34,8 +33,6 @@ class DockerExplorer(object):
   Attributes:
     docker_directory (str): Path to use as the root of the Docker runtime.
       Default is '/var/lib/docker'.
-    storage_object (lib.Storage): The object implementing the methods for
-      exploring the Docker containers.
   """
 
   def __init__(self):
@@ -45,16 +42,12 @@ class DockerExplorer(object):
     self.containers_directory = None
     self.docker_directory = None
     self.docker_version = 2
-    self.storage_object = None
 
   def _SetDockerDirectory(self, docker_path):
     """Sets the Docker main directory.
 
     Args:
       docker_path(str): the absolute path to the docker directory.
-
-    Raises:
-      errors.BadStorageException: If the storage backend couldn't be detected.
     """
     self.docker_directory = docker_path
     if not os.path.isdir(self.docker_directory):
@@ -66,29 +59,6 @@ class DockerExplorer(object):
 
     self.containers_directory = os.path.join(
         self.docker_directory, 'containers')
-
-    if os.path.isfile(
-        os.path.join(self.docker_directory, 'repositories-aufs')):
-      # TODO: check this agains other storages in version 1.9 and below
-      self.docker_version = 1
-      self.storage_object = storage.AufsStorage(
-          docker_directory=self.docker_directory, docker_version=1)
-    elif os.path.isdir(os.path.join(self.docker_directory, 'overlay2')):
-      self.storage_object = storage.Overlay2Storage(
-          docker_directory=self.docker_directory)
-    elif os.path.isdir(os.path.join(self.docker_directory, 'overlay')):
-      self.storage_object = storage.OverlayStorage(
-          docker_directory=self.docker_directory)
-    elif os.path.isdir(os.path.join(self.docker_directory, 'aufs')):
-      self.storage_object = storage.AufsStorage(
-          docker_directory=self.docker_directory)
-    if self.storage_object is None:
-      err_message = (
-          'Could not detect storage system. '
-          'Make sure the docker directory ({0:s}) is correct. '
-          'If it is correct, you might want to run this script'
-          ' with higher privileges.'.format(self.docker_directory))
-      raise errors.BadStorageException(err_message)
 
   def AddBasicOptions(self, argument_parser):
     """Adds the global options to the argument_parser.
@@ -218,7 +188,7 @@ class DockerExplorer(object):
       mountpoint (str): the path to the destination mount point.
     """
     container_object = self.GetContainer(container_id)
-    self.storage_object.Mount(container_object, mountpoint)
+    container_object.Mount(mountpoint)
 
   def GetContainersString(self, only_running=False):
     """Returns a string describing the running containers.
@@ -260,10 +230,6 @@ class DockerExplorer(object):
     """
     print(self.GetContainersString(only_running=only_running))
 
-  def ShowRepositories(self):
-    """Displays information about the images in the Docker repository."""
-    print(self.storage_object.ShowRepositories())
-
   def ShowHistory(self, container_id, show_empty_layers=False):
     """Prints the modification history of a container.
 
@@ -273,6 +239,33 @@ class DockerExplorer(object):
     """
     container_object = self.GetContainer(container_id)
     print(container_object.GetHistory(show_empty_layers))
+
+  def GetRepositoriesString(self):
+    """Returns information about images in the local Docker repositories.
+
+    Returns:
+      str: human readable list of images in local Docker repositories.
+    """
+    result_string = ''
+    repositories = []
+    if self.docker_version == 1:
+      repositories = [os.path.join(self.docker_directory, 'repositories-aufs')]
+    else:
+      image_path = os.path.join(self.docker_directory, 'image')
+      for storage_method in os.listdir(image_path):
+        repositories_file_path = os.path.join(
+            image_path, storage_method, 'repositories.json')
+        if os.path.isfile(repositories_file_path):
+          repositories.append(repositories_file_path)
+
+    for repositories_file_path in repositories:
+      result_string += (
+          'Listing repositories from file {0:s}\n'.format(
+              repositories_file_path))
+      with open(repositories_file_path) as rf:
+        result_string += utils.PrettyPrintJSON(rf.read())
+
+    return result_string
 
   def Main(self):
     """The main method for the DockerExplorer class.
@@ -287,7 +280,6 @@ class DockerExplorer(object):
 
     self._SetDockerDirectory(self.docker_directory)
 
-
     if options.command == 'mount':
       self.Mount(options.container_id, options.mountpoint)
 
@@ -301,7 +293,7 @@ class DockerExplorer(object):
       elif options.what == 'running_containers':
         self.ShowContainers(only_running=True)
       elif options.what == 'repositories':
-        self.ShowRepositories()
+        print(self.GetRepositoriesString())
 
     else:
       raise ValueError('Unhandled command %s' % options.command)

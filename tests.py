@@ -47,7 +47,7 @@ class UtilsTests(unittest.TestCase):
     test_json = json.dumps(test_dict)
     expected_string = ('{\n    "test": [\n        {\n            "dict1": {\n'
                        '                "key1": "val1"\n            }, \n'
-                       '            "dict2": null\n        }\n    ]\n}')
+                       '            "dict2": null\n        }\n    ]\n}\n')
     self.assertEqual(expected_string, utils.PrettyPrintJSON(test_json))
 
 
@@ -89,8 +89,8 @@ class TestDEMain(unittest.TestCase):
     self.assertEqual(expected_error_message, err.exception.message)
 
 
-class StorageTestCase(unittest.TestCase):
-  """Base class for tests of different BaseStorage implementations."""
+class DockerTestCase(unittest.TestCase):
+  """Base class for tests of different Storage implementations."""
 
   @classmethod
   def tearDownClass(cls):
@@ -98,7 +98,7 @@ class StorageTestCase(unittest.TestCase):
 
   @classmethod
   def _setup(cls, driver, driver_class):
-    """Internal method to set up the TestCase on a specific storate."""
+    """Internal method to set up the TestCase on a specific storage."""
     cls.driver = driver
     docker_directory_path = os.path.join('test_data', 'docker')
     if not os.path.isdir(docker_directory_path):
@@ -113,17 +113,17 @@ class StorageTestCase(unittest.TestCase):
 
   def testDetectStorage(self):
     """Tests the DockerExplorer.DetectStorage function."""
-    storage_object = self.de_object.storage_object
-    self.assertIsNotNone(storage_object)
-    self.assertIsInstance(storage_object, self.driver_class)
-    self.assertEqual(storage_object.STORAGE_METHOD, self.driver)
+    for container_obj in self.de_object.GetAllContainers():
+      self.assertIsNotNone(container_obj.storage_object)
+      self.assertEqual(container_obj.storage_name, self.driver)
+      self.assertIsInstance(container_obj.storage_object, self.driver_class)
 
-    self.assertEqual(2, storage_object.docker_version)
-    self.assertEqual('config.v2.json',
-                     self.de_object.container_config_filename)
+      self.assertEqual(2, container_obj.docker_version)
+      self.assertEqual(
+          'config.v2.json', container_obj.container_config_filename)
 
 
-class TestAufsStorage(StorageTestCase):
+class TestAufsStorage(DockerTestCase):
   """Tests methods in the BaseStorage object."""
 
   @classmethod
@@ -198,12 +198,13 @@ class TestAufsStorage(StorageTestCase):
     self.assertEqual(['/bin/sh', '-c', '#(nop) ', 'CMD ["sh"]'],
                      layer_info['container_config']['Cmd'])
 
-  def testShowRepositories(self):
-    """Tests the BaseStorage.ShowRepositories function on a AUFS storage."""
-    result_string = self.de_object.storage_object.ShowRepositories()
+  def testGetRepositoriesString(self):
+    """Tests BaseStorage.GetRepositoriesString() on a AUFS storage."""
+    self.maxDiff = None
+    result_string = self.de_object.GetRepositoriesString()
     expected_string = (
         'Listing repositories from file '
-        'test_data/docker/image/aufs/repositories.json{\n'
+        'test_data/docker/image/aufs/repositories.json\n{\n'
         '    "Repositories": {\n'
         '        "busybox": {\n'
         '            "busybox:latest": '
@@ -211,7 +212,7 @@ class TestAufsStorage(StorageTestCase):
         '68"\n'
         '        }\n'
         '    }\n'
-        '}')
+        '}\n')
     self.assertEqual(expected_string, result_string)
 
   def testMakeMountCommands(self):
@@ -219,7 +220,7 @@ class TestAufsStorage(StorageTestCase):
     container_id = (
         '7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966')
     container_obj = self.de_object.GetContainer(container_id)
-    commands = self.de_object.storage_object.MakeMountCommands(
+    commands = container_obj.storage_object.MakeMountCommands(
         container_obj, '/mnt')
     expected_commands = [
         ('mount -t aufs -o ro,br=test_data/docker/aufs/diff/test_data/docker/'
@@ -253,7 +254,7 @@ class TestAufsStorage(StorageTestCase):
     self.assertEqual(expected_string, container_obj.GetHistory())
 
 
-class TestOverlayStorage(StorageTestCase):
+class TestOverlayStorage(DockerTestCase):
   """Tests methods in the OverlayStorage object."""
 
   @classmethod
@@ -329,13 +330,13 @@ class TestOverlayStorage(StorageTestCase):
     self.assertEqual(['/bin/sh', '-c', '#(nop) ', 'CMD ["sh"]'],
                      layer_info['container_config']['Cmd'])
 
-  def testShowRepositories(self):
-    """Tests the BaseStorage.ShowRepositories function on a Overlay storage."""
-    result_string = self.de_object.storage_object.ShowRepositories()
+  def testGetRepositoriesString(self):
+    """Tests BaseStorage.GetRepositoriesString() on a Overlay storage."""
+    result_string = self.de_object.GetRepositoriesString()
     self.maxDiff = None
     expected_string = (
         'Listing repositories from file '
-        'test_data/docker/image/overlay/repositories.json{\n'
+        'test_data/docker/image/overlay/repositories.json\n{\n'
         '    "Repositories": {\n'
         '        "busybox": {\n'
         '            "busybox:latest": "sha256:'
@@ -346,7 +347,7 @@ class TestOverlayStorage(StorageTestCase):
         '2c3"\n'
         '        }\n'
         '    }\n'
-        '}')
+        '}\n')
     self.assertEqual(expected_string, result_string)
 
   def testMakeMountCommands(self):
@@ -354,7 +355,7 @@ class TestOverlayStorage(StorageTestCase):
     container_id = (
         '5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a')
     container_obj = self.de_object.GetContainer(container_id)
-    commands = self.de_object.storage_object.MakeMountCommands(
+    commands = container_obj.storage_object.MakeMountCommands(
         container_obj, '/mnt')
     expected_commands = [(
         'mount -t overlay overlay -o ro,lowerdir='
@@ -381,7 +382,7 @@ class TestOverlayStorage(StorageTestCase):
     self.assertEqual(expected_string, container_obj.GetHistory())
 
 
-class TestOverlay2Storage(StorageTestCase):
+class TestOverlay2Storage(DockerTestCase):
   """Tests methods in the Overlay2Storage object."""
 
   @classmethod
@@ -457,13 +458,13 @@ class TestOverlay2Storage(StorageTestCase):
     self.assertEqual(['/bin/sh', '-c', '#(nop) ', 'CMD ["sh"]'],
                      layer_info['container_config']['Cmd'])
 
-  def testShowRepositories(self):
-    """Tests the BaseStorage.ShowRepositories function on a Overlay2 storage."""
-    result_string = self.de_object.storage_object.ShowRepositories()
+  def testGetRepositoriesString(self):
+    """Tests BaseStorage.GetRepositoriesString() on a Overlay2 storage."""
+    result_string = self.de_object.GetRepositoriesString()
     self.maxDiff = None
     expected_string = (
         'Listing repositories from file '
-        'test_data/docker/image/overlay2/repositories.json{\n'
+        'test_data/docker/image/overlay2/repositories.json\n{\n'
         '    "Repositories": {\n'
         '        "busybox": {\n'
         '            "busybox:latest": "sha256:'
@@ -474,7 +475,14 @@ class TestOverlay2Storage(StorageTestCase):
         'c7"\n'
         '        }\n'
         '    }\n'
-        '}')
+        '}\n'
+        'Listing repositories from file '
+        'test_data/docker/image/overlay/repositories.json\n'
+        '{\n'
+        '    "Repositories": {}\n'
+        '}\n'
+
+    )
     self.assertEqual(expected_string, result_string)
 
   def testMakeMountCommands(self):
@@ -483,7 +491,7 @@ class TestOverlay2Storage(StorageTestCase):
     container_id = (
         '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206')
     container_obj = self.de_object.GetContainer(container_id)
-    commands = self.de_object.storage_object.MakeMountCommands(
+    commands = container_obj.storage_object.MakeMountCommands(
         container_obj, '/mnt')
     expected_commands = [(
         'mount -t overlay overlay -o ro,lowerdir='
@@ -511,7 +519,7 @@ class TestOverlay2Storage(StorageTestCase):
         'with command : /bin/sh -c #(nop)  CMD ["sh"]')
     self.assertEqual(expected_string, container_obj.GetHistory(container_obj))
 
-del StorageTestCase
+del DockerTestCase
 
 if __name__ == '__main__':
   unittest.main()

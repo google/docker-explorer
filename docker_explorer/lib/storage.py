@@ -17,10 +17,7 @@
 from __future__ import print_function, unicode_literals
 
 import os
-import subprocess
 import sys
-
-from docker_explorer.lib import utils
 
 
 class BaseStorage(object):
@@ -50,24 +47,6 @@ class BaseStorage(object):
     self.container_config_filename = 'config.v2.json'
     if self.docker_version == 1:
       self.container_config_filename = 'config.json'
-
-  def ShowRepositories(self):
-    """Returns information about the images in the Docker repository.
-
-    Returns:
-      str: human readable information about image repositories.
-    """
-    repositories_file_path = os.path.join(
-        self.docker_directory, 'image', self.STORAGE_METHOD,
-        'repositories.json')
-    if self.docker_version == 1:
-      repositories_file_path = os.path.join(
-          self.docker_directory, 'repositories-aufs')
-    result_string = (
-        'Listing repositories from file {0:s}').format(repositories_file_path)
-    with open(repositories_file_path) as rf:
-      repositories_string = rf.read()
-    return result_string + utils.PrettyPrintJSON(repositories_string)
 
   def MakeMountCommands(self, container_object, mount_dir):
     """Generates the required shell commands to mount a container given its ID.
@@ -123,25 +102,6 @@ class BaseStorage(object):
 
     return extra_commands
 
-  def Mount(self, container_object, mount_dir):
-    """Mounts the specified container's filesystem.
-
-    Args:
-      container_object (Container): the container.
-      mount_dir (str): the path to the destination mount point
-    """
-
-    commands = self.MakeMountCommands(container_object, mount_dir)
-    for c in commands:
-      print(c)
-    print('Do you want to mount this container Id: {0:s} on {1:s} ?\n'
-          '(ie: run these commands) [Y/n]'.format(
-              container_object.container_id, mount_dir))
-    choice = raw_input().lower()
-    if not choice or choice == 'y' or choice == 'yes':
-      for c in commands:
-        # TODO(romaing) this is quite unsafe, need to properly split args
-        subprocess.call(c, shell=True)
 
 class AufsStorage(BaseStorage):
   """This class implements AuFS storage specific methods."""

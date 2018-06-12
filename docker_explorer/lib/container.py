@@ -18,8 +18,10 @@ from __future__ import print_function, unicode_literals
 
 import json
 import os
+import subprocess
 
 from docker_explorer import errors
+from docker_explorer.lib import storage
 from docker_explorer.lib import utils
 
 
@@ -38,10 +40,17 @@ class Container(object):
     name (str): the name of the container.
     running (boolean): True if the container is running.
     start_timestamp (str): the container's start timestamp.
-    storage_driver (str): the container's storage driver.
+    storage_name (str): the container's storage driver name.
+    storage_object (BaseStorage): the container's storage backend object.
     volumes (list(tuple)): list of mount points to bind from host to the
       container. (Docker storage backend v1).
   """
+
+  STORAGES_MAP = {
+      'aufs': storage.AufsStorage,
+      'overlay': storage.OverlayStorage,
+      'overlay2': storage.Overlay2Storage
+  }
 
   def __init__(self, docker_directory, container_id, docker_version=2):
     """Initializes the Container class.
@@ -88,16 +97,18 @@ class Container(object):
     if json_state:
       self.running = json_state.get('Running', False)
       self.start_timestamp = json_state.get('StartedAt', False)
-    self.storage_driver = container_info_dict.get('Driver', None)
-    if self.storage_driver is None:
+    self.storage_name = container_info_dict.get('Driver', None)
+    if self.storage_name is None:
       raise errors.BadContainerException(
           '{0} container config file lacks Driver key'.format(
               container_info_json_path))
+
+    self._SetStorage(self.storage_name)
     self.volumes = container_info_dict.get('Volumes', None)
 
     if self.docker_version == 2:
       c_path = os.path.join(
-          self.docker_directory, 'image', self.storage_driver, 'layerdb',
+          self.docker_directory, 'image', self.storage_name, 'layerdb',
           'mounts', container_id)
       with open(os.path.join(c_path, 'mount-id')) as mount_id_file:
         self.mount_id = mount_id_file.read()
@@ -131,7 +142,7 @@ class Container(object):
     elif self.docker_version == 2:
       hash_method, layer_id = layer_id.split(':')
       layer_info_path = os.path.join(
-          self.docker_directory, 'image', self.storage_driver, 'imagedb',
+          self.docker_directory, 'image', self.storage_name, 'imagedb',
           'content', hash_method, layer_id)
     if os.path.isfile(layer_info_path):
       with open(layer_info_path) as layer_info_file:
@@ -162,7 +173,7 @@ class Container(object):
       elif self.docker_version == 2:
         hash_method, layer_id = current_layer.split(':')
         parent_layer_path = os.path.join(
-            self.docker_directory, 'image', self.storage_driver, 'imagedb',
+            self.docker_directory, 'image', self.storage_name, 'imagedb',
             'metadata', hash_method, layer_id, 'parent')
         if not os.path.isfile(parent_layer_path):
           break
@@ -204,3 +215,41 @@ class Container(object):
         else:
           history_str += 'Empty layer'
     return history_str
+
+  def _SetStorage(self, storage_name):
+    """Sets the storage_object attribute.
+
+    Args:
+      storage_name (str): the name of the storage.
+    Returns:
+      BaseStorage: a storage object.
+    Raises:
+      BadContainerException: if no storage Driver is defined, or if it is not
+        implemented
+    """
+    storage_class = self.STORAGES_MAP.get(storage_name, None)
+
+    if storage_class is None:
+      raise errors.BadContainerException(
+          'Storage driver {0} is not implemented'.format(storage_name))
+
+    self.storage_object = storage_class(
+        self.docker_directory, self.docker_version)
+
+  def Mount(self, mount_dir):
+    """Mounts the specified container's filesystem.
+
+    Args:
+      mount_dir (str): the path to the destination mount point
+    """
+
+    commands = self.storage_object.MakeMountCommands(self, mount_dir)
+    for c in commands:
+      print(c)
+    print('Do you want to mount this container ID: {0:s} on {1:s} ?\n'
+          '(ie: run these commands) [Y/n]'.format(self.container_id, mount_dir))
+    choice = raw_input().lower()
+    if not choice in ['y', 'yes', '']:
+      for c in commands:
+        # TODO() this is quite unsafe, need to properly split args
+        subprocess.call(c, shell=True)
