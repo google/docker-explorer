@@ -31,7 +31,7 @@ class BaseStorage(object):
   """
 
   def __init__(self, docker_directory='/var/lib/docker', docker_version=2):
-    """Initialized a BaseStorage object.
+    """Initializes a BaseStorage object.
 
     Args:
       docker_directory (str): Path to the Docker root directory.
@@ -70,7 +70,7 @@ class BaseStorage(object):
     return result_string + utils.PrettyPrintJSON(repositories_string)
 
   def MakeMountCommands(self, container_object, mount_dir):
-    """Generates the required shell commands to mount a container's ID.
+    """Generates the required shell commands to mount a container given its ID.
 
     Args:
       container_object (Container): the container object to mount.
@@ -160,7 +160,7 @@ class AufsStorage(BaseStorage):
         docker_directory=docker_directory, docker_version=docker_version)
 
   def MakeMountCommands(self, container_object, mount_dir):
-    """Generates the required shell commands to mount a container's ID.
+    """Generates the required shell commands to mount a container given its ID.
 
     Args:
       container_object (Container): the container object to mount.
@@ -207,23 +207,24 @@ class OverlayStorage(BaseStorage):
   """This class implements OverlayFS storage specific methods."""
 
   STORAGE_METHOD = 'overlay'
-  LOWER_NAME = u'lower-id'
-  UPPER_NAME = u'upper'
+  LOWERDIR_NAME = 'lower-id'
+  UPPERDIR_NAME = 'upper'
 
-  def _BuildLowerLayers(self, lower):
-    """Builds the mount command option for the 'lower' directory.
+  def _BuildLowerLayers(self, lower_content):
+    """Builds the OverlayFS mount argument for the lower layer.
 
     Args:
-      lower (str): the path to the lower directory.
+      lower_content (str): content of the 'lower directory' description file.
 
     Returns:
-      str: the mount command option for thr 'lower' directory.
+      str: the mount.overlay command argument for the 'lower directory'.
     """
+    # For overlay driver, this is only the full path to the lowerdir.
     return os.path.join(
-        self.docker_directory, self.STORAGE_METHOD, lower.strip(), 'root')
+        self.docker_directory, self.STORAGE_METHOD, lower_content, 'root')
 
   def MakeMountCommands(self, container_object, mount_dir):
-    """Generates the required shell commands to mount a container's ID.
+    """Generates the required shell commands to mount a container given its ID.
 
     Args:
       container_object (Container): the container object.
@@ -236,15 +237,15 @@ class OverlayStorage(BaseStorage):
     mount_id_path = os.path.join(
         self.docker_directory, self.STORAGE_METHOD, container_object.mount_id)
 
-    with open(os.path.join(mount_id_path, self.LOWER_NAME)) as lower_fd:
-      lower_dir = self._BuildLowerLayers(lower_fd.read())
-    upper_dir = os.path.join(mount_id_path, self.UPPER_NAME)
+    with open(os.path.join(mount_id_path, self.LOWERDIR_NAME)) as lower_fd:
+      lower_dir = self._BuildLowerLayers(lower_fd.read().strip())
+    upper_dir = os.path.join(mount_id_path, self.UPPERDIR_NAME)
     work_dir = os.path.join(mount_id_path, 'work')
 
-    cmd = (
+    cmd_pattern = (
         'mount -t overlay overlay -o ro,lowerdir=\"{0:s}\":"{1:s}\",'
-        'workdir="{2:s}\" \"{3:s}\"').format(
-            lower_dir, upper_dir, work_dir, mount_dir)
+        'workdir="{2:s}\" \"{3:s}\"')
+    cmd = cmd_pattern.format(lower_dir, upper_dir, work_dir, mount_dir)
     return [cmd]
 
 
@@ -255,24 +256,26 @@ class Overlay2Storage(OverlayStorage):
   https://docs.docker.com/storage/storagedriver/overlayfs-driver/#how-the-overlay2-driver-works.
   """
 
-  STORAGE_METHOD = u'overlay2'
-  LOWER_NAME = u'lower'
-  UPPER_NAME = u'diff'
+  STORAGE_METHOD = 'overlay2'
+  LOWERDIR_NAME = 'lower'
+  UPPERDIR_NAME = 'diff'
 
-  def _BuildLowerLayers(self, lower):
-    """Builds the mount command option for the 'lower' directory.
+  def _BuildLowerLayers(self, lower_content):
+    """Builds the OverlayFS mount argument for the lower layer.
 
     Args:
-      lower (str): the path to the lower directory.
+      lower_content (str): content of the 'lower directory' description file.
 
     Returns:
-      str: the mount command option for thr 'lower' directory.
+      str: the mount.overlay command argument for the 'lower directory'.
     """
-    # We need the full pathname to the lower directory.
-    # If multiple lower directories are stacked, we process each of them
-    # separately.
+    # For the overlay2 driver, the pointer to the 'lower directory' can be
+    # made of multiple layers.
+    # For that argument to be passed to the mount.overlay command, we need to
+    # reconstruct full paths to all these layers.
+    # ie: from 'abcd:0123' to '/var/lib/docker/abcd:/var/lib/docker/0123'
     lower_dir = ':'.join([
         os.path.join(self.docker_directory, self.STORAGE_METHOD, lower_)
-        for lower_ in lower.strip().split(':')
+        for lower_ in lower_content.split(':')
     ])
     return lower_dir
