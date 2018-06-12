@@ -26,8 +26,7 @@ import unittest
 from docker_explorer import de
 from docker_explorer import errors
 
-from docker_explorer.lib import aufs
-from docker_explorer.lib import overlay
+from docker_explorer.lib import storage
 from docker_explorer.lib import utils
 
 
@@ -76,7 +75,7 @@ class TestDEMain(unittest.TestCase):
 
   def testDetectStorageFail(self):
     """Tests that the DockerExplorer.DetectStorage function fails on
-    non-existing Docker directory."""
+    Docker directory."""
     de_object = de.DockerExplorer()
     de_object.docker_directory = 'this_dir_shouldnt_exist'
 
@@ -91,7 +90,7 @@ class TestDEMain(unittest.TestCase):
 
 
 class StorageTestCase(unittest.TestCase):
-  """Base class for tests of different Storage implementations."""
+  """Base class for tests of different BaseStorage implementations."""
 
   @classmethod
   def tearDownClass(cls):
@@ -125,11 +124,11 @@ class StorageTestCase(unittest.TestCase):
 
 
 class TestAufsStorage(StorageTestCase):
-  """Tests methods in the Storage object."""
+  """Tests methods in the BaseStorage object."""
 
   @classmethod
   def setUpClass(cls):
-    cls._setup('aufs', aufs.AufsStorage)
+    cls._setup('aufs', storage.AufsStorage)
 
   def testGetAllContainers(self):
     """Tests the GetAllContainers function on a AuFS storage."""
@@ -150,7 +149,7 @@ class TestAufsStorage(StorageTestCase):
     self.assertEqual(expected_container_id, container_obj.container_id)
 
   def testGetOrderedLayers(self):
-    """Tests the Storage.GetOrderedLayers function on a AUFS storage."""
+    """Tests the BaseStorage.GetOrderedLayers function on a AUFS storage."""
     container_id = (
         '7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966')
     container_obj = self.de_object.GetContainer(container_id)
@@ -162,7 +161,7 @@ class TestAufsStorage(StorageTestCase):
         layers[0])
 
   def testGetRunningContainersList(self):
-    """Tests the Storage.GetContainersList function on a AUFS storage."""
+    """Tests the BaseStorage.GetContainersList function on a AUFS storage."""
     running_containers = self.de_object.GetContainersList(only_running=True)
     running_containers = sorted(
         running_containers, key=lambda ci: ci.container_id)
@@ -188,7 +187,7 @@ class TestAufsStorage(StorageTestCase):
     self.assertEqual(expected_string, result_string)
 
   def testGetLayerInfo(self):
-    """Tests the Storage.GetLayerInfo function on a AUFS storage."""
+    """Tests the BaseStorage.GetLayerInfo function on a AUFS storage."""
     container_id = (
         '7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966')
     container_obj = self.de_object.GetContainer(container_id)
@@ -200,7 +199,7 @@ class TestAufsStorage(StorageTestCase):
                      layer_info['container_config']['Cmd'])
 
   def testShowRepositories(self):
-    """Tests the Storage.ShowRepositories function on a AUFS storage."""
+    """Tests the BaseStorage.ShowRepositories function on a AUFS storage."""
     result_string = self.de_object.storage_object.ShowRepositories()
     expected_string = (
         'Listing repositories from file '
@@ -216,7 +215,7 @@ class TestAufsStorage(StorageTestCase):
     self.assertEqual(expected_string, result_string)
 
   def testMakeMountCommands(self):
-    """Tests the Storage.MakeMountCommands function on a AUFS storage."""
+    """Tests the BaseStorage.MakeMountCommands function on a AUFS storage."""
     container_id = (
         '7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966')
     container_obj = self.de_object.GetContainer(container_id)
@@ -240,7 +239,7 @@ class TestAufsStorage(StorageTestCase):
     self.assertEqual(expected_commands, commands)
 
   def testGetHistory(self):
-    """Tests the Storage.GetHistory function on a AUFS storage."""
+    """Tests the BaseStorage.GetHistory function on a AUFS storage."""
     self.maxDiff = None
     container_id = (
         '7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966')
@@ -259,7 +258,7 @@ class TestOverlayStorage(StorageTestCase):
 
   @classmethod
   def setUpClass(cls):
-    cls._setup('overlay', overlay.OverlayStorage)
+    cls._setup('overlay', storage.OverlayStorage)
 
   def testGetAllContainers(self):
     """Tests the GetAllContainers function on a Overlay storage."""
@@ -280,7 +279,7 @@ class TestOverlayStorage(StorageTestCase):
     self.assertEqual(expected_container_id, container_obj.container_id)
 
   def testGetOrderedLayers(self):
-    """Tests the Storage.GetOrderedLayers function on a Overlay storage."""
+    """Tests the BaseStorage.GetOrderedLayers function on a Overlay storage."""
     container_id = (
         '5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a')
     container_obj = self.de_object.GetContainer(container_id)
@@ -292,7 +291,7 @@ class TestOverlayStorage(StorageTestCase):
         layers[0])
 
   def testGetRunningContainersList(self):
-    """Tests the Storage.GetContainersList function on a Overlay storage."""
+    """Tests the BaseStorage.GetContainersList function on a Overlay storage."""
     running_containers = self.de_object.GetContainersList(only_running=True)
     running_containers = sorted(
         running_containers, key=lambda ci: ci.container_id)
@@ -319,7 +318,7 @@ class TestOverlayStorage(StorageTestCase):
     self.assertEqual(expected_string, result_string)
 
   def testGetLayerInfo(self):
-    """Tests the Storage.GetLayerInfo function on a Overlay storage."""
+    """Tests the BaseStorage.GetLayerInfo function on a Overlay storage."""
     container_id = (
         '5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a')
     container_obj = self.de_object.GetContainer(container_id)
@@ -331,7 +330,7 @@ class TestOverlayStorage(StorageTestCase):
                      layer_info['container_config']['Cmd'])
 
   def testShowRepositories(self):
-    """Tests the Storage.ShowRepositories function on a Overlay storage."""
+    """Tests the BaseStorage.ShowRepositories function on a Overlay storage."""
     result_string = self.de_object.storage_object.ShowRepositories()
     self.maxDiff = None
     expected_string = (
@@ -351,7 +350,7 @@ class TestOverlayStorage(StorageTestCase):
     self.assertEqual(expected_string, result_string)
 
   def testMakeMountCommands(self):
-    """Tests the Storage.MakeMountCommands function on a Overlay storage."""
+    """Tests the BaseStorage.MakeMountCommands function on a Overlay storage."""
     container_id = (
         '5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a')
     container_obj = self.de_object.GetContainer(container_id)
@@ -368,7 +367,7 @@ class TestOverlayStorage(StorageTestCase):
     self.assertEqual(expected_commands, commands)
 
   def testGetHistory(self):
-    """Tests the Storage.GetHistory function on a Overlay storage."""
+    """Tests the BaseStorage.GetHistory function on a Overlay storage."""
     self.maxDiff = None
     container_id = (
         '5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a')
@@ -387,7 +386,7 @@ class TestOverlay2Storage(StorageTestCase):
 
   @classmethod
   def setUpClass(cls):
-    cls._setup('overlay2', overlay.Overlay2Storage)
+    cls._setup('overlay2', storage.Overlay2Storage)
 
   def testGetAllContainers(self):
     """Tests the GetAllContainers function on a Overlay2 storage."""
@@ -408,7 +407,7 @@ class TestOverlay2Storage(StorageTestCase):
     self.assertEqual(expected_container_id, container_obj.container_id)
 
   def testGetOrderedLayers(self):
-    """Tests the Storage.GetOrderedLayers function on a Overlay2 storage."""
+    """Tests the BaseStorage.GetOrderedLayers function on a Overlay2 storage."""
     container_id = (
         '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206')
     container_obj = self.de_object.GetContainer(container_id)
@@ -420,7 +419,7 @@ class TestOverlay2Storage(StorageTestCase):
         layers[0])
 
   def testGetRunningContainersList(self):
-    """Tests the Storage.GetContainersList function on a Overlay2 storage."""
+    """Tests the BaseStorage.GetContainersList function on Overlay2 storage."""
     running_containers = self.de_object.GetContainersList(only_running=True)
     running_containers = sorted(
         running_containers, key=lambda ci: ci.container_id)
@@ -447,7 +446,7 @@ class TestOverlay2Storage(StorageTestCase):
     self.assertEqual(expected_string, result_string)
 
   def testGetLayerInfo(self):
-    """Tests the Storage.GetLayerInfo function on a Overlay2 storage."""
+    """Tests the BaseStorage.GetLayerInfo function on a Overlay2 storage."""
     container_id = (
         '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206')
     container_obj = self.de_object.GetContainer(container_id)
@@ -459,7 +458,7 @@ class TestOverlay2Storage(StorageTestCase):
                      layer_info['container_config']['Cmd'])
 
   def testShowRepositories(self):
-    """Tests the Storage.ShowRepositories function on a Overlay2 storage."""
+    """Tests the BaseStorage.ShowRepositories function on a Overlay2 storage."""
     result_string = self.de_object.storage_object.ShowRepositories()
     self.maxDiff = None
     expected_string = (
@@ -479,7 +478,7 @@ class TestOverlay2Storage(StorageTestCase):
     self.assertEqual(expected_string, result_string)
 
   def testMakeMountCommands(self):
-    """Tests the Storage.MakeMountCommands function on a Overlay2 storage."""
+    """Tests the BaseStorage.MakeMountCommands function on Overlay2 storage."""
     self.maxDiff = None
     container_id = (
         '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206')
@@ -499,7 +498,7 @@ class TestOverlay2Storage(StorageTestCase):
     self.assertEqual(expected_commands, commands)
 
   def testGetHistory(self):
-    """Tests the Storage.GetHistory function on a Overlay2 storage."""
+    """Tests the BaseStorage.GetHistory function on a Overlay2 storage."""
     self.maxDiff = None
     container_id = (
         '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206')
