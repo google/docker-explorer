@@ -249,7 +249,9 @@ class Container(object):
     print('Do you want to mount this container ID: {0:s} on {1:s} ?\n'
           '(ie: run these commands) [Y/n]'.format(self.container_id, mount_dir))
     choice = raw_input().lower()
-    if not choice in ['y', 'yes', '']:
+    if choice in ['y', 'yes', '']:
       for c in commands:
         # TODO() this is quite unsafe, need to properly split args
         subprocess.call(c, shell=True)
+    else:
+      print('Not mounting')
