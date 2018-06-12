@@ -31,6 +31,7 @@ class Container(object):
     config_labels (list(str)): labels attached to the container.
     container_id (str): the ID of the container.
     creation_timestamp (str): the container's creation timestamp.
+    docker_version (int): the version number of the storage system.
     image_id (str): the ID of the container's image.
     mount_points (list(dict)): list of mount points to bind from host to the
       container. (Docker storage backend v2).
@@ -105,7 +106,7 @@ class Container(object):
     """Returns the size of the layer.
 
     Args:
-      layer_id (str): the layer id to get the size of.
+      layer_id (str): the layer ID to get the size of.
 
     Returns:
       int: the size of the layer in bytes.
@@ -115,14 +116,14 @@ class Container(object):
       path = os.path.join(self.docker_directory, 'graph',
                           layer_id, 'layersize')
       size = int(open(path).read())
-    # TODO(romaing) Add docker storage v2 support
+    # TODO: Add docker storage v2 support
     return size
 
   def GetLayerInfo(self, layer_id):
     """Gets a docker FS layer information.
 
     Returns:
-      dict: the container information.
+      dict: the layer information.
     """
     if self.docker_version == 1:
       layer_info_path = os.path.join(
@@ -132,18 +133,17 @@ class Container(object):
       layer_info_path = os.path.join(
           self.docker_directory, 'image', self.storage_driver, 'imagedb',
           'content', hash_method, layer_id)
-    layer_info = None
     if os.path.isfile(layer_info_path):
       with open(layer_info_path) as layer_info_file:
-        layer_info = json.load(layer_info_file)
-        return layer_info
+        return json.load(layer_info_file)
+
     return None
 
   def GetOrderedLayers(self):
-    """Returns an array of the sorted image ID for a container.
+    """Returns an array of the sorted layer IDs for a container.
 
     Returns:
-      list(str): a list of layer IDs (hashes).
+      list (str): a list of layer IDs.
     """
     layer_list = []
     current_layer = self.container_id
