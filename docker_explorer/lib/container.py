@@ -248,7 +248,13 @@ class Container(object):
       print(c)
     print('Do you want to mount this container ID: {0:s} on {1:s} ?\n'
           '(ie: run these commands) [Y/n]'.format(self.container_id, mount_dir))
-    choice = raw_input().lower()
+    # Ugly Py2/Py3 compat code.
+    # Undo in 2020+
+    try:
+      input = raw_input  # pylint: disable=redefined-builtin
+    except NameError:
+      pass
+    choice = input().lower()
     if choice in ['y', 'yes', '']:
       for c in commands:
         # TODO() this is quite unsafe, need to properly split args
