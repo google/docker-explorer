@@ -7,7 +7,6 @@ Standards-Version: 3.9.5
 
 Package: docker-explorer
 Architecture: any
-Pre-Depends: dpkg (>= 1.16.1), python2.7-minimal, ${misc:Pre-Depends}
 Depends: ${python:Depends}, ${misc:Depends}
 Description: Docker forensic analysis tool.
  Docker forensic analysis tool.
