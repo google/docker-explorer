@@ -1,5 +1,5 @@
-docker-explorer (20180612) unstable; urgency=low
+docker-explorer (20180620) unstable; urgency=low
 
   * Initial Release
 
- -- docker-explorer Developers <docker-explorer-devs@google.com>  Tue, 12 Jun 2018 15:50:40 +0000
+ -- docker-explorer Developers <docker-explorer-devs@google.com>  Wed, 20 Jun 2018 11:18:39 +0200
