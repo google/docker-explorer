@@ -1,6 +1,6 @@
-docker-explorer (20180620) xenial; urgency=low
+docker-explorer (20180628) xenial; urgency=low
 
   * Initial Release
 
 
- -- Docker-Explorer devs <docker-explorer-devs@google.com>  Wed, 20 Jun 2018 11:18:39 +0200
+ -- Romain Gayon <romaing@google.com>  Thu, 28 Jun 2018 15:42:57 +0200
