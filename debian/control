@@ -8,5 +8,6 @@ Standards-Version: 3.9.5
 Package: docker-explorer
 Architecture: any
 Depends: ${python:Depends}, ${misc:Depends}
+Suggests: aufs-tools
 Description: Docker forensic analysis tool.
  Docker forensic analysis tool.
