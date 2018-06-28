@@ -52,11 +52,8 @@ class DockerExplorer(object):
     """
     self.docker_directory = docker_path
     if not os.path.isdir(self.docker_directory):
-      err_message = (
-          '{0:s} is not a Docker directory\n'
-          'Please specify the Docker\'s directory path.\n'
-          'hint: de.py -r /var/lib/docker').format(self.docker_directory)
-      raise errors.BadStorageException(err_message)
+      msg = '{0:s} is not a Docker directory\n'.format(self.docker_directory)
+      raise errors.BadStorageException(msg)
 
     self.containers_directory = os.path.join(
         self.docker_directory, 'containers')
@@ -156,14 +153,23 @@ class DockerExplorer(object):
 
     Returns:
       list(Container): the list of Container objects.
+
+    Raises:
+      errors.BadStorageException: If required files or directories are not found
+        in the provided Docker directory.
     """
+    if not os.path.isdir(self.containers_directory):
+      raise errors.BadStorageException(
+          'Containers directory {0} does not exist'.format(
+              self.containers_directory))
     container_ids_list = os.listdir(self.containers_directory)
     if not container_ids_list:
-      print('Couldn\'t find any container configuration file (\'{0:s}\'). '
-            'Make sure the docker repository ({1:s}) is correct. '
+      print('Could not find container configuration files ({0:s}) in {1:s}.\n'
+            'Make sure the docker repository ({2:s}) is correct.\n'
             'If it is correct, you might want to run this script'
-            ' with higher privileges.').format(
-                self.container_config_filename, self.docker_directory)
+            ' with higher privileges.'.format(
+                self.container_config_filename, self.containers_directory,
+                self.docker_directory))
     return [self.GetContainer(cid) for cid in container_ids_list]
 
   def GetContainersList(self, only_running=False):
@@ -246,6 +252,10 @@ class DockerExplorer(object):
 
     Returns:
       str: human readable list of images in local Docker repositories.
+
+    Raises:
+      errors.BadStorageException: If required files or directories are not found
+        in the provided Docker directory.
     """
     result_string = ''
     repositories = []
@@ -253,6 +263,9 @@ class DockerExplorer(object):
       repositories = [os.path.join(self.docker_directory, 'repositories-aufs')]
     else:
       image_path = os.path.join(self.docker_directory, 'image')
+      if not os.path.isdir(image_path):
+        raise errors.BadStorageException(
+            'Expected image directory {0} does not exist.'.format(image_path))
       for storage_method in os.listdir(image_path):
         repositories_file_path = os.path.join(
             image_path, storage_method, 'repositories.json')
@@ -301,4 +314,9 @@ class DockerExplorer(object):
 
 
 if __name__ == '__main__':
-  DockerExplorer().Main()
+  try:
+    DockerExplorer().Main()
+  except errors.BadStorageException as exc:
+    print('ERROR: {0}\n'.format(exc.message))
+    print('Please specify a proper Docker\'s directory path.\n'
+          '	hint: de.py -r /var/lib/docker')
