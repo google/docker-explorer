@@ -41,7 +41,7 @@ class DockerExplorer(object):
     self._argument_parser = None
     self.container_config_filename = 'config.v2.json'
     self.containers_directory = None
-    self.docker_directory = None
+    self.docker_directory = '/var/lib/docker'
     self.docker_version = 2
 
   def _SetDockerDirectory(self, docker_path):
@@ -139,15 +139,49 @@ class DockerExplorer(object):
     """Parses the command line options."""
     self.docker_directory = os.path.abspath(options.docker_directory)
 
-  def GetContainer(self, container_id):
-    """Returns a Container object given a container_id.
+  def _GetFullContainerID(self, short_id):
+    """Searches for a container ID from its first characters.
 
     Args:
-      container_id (str): the ID of the container.
+      short_id (str): the first few characters of a container ID.
+    Returns:
+      str: the full container ID
+    Raises:
+      errors.DockerExplorerError: when we couldn't map the short version to
+        exactly one full container ID.
+    """
+    if len(short_id) == 64:
+      return short_id
+
+    containers_dir = os.path.join(self.docker_directory, 'containers')
+    possible_cids = []
+    for container_dirs in sorted(os.listdir(containers_dir)):
+      possible_cid = os.path.basename(container_dirs)
+      if possible_cid.startswith(short_id):
+        possible_cids.append(possible_cid)
+
+    possible_cids_len = len(possible_cids)
+    if possible_cids_len == 0:
+      raise errors.DockerExplorerError(
+          'Could not find any container whose ID starts with "{0}"'.format(
+              short_id))
+    elif possible_cids_len > 1:
+      raise errors.DockerExplorerError(
+          'Too many containers whose ID starts with "{0}" ({1:d})'.format(
+              short_id, possible_cids_len))
+
+    return possible_cids[0]
+
+  def GetContainer(self, container_id_part):
+    """Returns a Container object given the first characters of a container_id.
+
+    Args:
+      container_id_part (str): the first characters of a container ID.
 
     Returns:
       container.Container: the container object.
     """
+    container_id = self._GetFullContainerID(container_id_part)
     return container.Container(
         self.docker_directory, container_id, docker_version=self.docker_version)
 

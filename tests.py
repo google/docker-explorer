@@ -253,6 +253,24 @@ class TestAufsStorage(DockerTestCase):
         'with command : /bin/sh -c #(nop)  CMD ["sh"]')
     self.assertEqual(expected_string, container_obj.GetHistory())
 
+  def testGetFullContainerID(self):
+    """Tests the DockerExplorer._GetFullContainerID function on AuFS."""
+    self.assertEqual(
+        '2cc4b0d9c1dfdf71099c5e9a109e6a0fe286152a5396bd1850689478e8f70625',
+        self.de_object._GetFullContainerID('2cc4b0d'))
+
+    with self.assertRaises(Exception) as err:
+      self.de_object._GetFullContainerID('')
+    self.assertEqual(
+        'Too many containers whose ID starts with "" (7)',
+        err.exception.message)
+
+    with self.assertRaises(Exception) as err:
+      self.de_object._GetFullContainerID('xx')
+    self.assertEqual(
+        'Could not find any container whose ID starts with "xx"',
+        err.exception.message)
+
 
 class TestOverlayStorage(DockerTestCase):
   """Tests methods in the OverlayStorage object."""
@@ -380,6 +398,24 @@ class TestOverlayStorage(DockerTestCase):
         '\tsize : 0\tcreated at : 2018-01-24T04:29:35.590938\t'
         'with command : /bin/sh -c #(nop)  CMD ["sh"]')
     self.assertEqual(expected_string, container_obj.GetHistory())
+
+  def testGetFullContainerID(self):
+    """Tests the DockerExplorer._GetFullContainerID function on Overlay."""
+    self.assertEqual(
+        '5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a',
+        self.de_object._GetFullContainerID('5dc287aa80'))
+
+    with self.assertRaises(Exception) as err:
+      self.de_object._GetFullContainerID('4')
+    self.assertEqual(
+        'Too many containers whose ID starts with "4" (2)',
+        err.exception.message)
+
+    with self.assertRaises(Exception) as err:
+      self.de_object._GetFullContainerID('xx')
+    self.assertEqual(
+        'Could not find any container whose ID starts with "xx"',
+        err.exception.message)
 
 
 class TestOverlay2Storage(DockerTestCase):
@@ -518,6 +554,25 @@ class TestOverlay2Storage(DockerTestCase):
         '\tsize : 0\tcreated at : 2018-04-05T10:41:28.876407\t'
         'with command : /bin/sh -c #(nop)  CMD ["sh"]')
     self.assertEqual(expected_string, container_obj.GetHistory(container_obj))
+
+  def testGetFullContainerID(self):
+    """Tests the DockerExplorer._GetFullContainerID function on Overlay2."""
+    self.assertEqual(
+        '61ba4e6c012c782186c649466157e05adfd7caa5b551432de51043893cae5353',
+        self.de_object._GetFullContainerID('61ba4e6c012c782'))
+
+    with self.assertRaises(Exception) as err:
+      self.de_object._GetFullContainerID('')
+    self.assertEqual(
+        'Too many containers whose ID starts with "" (5)',
+        err.exception.message)
+
+    with self.assertRaises(Exception) as err:
+      self.de_object._GetFullContainerID('xx')
+    self.assertEqual(
+        'Could not find any container whose ID starts with "xx"',
+        err.exception.message)
+
 
 del DockerTestCase
 
