@@ -1,4 +1,5 @@
 # Files to ignore by git.
+debian/changelog
 
 # Back-up files
 *~
