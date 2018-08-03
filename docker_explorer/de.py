@@ -52,7 +52,7 @@ class DockerExplorer(object):
     """
     self.docker_directory = docker_path
     if not os.path.isdir(self.docker_directory):
-      msg = '{0:s} is not a Docker directory\n'.format(self.docker_directory)
+      msg = '{0:s} is not a Docker directory'.format(self.docker_directory)
       raise errors.BadStorageException(msg)
 
     self.containers_directory = os.path.join(
@@ -165,7 +165,7 @@ class DockerExplorer(object):
     container_ids_list = os.listdir(self.containers_directory)
     if not container_ids_list:
       print('Could not find container configuration files ({0:s}) in {1:s}.\n'
-            'Make sure the docker repository ({2:s}) is correct.\n'
+            'Make sure the docker directory ({2:s}) is correct.\n'
             'If it is correct, you might want to run this script'
             ' with higher privileges.'.format(
                 self.container_config_filename, self.containers_directory,
@@ -318,5 +318,5 @@ if __name__ == '__main__':
     DockerExplorer().Main()
   except errors.BadStorageException as exc:
     print('ERROR: {0}\n'.format(exc.message))
-    print('Please specify a proper Docker\'s directory path.\n'
+    print('Please specify a proper Docker directory path.\n'
           '	hint: de.py -r /var/lib/docker')
