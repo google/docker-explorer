@@ -80,7 +80,7 @@ class TestDEMain(unittest.TestCase):
     de_object.docker_directory = 'this_dir_shouldnt_exist'
 
     expected_error_message = (
-        'this_dir_shouldnt_exist is not a Docker directory\n')
+        'this_dir_shouldnt_exist is not a Docker directory')
     with self.assertRaises(errors.BadStorageException) as err:
       de_object._SetDockerDirectory('this_dir_shouldnt_exist')
     self.assertEqual(expected_error_message, err.exception.message)
