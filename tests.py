@@ -461,6 +461,11 @@ class TestOverlay2Storage(DockerTestCase):
     self.maxDiff = None
     expected_string = (
         'Listing repositories from file '
+        'test_data/docker/image/overlay/repositories.json\n'
+        '{\n'
+        '    "Repositories": {}\n'
+        '}\n'
+        'Listing repositories from file '
         'test_data/docker/image/overlay2/repositories.json\n{\n'
         '    "Repositories": {\n'
         '        "busybox": {\n'
@@ -472,11 +477,6 @@ class TestOverlay2Storage(DockerTestCase):
         'c7"\n'
         '        }\n'
         '    }\n'
-        '}\n'
-        'Listing repositories from file '
-        'test_data/docker/image/overlay/repositories.json\n'
-        '{\n'
-        '    "Repositories": {}\n'
         '}\n'
 
     )

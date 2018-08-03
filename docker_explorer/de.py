@@ -272,7 +272,7 @@ class DockerExplorer(object):
         if os.path.isfile(repositories_file_path):
           repositories.append(repositories_file_path)
 
-    for repositories_file_path in repositories:
+    for repositories_file_path in sorted(repositories):
       result_string += (
           'Listing repositories from file {0:s}\n'.format(
               repositories_file_path))
