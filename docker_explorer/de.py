@@ -163,12 +163,12 @@ class DockerExplorer(object):
     possible_cids_len = len(possible_cids)
     if possible_cids_len == 0:
       raise errors.DockerExplorerError(
-          'Could not find any container whose ID starts with "{0}"'.format(
+          'Could not find any container ID starting with "{0}"'.format(
               short_id))
-    elif possible_cids_len > 1:
+    if possible_cids_len > 1:
       raise errors.DockerExplorerError(
-          'Too many containers whose ID starts with "{0}" ({1:d})'.format(
-              short_id, possible_cids_len))
+          'Too many container IDs starting with "{0}": {1}'.format(
+              short_id, ', '.join(possible_cids)))
 
     return possible_cids[0]
 

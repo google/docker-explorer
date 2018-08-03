@@ -262,13 +262,20 @@ class TestAufsStorage(DockerTestCase):
     with self.assertRaises(Exception) as err:
       self.de_object._GetFullContainerID('')
     self.assertEqual(
-        'Too many containers whose ID starts with "" (7)',
+        'Too many container IDs starting with "": '
+        '1171e9631158156ba2b984d335b2bf31838403700df3882c51aed70beebb604f, '
+        '2cc4b0d9c1dfdf71099c5e9a109e6a0fe286152a5396bd1850689478e8f70625, '
+        '7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966, '
+        '986c6e682f30550512bc2f7243f5a57c91b025e543ef703c426d732585209945, '
+        'b6f881bfc566ed604da1dc9bc8782a3540380c094154d703a77113b1ecfca660, '
+        'c8a38b6c29b0c901c37c2bb17bfcd73942c44bb71cc528505385c62f3c6fff35, '
+        'dd39804186d4f649f1e9cec89df1583e7a12a48193223a16cc40958f7e76b858',
         err.exception.message)
 
     with self.assertRaises(Exception) as err:
       self.de_object._GetFullContainerID('xx')
     self.assertEqual(
-        'Could not find any container whose ID starts with "xx"',
+        'Could not find any container ID starting with "xx"',
         err.exception.message)
 
 
@@ -408,13 +415,15 @@ class TestOverlayStorage(DockerTestCase):
     with self.assertRaises(Exception) as err:
       self.de_object._GetFullContainerID('4')
     self.assertEqual(
-        'Too many containers whose ID starts with "4" (2)',
+        'Too many container IDs starting with "4": '
+        '42e8679f78d6ea623391cdbcb928740ed804f928bd94f94e1d98687f34c48311, '
+        '4ad09bee61dcc675bf41085dbf38c31426a7ed6666fdd47521bfb8f5e67a7e6d',
         err.exception.message)
 
     with self.assertRaises(Exception) as err:
       self.de_object._GetFullContainerID('xx')
     self.assertEqual(
-        'Could not find any container whose ID starts with "xx"',
+        'Could not find any container ID starting with "xx"',
         err.exception.message)
 
 
@@ -564,13 +573,18 @@ class TestOverlay2Storage(DockerTestCase):
     with self.assertRaises(Exception) as err:
       self.de_object._GetFullContainerID('')
     self.assertEqual(
-        'Too many containers whose ID starts with "" (5)',
+        'Too many container IDs starting with "": '
+        '10acac0b3466813c9e1f85e2aa7d06298e51fbfe86bbcb6b7a19dd33d3798f6a, '
+        '61ba4e6c012c782186c649466157e05adfd7caa5b551432de51043893cae5353, '
+        '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206, '
+        '9949fa153b778e39d6cab0a4e0ba60fa34a13fedb1f256d613a2f88c0c98408a, '
+        'f83f963c67cbd36055f690fc988c1e42be06c1253e80113d1d516778c06b2841',
         err.exception.message)
 
     with self.assertRaises(Exception) as err:
       self.de_object._GetFullContainerID('xx')
     self.assertEqual(
-        'Could not find any container whose ID starts with "xx"',
+        'Could not find any container ID starting with "xx"',
         err.exception.message)
 
 
