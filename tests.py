@@ -381,12 +381,11 @@ class TestOverlayStorage(DockerTestCase):
         container_obj, '/mnt')
     expected_commands = [(
         'mount -t overlay overlay -o ro,lowerdir='
-        '"test_data/docker/overlay/a94d714512251b0d8a9bfaacb832e0c6cb70f71cb71'
-        '976cca7a528a429336aae/root":'
         '"test_data/docker/overlay/974e2b994f9db74e1ddd6fc546843bc65920e786612'
-        'a388f25685acf84b3fed1/upper",'
-        'workdir="test_data/docker/overlay/974e2b994f9db74e1ddd6fc546843bc6592'
-        '0e786612a388f25685acf84b3fed1/work" "/mnt"')]
+        'a388f25685acf84b3fed1/upper:'
+        'test_data/docker/overlay/a94d714512251b0d8a9bfaacb832e0c6cb70f71cb71'
+        '976cca7a528a429336aae/root" '
+        '"/mnt"')]
     self.assertEqual(expected_commands, commands)
 
   def testGetHistory(self):
@@ -537,13 +536,10 @@ class TestOverlay2Storage(DockerTestCase):
         container_obj, '/mnt')
     expected_commands = [(
         'mount -t overlay overlay -o ro,lowerdir='
-        '"test_data/docker/overlay2/l/OTFSLJCXWCECIG6FVNGRTWUZ7D:'
-        'test_data/docker/overlay2/l/CH5A7XWSBP2DUPV7V47B7DOOGY":'
         '"test_data/docker/overlay2/'
-        '92fd3b3e7d6101bb701743c9518c45b0d036b898c8a3d7cae84e1a06e6829b53/diff"'
-        ',workdir="test_data/docker/overlay2/'
-        '92fd3b3e7d6101bb701743c9518c45b0d036b898c8a3d7cae84e1a06e6829b53/work"'
-        ' "/mnt"'
+        '92fd3b3e7d6101bb701743c9518c45b0d036b898c8a3d7cae84e1a06e6829b53/diff:'
+        'test_data/docker/overlay2/l/OTFSLJCXWCECIG6FVNGRTWUZ7D:'
+        'test_data/docker/overlay2/l/CH5A7XWSBP2DUPV7V47B7DOOGY" "/mnt"'
         )]
     self.assertEqual(expected_commands, commands)
 

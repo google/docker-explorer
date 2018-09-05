@@ -200,12 +200,10 @@ class OverlayStorage(BaseStorage):
     with open(os.path.join(mount_id_path, self.LOWERDIR_NAME)) as lower_fd:
       lower_dir = self._BuildLowerLayers(lower_fd.read().strip())
     upper_dir = os.path.join(mount_id_path, self.UPPERDIR_NAME)
-    work_dir = os.path.join(mount_id_path, 'work')
 
     cmd_pattern = (
-        'mount -t overlay overlay -o ro,lowerdir=\"{0:s}\":"{1:s}\",'
-        'workdir="{2:s}\" \"{3:s}\"')
-    cmd = cmd_pattern.format(lower_dir, upper_dir, work_dir, mount_dir)
+        'mount -t overlay overlay -o ro,lowerdir="{0:s}:{1:s}" "{2:s}"')
+    cmd = cmd_pattern.format(upper_dir, lower_dir, mount_dir)
     return [cmd]
 
 
