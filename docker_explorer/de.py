@@ -239,7 +239,7 @@ class DockerExplorer(object):
       only_running (bool): Whether we display only running Containers.
 
     Returns:
-      str: the string displaying information about running containers.
+      dict: A dict object representing the containers.
     """
     result = []
     for container_object in self.GetContainersList(only_running=only_running):
@@ -258,7 +258,7 @@ class DockerExplorer(object):
 
       result.append(container_json)
 
-    return utils.PrettyPrintJSON(result)
+    return result
 
   def ShowContainers(self, only_running=False):
     """Displays the running containers.
@@ -266,22 +266,8 @@ class DockerExplorer(object):
     Args:
       only_running (bool): Whether we display only running Containers.
     """
-    result = []
-    for container_object in self.GetContainersList(only_running=only_running):
-      image_id = container_object.image_id,
-      if self.docker_version == 2:
-        image_id = image_id.split(':')[1]
-      container_json = {
-          'container_id': container_object.container_id,
-          'image_id': image_id
-      }
-
-      if container_object.config_labels:
-        container_json['Labels'] = container_object.config_labels
-
-      result.append(container_json)
-
-    print(utils.PrettyPrintJSON(result))
+    print(utils.PrettyPrintJSON(
+        self.GetContainersJson(only_running=only_running)))
 
 
   def ShowHistory(self, container_id, show_empty_layers=False):

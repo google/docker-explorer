@@ -171,20 +171,16 @@ class TestAufsStorage(DockerTestCase):
 
   def testGetContainersJson(self):
     """Tests the GetContainersJson function on a AUFS storage."""
-    result_string = self.de_object.GetContainersJson(only_running=True)
-    expected_string = (
-        '[\n'
-        '    {\n'
-        '        "container_id": '
-        '"7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966", \n'
-        '        "image_id": '
-        '"7968321274dc6b6171697c33df7815310468e694ac5be0ec03ff053bb135e768", \n'
-        '        "image_name": "busybox", \n'
-        '        "start_date": "2017-02-13T16:45:05.785658"\n'
-        '    }\n'
-        ']\n'
-    )
-    self.assertEqual(expected_string, result_string)
+    result = self.de_object.GetContainersJson(only_running=True)
+    expected = [
+        {'image_id':
+         '7968321274dc6b6171697c33df7815310468e694ac5be0ec03ff053bb135e768',
+         'container_id':
+         '7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966',
+         'start_date': '2017-02-13T16:45:05.785658',
+         'image_name': 'busybox'}
+    ]
+    self.assertEqual(expected, result)
 
   def testGetLayerInfo(self):
     """Tests the BaseStorage.GetLayerInfo function on a AUFS storage."""
@@ -334,20 +330,16 @@ class TestOverlayStorage(DockerTestCase):
 
   def testGetContainersJson(self):
     """Tests the GetContainersJson function on a Overlay storage."""
-    result_string = self.de_object.GetContainersJson(only_running=True)
-    expected_string = (
-        '[\n'
-        '    {\n'
-        '        "container_id": '
-        '"5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a", \n'
-        '        "image_id": '
-        '"5b0d59026729b68570d99bc4f3f7c31a2e4f2a5736435641565d93e7c25bd2c3", \n'
-        '        "image_name": "busybox:latest", \n'
-        '        "start_date": "2018-01-26T14:55:56.574924"\n'
-        '    }\n'
-        ']\n'
-    )
-    self.assertEqual(expected_string, result_string)
+    result= self.de_object.GetContainersJson(only_running=True)
+    expected = [
+        {'image_id':
+         '5b0d59026729b68570d99bc4f3f7c31a2e4f2a5736435641565d93e7c25bd2c3',
+         'container_id':
+         '5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a',
+         'start_date': '2018-01-26T14:55:56.574924',
+         'image_name': 'busybox:latest'}
+    ]
+    self.assertEqual(expected, result)
 
   def testGetLayerInfo(self):
     """Tests the BaseStorage.GetLayerInfo function on a Overlay storage."""
@@ -489,20 +481,16 @@ class TestOverlay2Storage(DockerTestCase):
 
   def testGetContainersJson(self):
     """Tests the GetContainersJson function on a Overlay2 storage."""
-    result_string = self.de_object.GetContainersJson(only_running=True)
-    expected_string = (
-        '[\n'
-        '    {\n'
-        '        "container_id": '
-        '"8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206", \n'
-        '        "image_id": '
-        '"8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7", \n'
-        '        "image_name": "busybox", \n'
-        '        "start_date": "2018-05-16T10:51:39.625989"\n'
-        '    }\n'
-        ']\n'
-    )
-    self.assertEqual(expected_string, result_string)
+    result = self.de_object.GetContainersJson(only_running=True)
+    expected = [
+        {'image_id':
+         '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7',
+         'container_id':
+         '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206',
+         'start_date': '2018-05-16T10:51:39.625989',
+         'image_name': 'busybox'}
+    ]
+    self.assertEqual(expected, result)
 
   def testGetLayerInfo(self):
     """Tests the BaseStorage.GetLayerInfo function on a Overlay2 storage."""
