@@ -35,15 +35,15 @@ def FormatDatetime(timestamp):
     time = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%SZ')
   return time.isoformat()
 
-def PrettyPrintJSON(string):
-  """Generates a easy to read representation of a JSON string.
+def PrettyPrintJSON(dict_object):
+  """Generates a easy to read representation of a dict object.
 
   Args:
-    string (str): JSON string.
+    dict_object (dict): dict to convert to string
 
   Returns:
     str: pretty printed JSON string.
   """
   pretty_json = json.dumps(
-      json.loads(string), sort_keys=True, indent=4, separators=(', ', ': '))
+      dict_object, sort_keys=True, indent=4, separators=(', ', ': '))
   return pretty_json + '\n'

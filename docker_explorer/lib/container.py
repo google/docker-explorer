@@ -198,38 +198,33 @@ class Container(object):
     return layer_list
 
   def GetHistory(self, show_empty_layers=False):
-    """Returns a string representing the modification history of the container.
+    """Returns a JSON string representing the modification history of the container.
 
     Args:
       show_empty_layers (bool): whether to display empty layers.
     Returns:
       str: the human readable history.
     """
-    history_str = ''
+    result_dict = {}
     for layer in self.GetOrderedLayers():
       layer_info = self.GetLayerInfo(layer)
+      layer_dict = {}
+
       if layer is None:
         raise ValueError('Layer {0:s} does not exist'.format(layer))
-      history_str += '-------------------------------------------------------\n'
-      history_str += layer+'\n'
-      if layer_info is None:
-        history_str += 'no info =('
-      else:
-        layer_size = self.GetLayerSize(layer)
-        if layer_size > 0 or show_empty_layers or self.docker_version == 2:
-          history_str += '\tsize : {0:d}'.format(layer_size)
-          history_str += '\tcreated at : {0:s}'.format(
-              utils.FormatDatetime(layer_info['created']))
-          container_cmd = layer_info['container_config'].get('Cmd', None)
-          if container_cmd:
-            history_str += '\twith command : {0:s}'.format(
-                ' '.join(container_cmd))
-          comment = layer_info.get('comment', None)
-          if comment:
-            history_str += '\tcomment : {0:s}'.format(comment)
-        else:
-          history_str += 'Empty layer'
-    return history_str
+      layer_size = self.GetLayerSize(layer)
+      layer_dict['size'] = layer_size
+      if layer_size > 0 or show_empty_layers or self.docker_version == 2:
+        layer_dict['created_at'] = utils.FormatDatetime(layer_info['created'])
+        container_cmd = layer_info['container_config'].get('Cmd', None)
+        if container_cmd:
+          layer_dict['container_cmd'] = ' '.join(container_cmd)
+        comment = layer_info.get('comment', None)
+        if comment:
+          layer_dict['comment'] = comment
+      result_dict[layer] = layer_dict
+
+    return json.dumps(result_dict)
 
   def _SetStorage(self, storage_name):
     """Sets the storage_object attribute.

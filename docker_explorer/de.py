@@ -21,6 +21,7 @@ A tool to parse offline Docker installation.
 from __future__ import print_function, unicode_literals
 
 import argparse
+import json
 import os
 
 from docker_explorer import errors
@@ -231,8 +232,8 @@ class DockerExplorer(object):
     container_object = self.GetContainer(container_id)
     container_object.Mount(mountpoint)
 
-  def GetContainersString(self, only_running=False):
-    """Returns a string describing the running containers.
+  def GetContainersJson(self, only_running=False):
+    """Returns a JSON string describing the running containers.
 
     Args:
       only_running (bool): Whether we display only running Containers.
@@ -240,28 +241,24 @@ class DockerExplorer(object):
     Returns:
       str: the string displaying information about running containers.
     """
-    result_string = ''
+    result = []
     for container_object in self.GetContainersList(only_running=only_running):
       image_id = container_object.image_id
       if self.docker_version == 2:
         image_id = image_id.split(':')[1]
+      container_json = {
+          'container_id': container_object.container_id,
+          'image_id': image_id
+      }
 
       if container_object.config_labels:
-        labels_list = ['{0:s}: {1:s}'.format(k, v) for (k, v) in
-                       container_object.config_labels.items()]
-        labels_str = ', '.join(labels_list)
-        result_string += 'Container id: {0:s} / Labels : {1:s}\n'.format(
-            container_object.container_id, labels_str)
-      else:
-        result_string += 'Container id: {0:s} / No Label\n'.format(
-            container_object.container_id)
-      result_string += '\tStart date: {0:s}\n'.format(
-          utils.FormatDatetime(container_object.start_timestamp))
-      result_string += '\tImage ID: {0:s}\n'.format(image_id)
-      result_string += '\tImage Name: {0:s}\n'.format(
-          container_object.config_image_name)
+        container_json['labels'] = container_object.config_labels.items()
+      container_json['start_date'] = utils.FormatDatetime(container_object.start_timestamp)
+      container_json['image_name'] = container_object.config_image_name
 
-    return result_string
+      result.append(container_json)
+
+    return utils.PrettyPrintJSON(result)
 
   def ShowContainers(self, only_running=False):
     """Displays the running containers.
@@ -269,7 +266,23 @@ class DockerExplorer(object):
     Args:
       only_running (bool): Whether we display only running Containers.
     """
-    print(self.GetContainersString(only_running=only_running))
+    result = []
+    for container_object in self.GetContainersList(only_running=only_running):
+      image_id = container_object.image_id,
+      if self.docker_version == 2:
+        image_id = image_id.split(':')[1]
+      container_json = {
+          'container_id': container_object.container_id,
+          'image_id': image_id
+      }
+
+      if container_object.config_labels:
+        container_json['Labels'] = container_object.config_labels
+
+      result.append(container_json)
+
+    print(utils.PrettyPrintJSON(result))
+
 
   def ShowHistory(self, container_id, show_empty_layers=False):
     """Prints the modification history of a container.
@@ -291,7 +304,6 @@ class DockerExplorer(object):
       errors.BadStorageException: If required files or directories are not found
         in the provided Docker directory.
     """
-    result_string = ''
     repositories = []
     if self.docker_version == 1:
       repositories = [os.path.join(self.docker_directory, 'repositories-aufs')]
@@ -306,14 +318,14 @@ class DockerExplorer(object):
         if os.path.isfile(repositories_file_path):
           repositories.append(repositories_file_path)
 
+    result = []
     for repositories_file_path in sorted(repositories):
-      result_string += (
-          'Listing repositories from file {0:s}\n'.format(
-              repositories_file_path))
       with open(repositories_file_path) as rf:
-        result_string += utils.PrettyPrintJSON(rf.read())
+        repo_obj = json.loads(rf.read())
+        repo_obj['path'] = repositories_file_path
+        result.append(repo_obj)
 
-    return result_string
+    return utils.PrettyPrintJSON(result)
 
   def Main(self):
     """The main method for the DockerExplorer class.
