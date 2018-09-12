@@ -253,7 +253,8 @@ class DockerExplorer(object):
 
       if container_object.config_labels:
         container_json['labels'] = container_object.config_labels.items()
-      container_json['start_date'] = utils.FormatDatetime(container_object.start_timestamp)
+      container_json['start_date'] = utils.FormatDatetime(
+          container_object.start_timestamp)
       container_json['image_name'] = container_object.config_image_name
 
       result.append(container_json)

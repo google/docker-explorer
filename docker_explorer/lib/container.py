@@ -198,7 +198,7 @@ class Container(object):
     return layer_list
 
   def GetHistory(self, show_empty_layers=False):
-    """Returns a JSON string representing the modification history of the container.
+    """Returns a dict containing the modification history of the container.
 
     Args:
       show_empty_layers (bool): whether to display empty layers.
@@ -224,7 +224,7 @@ class Container(object):
           layer_dict['comment'] = comment
       result_dict[layer] = layer_dict
 
-    return json.dumps(result_dict)
+    return result_dict
 
   def _SetStorage(self, storage_name):
     """Sets the storage_object attribute.
