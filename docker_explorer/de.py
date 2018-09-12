@@ -278,7 +278,7 @@ class DockerExplorer(object):
       show_empty_layers (bool): whether to display empty layers.
     """
     container_object = self.GetContainer(container_id)
-    print(container_object.GetHistory(show_empty_layers))
+    print(utils.PrettyPrintJSON(container_object.GetHistory(show_empty_layers)))
 
   def GetRepositoriesString(self):
     """Returns information about images in the local Docker repositories.
