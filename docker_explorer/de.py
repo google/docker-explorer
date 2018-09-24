@@ -233,7 +233,7 @@ class DockerExplorer(object):
     container_object.Mount(mountpoint)
 
   def GetContainersJson(self, only_running=False):
-    """Returns a JSON string describing the running containers.
+    """Returns a dict describing the running containers.
 
     Args:
       only_running (bool): Whether we display only running Containers.
@@ -252,7 +252,7 @@ class DockerExplorer(object):
       }
 
       if container_object.config_labels:
-        container_json['labels'] = container_object.config_labels.items()
+        container_json['labels'] = container_object.config_labels
       container_json['start_date'] = utils.FormatDatetime(
           container_object.start_timestamp)
       container_json['image_name'] = container_object.config_image_name

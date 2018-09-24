@@ -203,7 +203,7 @@ class Container(object):
     Args:
       show_empty_layers (bool): whether to display empty layers.
     Returns:
-      str: the human readable history.
+      dict: object describing history of the container.
     """
     result_dict = {}
     for layer in self.GetOrderedLayers():
