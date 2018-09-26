@@ -44,11 +44,10 @@ class UtilsTests(unittest.TestCase):
   def testPrettyPrintJSON(self):
     """Tests the utils.PrettyPrintJSON function."""
     test_dict = {'test': [{'dict1': {'key1': 'val1'}, 'dict2': None}]}
-    test_json = json.dumps(test_dict)
     expected_string = ('{\n    "test": [\n        {\n            "dict1": {\n'
                        '                "key1": "val1"\n            }, \n'
                        '            "dict2": null\n        }\n    ]\n}\n')
-    self.assertEqual(expected_string, utils.PrettyPrintJSON(test_json))
+    self.assertEqual(expected_string, utils.PrettyPrintJSON(test_dict))
 
 
 class TestDEMain(unittest.TestCase):
@@ -170,18 +169,18 @@ class TestAufsStorage(DockerTestCase):
     self.assertEqual('busybox', container.config_image_name)
     self.assertTrue(container.running)
 
-  def testGetContainersString(self):
-    """Tests the GetContainersString function on a AUFS storage."""
-    result_string = self.de_object.GetContainersString(only_running=True)
-    expected_string = (
-        'Container id: '
-        '7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966 '
-        '/ No Label\n'
-        '\tStart date: 2017-02-13T16:45:05.785658\n'
-        '\tImage ID: '
-        '7968321274dc6b6171697c33df7815310468e694ac5be0ec03ff053bb135e768\n'
-        '\tImage Name: busybox\n')
-    self.assertEqual(expected_string, result_string)
+  def testGetContainersJson(self):
+    """Tests the GetContainersJson function on a AUFS storage."""
+    result = self.de_object.GetContainersJson(only_running=True)
+    expected = [
+        {'image_id':
+         '7968321274dc6b6171697c33df7815310468e694ac5be0ec03ff053bb135e768',
+         'container_id':
+         '7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966',
+         'start_date': '2017-02-13T16:45:05.785658',
+         'image_name': 'busybox'}
+    ]
+    self.assertEqual(expected, result)
 
   def testGetLayerInfo(self):
     """Tests the BaseStorage.GetLayerInfo function on a AUFS storage."""
@@ -196,20 +195,22 @@ class TestAufsStorage(DockerTestCase):
                      layer_info['container_config']['Cmd'])
 
   def testGetRepositoriesString(self):
-    """Tests BaseStorage.GetRepositoriesString() on a AUFS storage."""
+    """Tests GetRepositoriesString() on a AUFS storage."""
     self.maxDiff = None
     result_string = self.de_object.GetRepositoriesString()
     expected_string = (
-        'Listing repositories from file '
-        'test_data/docker/image/aufs/repositories.json\n{\n'
-        '    "Repositories": {\n'
-        '        "busybox": {\n'
-        '            "busybox:latest": '
-        '"sha256:7968321274dc6b6171697c33df7815310468e694ac5be0ec03ff053bb135e7'
-        '68"\n'
-        '        }\n'
+        '[\n'
+        '    {\n'
+        '        "Repositories": {\n'
+        '            "busybox": {\n'
+        '                "busybox:latest": "sha256:'
+        '7968321274dc6b6171697c33df7815310468e694ac5be0ec03ff053bb135e768"\n'
+        '            }\n'
+        '        }, \n'
+        '        "path": "test_data/docker/image/aufs/repositories.json"\n'
         '    }\n'
-        '}\n')
+        ']\n'
+    )
     self.assertEqual(expected_string, result_string)
 
   def testMakeMountCommands(self):
@@ -242,13 +243,16 @@ class TestAufsStorage(DockerTestCase):
     container_id = (
         '7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966')
     container_obj = self.de_object.GetContainer(container_id)
-    expected_string = (
-        '-------------------------------------------------------\n'
+    expected = {
         'sha256:'
-        '7968321274dc6b6171697c33df7815310468e694ac5be0ec03ff053bb135e768\n'
-        '\tsize : 0\tcreated at : 2017-01-13T22:13:54.401355\t'
-        'with command : /bin/sh -c #(nop)  CMD ["sh"]')
-    self.assertEqual(expected_string, container_obj.GetHistory())
+        '7968321274dc6b6171697c33df7815310468e694ac5be0ec03ff053bb135e768': {
+            'created_at': '2017-01-13T22:13:54.401355',
+            'container_cmd': '/bin/sh -c #(nop)  CMD ["sh"]',
+            'size': 0
+        }
+    }
+
+    self.assertEqual(expected, container_obj.GetHistory())
 
   def testGetFullContainerID(self):
     """Tests the DockerExplorer._GetFullContainerID function on AuFS."""
@@ -327,18 +331,18 @@ class TestOverlayStorage(DockerTestCase):
 
     self.assertTrue(container.running)
 
-  def testGetContainersString(self):
-    """Tests the GetContainersString function on a Overlay storage."""
-    result_string = self.de_object.GetContainersString(only_running=True)
-    expected_string = (
-        'Container id: '
-        '5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a '
-        '/ No Label\n'
-        '\tStart date: 2018-01-26T14:55:56.574924\n'
-        '\tImage ID: '
-        '5b0d59026729b68570d99bc4f3f7c31a2e4f2a5736435641565d93e7c25bd2c3\n'
-        '\tImage Name: busybox:latest\n')
-    self.assertEqual(expected_string, result_string)
+  def testGetContainersJson(self):
+    """Tests the GetContainersJson function on a Overlay storage."""
+    result= self.de_object.GetContainersJson(only_running=True)
+    expected = [
+        {'image_id':
+         '5b0d59026729b68570d99bc4f3f7c31a2e4f2a5736435641565d93e7c25bd2c3',
+         'container_id':
+         '5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a',
+         'start_date': '2018-01-26T14:55:56.574924',
+         'image_name': 'busybox:latest'}
+    ]
+    self.assertEqual(expected, result)
 
   def testGetLayerInfo(self):
     """Tests the BaseStorage.GetLayerInfo function on a Overlay storage."""
@@ -353,23 +357,27 @@ class TestOverlayStorage(DockerTestCase):
                      layer_info['container_config']['Cmd'])
 
   def testGetRepositoriesString(self):
-    """Tests BaseStorage.GetRepositoriesString() on a Overlay storage."""
+    """Tests GetRepositoriesString() on a Overlay storage."""
     result_string = self.de_object.GetRepositoriesString()
     self.maxDiff = None
     expected_string = (
-        'Listing repositories from file '
-        'test_data/docker/image/overlay/repositories.json\n{\n'
-        '    "Repositories": {\n'
-        '        "busybox": {\n'
-        '            "busybox:latest": "sha256:'
+        '[\n'
+        '    {\n'
+        '        "Repositories": {\n'
+        '            "busybox": {\n'
+        '                "busybox:latest": "sha256:'
         '5b0d59026729b68570d99bc4f3f7c31a2e4f2a5736435641565d93e7c25bd2c3", \n'
-        '            "busybox@sha256:1669a6aa7350e1cdd28f972ddad5aceba2912f589'
-        'f19a090ac75b7083da748db": '
-        '"sha256:5b0d59026729b68570d99bc4f3f7c31a2e4f2a5736435641565d93e7c25bd'
-        '2c3"\n'
-        '        }\n'
+        '                "busybox@sha256:'
+        '1669a6aa7350e1cdd28f972ddad5aceba2912f589f19a090ac75b7083da748db": '
+        '"sha256:'
+        '5b0d59026729b68570d99bc4f3f7c31a2e4f2a5736435641565d93e7c25bd2c3"\n'
+        '            }\n'
+        '        }, \n'
+        '        "path": "test_data/docker/image/overlay/repositories.json"\n'
         '    }\n'
-        '}\n')
+        ']\n'
+    )
+
     self.assertEqual(expected_string, result_string)
 
   def testMakeMountCommands(self):
@@ -394,13 +402,16 @@ class TestOverlayStorage(DockerTestCase):
     container_id = (
         '5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a')
     container_obj = self.de_object.GetContainer(container_id)
-    expected_string = (
-        '-------------------------------------------------------\n'
+    expected = {
         'sha256:'
-        '5b0d59026729b68570d99bc4f3f7c31a2e4f2a5736435641565d93e7c25bd2c3\n'
-        '\tsize : 0\tcreated at : 2018-01-24T04:29:35.590938\t'
-        'with command : /bin/sh -c #(nop)  CMD ["sh"]')
-    self.assertEqual(expected_string, container_obj.GetHistory())
+        '5b0d59026729b68570d99bc4f3f7c31a2e4f2a5736435641565d93e7c25bd2c3':
+        {
+            'created_at': '2018-01-24T04:29:35.590938',
+            'container_cmd': '/bin/sh -c #(nop)  CMD ["sh"]',
+            'size': 0
+        }
+    }
+    self.assertEqual(expected, container_obj.GetHistory())
 
   def testGetFullContainerID(self):
     """Tests the DockerExplorer._GetFullContainerID function on Overlay."""
@@ -474,18 +485,18 @@ class TestOverlay2Storage(DockerTestCase):
 
     self.assertTrue(container.running)
 
-  def testGetContainersString(self):
-    """Tests the GetContainersString function on a Overlay2 storage."""
-    result_string = self.de_object.GetContainersString(only_running=True)
-    expected_string = (
-        'Container id: '
-        '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206 '
-        '/ No Label\n'
-        '\tStart date: 2018-05-16T10:51:39.625989\n'
-        '\tImage ID: '
-        '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7\n'
-        '\tImage Name: busybox\n')
-    self.assertEqual(expected_string, result_string)
+  def testGetContainersJson(self):
+    """Tests the GetContainersJson function on a Overlay2 storage."""
+    result = self.de_object.GetContainersJson(only_running=True)
+    expected = [
+        {'image_id':
+         '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7',
+         'container_id':
+         '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206',
+         'start_date': '2018-05-16T10:51:39.625989',
+         'image_name': 'busybox'}
+    ]
+    self.assertEqual(expected, result)
 
   def testGetLayerInfo(self):
     """Tests the BaseStorage.GetLayerInfo function on a Overlay2 storage."""
@@ -500,29 +511,29 @@ class TestOverlay2Storage(DockerTestCase):
                      layer_info['container_config']['Cmd'])
 
   def testGetRepositoriesString(self):
-    """Tests BaseStorage.GetRepositoriesString() on a Overlay2 storage."""
+    """Tests GetRepositoriesString() on a Overlay2 storage."""
     result_string = self.de_object.GetRepositoriesString()
     self.maxDiff = None
     expected_string = (
-        'Listing repositories from file '
-        'test_data/docker/image/overlay/repositories.json\n'
-        '{\n'
-        '    "Repositories": {}\n'
-        '}\n'
-        'Listing repositories from file '
-        'test_data/docker/image/overlay2/repositories.json\n{\n'
-        '    "Repositories": {\n'
-        '        "busybox": {\n'
-        '            "busybox:latest": "sha256:'
+        '[\n'
+        '    {\n'
+        '        "Repositories": {}, \n'
+        '        "path": "test_data/docker/image/overlay/repositories.json"\n'
+        '    }, \n'
+        '    {\n'
+        '        "Repositories": {\n'
+        '            "busybox": {\n'
+        '                "busybox:latest": "sha256:'
         '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7", \n'
-        '            "busybox@sha256:58ac43b2cc92c687a32c8be6278e50a063579655fe'
-        '3090125dcb2af0ff9e1a64": '
-        '"sha256:8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8'
-        'c7"\n'
-        '        }\n'
+        '                "busybox@sha256:'
+        '58ac43b2cc92c687a32c8be6278e50a063579655fe3090125dcb2af0ff9e1a64": '
+        '"sha256:'
+        '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7"\n'
+        '            }\n'
+        '        }, \n'
+        '        "path": "test_data/docker/image/overlay2/repositories.json"\n'
         '    }\n'
-        '}\n'
-
+        ']\n'
     )
     self.assertEqual(expected_string, result_string)
 
@@ -549,13 +560,15 @@ class TestOverlay2Storage(DockerTestCase):
     container_id = (
         '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206')
     container_obj = self.de_object.GetContainer(container_id)
-    expected_string = (
-        '-------------------------------------------------------\n'
+    expected = {
         'sha256:'
-        '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7\n'
-        '\tsize : 0\tcreated at : 2018-04-05T10:41:28.876407\t'
-        'with command : /bin/sh -c #(nop)  CMD ["sh"]')
-    self.assertEqual(expected_string, container_obj.GetHistory(container_obj))
+        '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7': {
+            'created_at': '2018-04-05T10:41:28.876407',
+            'container_cmd': '/bin/sh -c #(nop)  CMD ["sh"]',
+            'size': 0
+        }
+    }
+    self.assertEqual(expected, container_obj.GetHistory(container_obj))
 
   def testGetFullContainerID(self):
     """Tests the DockerExplorer._GetFullContainerID function on Overlay2."""
