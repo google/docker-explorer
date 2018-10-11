@@ -2,6 +2,8 @@
 
 This project helps a forensics analyst explore offline Docker filesystems.
 
+This is not an officially supported Google product.
+
 ## Overview
 
 When analyzing a system where a Docker container has been compromised, it can
