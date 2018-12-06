@@ -81,8 +81,10 @@ class BaseStorage(object):
           storage_ihp = storage.lstrip(os.path.sep)
           storage_path = os.path.join(self.root_directory, storage_ihp)
           volume_mountpoint = os.path.join(mount_dir, mountpoint_ihp)
-          extra_commands.append('mount --bind -o ro {0:s} {1:s}'.format(
-              storage_path, volume_mountpoint))
+          extra_commands.append(
+              ['/bin/mount', '--bind', '-o', 'ro', storage_path,
+               volume_mountpoint]
+          )
     elif self.docker_version == 2:
       # 'MountPoints'
       container_mount_points = container_object.mount_points
@@ -97,8 +99,9 @@ class BaseStorage(object):
             src_mount = os.path.join('docker', 'volumes', volume_name, '_data')
           storage_path = os.path.join(self.root_directory, src_mount)
           volume_mountpoint = os.path.join(mount_dir, dst_mount)
-          extra_commands.append('mount --bind -o ro {0:s} {1:s}'.format(
-              storage_path, volume_mountpoint))
+          extra_commands.append(
+              ['/bin/mount', '--bind', '-o', 'ro', storage_path,
+               volume_mountpoint])
 
     return extra_commands
 
@@ -147,16 +150,18 @@ class AufsStorage(BaseStorage):
     commands = []
     mountpoint_path = os.path.join(
         self.docker_directory, self.STORAGE_METHOD, 'diff', container_id)
-    commands.append('mount -t aufs -o ro,br={0:s}=ro+wh none {1:s}'.format(
-        mountpoint_path, mount_dir))
+    commands.append(
+        ['/bin/mount', '-t', 'aufs', '-o',
+         'ro,br={0:s}=ro+wh'.format(mountpoint_path), 'none', mount_dir])
     with open(container_layers_filepath) as container_layers_file:
       layers = container_layers_file.read().split()
       for layer in layers:
         mountpoint_path = os.path.join(
             self.docker_directory, self.STORAGE_METHOD, 'diff', layer)
         commands.append(
-            'mount -t aufs -o ro,remount,append:{0:s}=ro+wh none {1:s}'.format(
-                mountpoint_path, mount_dir))
+            ['/bin/mount', '-t', 'aufs', '-o',
+             'ro,remount,append:{0:s}=ro+wh'.format(mountpoint_path), 'none',
+             mount_dir])
 
     commands.extend(self._MakeExtraVolumeCommands(container_object, mount_dir))
 
@@ -201,9 +206,9 @@ class OverlayStorage(BaseStorage):
       lower_dir = self._BuildLowerLayers(lower_fd.read().strip())
     upper_dir = os.path.join(mount_id_path, self.UPPERDIR_NAME)
 
-    cmd_pattern = (
-        'mount -t overlay overlay -o ro,lowerdir="{0:s}:{1:s}" "{2:s}"')
-    cmd = cmd_pattern.format(upper_dir, lower_dir, mount_dir)
+    cmd = [
+        '/bin/mount', '-t', 'overlay', 'overlay', '-o',
+        'ro,lowerdir="{0:s}:{1:s}"'.format(upper_dir, lower_dir), mount_dir]
     return [cmd]
 
 

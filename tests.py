@@ -16,7 +16,6 @@
 
 from __future__ import unicode_literals
 
-import json
 import os
 import shutil
 import sys
@@ -220,18 +219,19 @@ class TestAufsStorage(DockerTestCase):
     container_obj = self.de_object.GetContainer(container_id)
     commands = container_obj.storage_object.MakeMountCommands(
         container_obj, '/mnt')
+    commands = [' '.join(x) for x in commands]
     expected_commands = [
-        ('mount -t aufs -o ro,br=test_data/docker/aufs/diff/test_data/docker/'
-         'aufs/diff/'
+        ('/bin/mount -t aufs -o ro,br=test_data/docker/aufs/diff/test_data/'
+         'docker/aufs/diff/'
          'b16a494082bba0091e572b58ff80af1b7b5d28737a3eedbe01e73cd7f4e01d23'
          '=ro+wh none /mnt'),
-        ('mount -t aufs -o ro,remount,append:test_data/docker/aufs/diff/'
+        ('/bin/mount -t aufs -o ro,remount,append:test_data/docker/aufs/diff/'
          'b16a494082bba0091e572b58ff80af1b7b5d28737a3eedbe01e73cd7f4e01d23'
          '-init=ro+wh none /mnt'),
-        ('mount -t aufs -o ro,remount,append:test_data/docker/aufs/diff/'
+        ('/bin/mount -t aufs -o ro,remount,append:test_data/docker/aufs/diff/'
          'd1c54c46d331de21587a16397e8bd95bdbb1015e1a04797c76de128107da83ae'
          '=ro+wh none /mnt'),
-        ('mount --bind -o ro {0:s}/docker/volumes/'
+        ('/bin/mount --bind -o ro {0:s}/docker/volumes/'
          '28297de547b5473a9aff90aaab45ed108ebf019981b40c3c35c226f54c13ac0d/'
          '_data /mnt/var/jenkins_home').format(os.path.abspath('test_data'))
     ]
@@ -333,7 +333,7 @@ class TestOverlayStorage(DockerTestCase):
 
   def testGetContainersJson(self):
     """Tests the GetContainersJson function on a Overlay storage."""
-    result= self.de_object.GetContainersJson(only_running=True)
+    result = self.de_object.GetContainersJson(only_running=True)
     expected = [
         {'image_id':
          '5b0d59026729b68570d99bc4f3f7c31a2e4f2a5736435641565d93e7c25bd2c3',
@@ -387,13 +387,14 @@ class TestOverlayStorage(DockerTestCase):
     container_obj = self.de_object.GetContainer(container_id)
     commands = container_obj.storage_object.MakeMountCommands(
         container_obj, '/mnt')
+    commands = [' '.join(x) for x in commands]
     expected_commands = [(
-        'mount -t overlay overlay -o ro,lowerdir='
+        '/bin/mount -t overlay overlay -o ro,lowerdir='
         '"test_data/docker/overlay/974e2b994f9db74e1ddd6fc546843bc65920e786612'
         'a388f25685acf84b3fed1/upper:'
         'test_data/docker/overlay/a94d714512251b0d8a9bfaacb832e0c6cb70f71cb71'
         '976cca7a528a429336aae/root" '
-        '"/mnt"')]
+        '/mnt')]
     self.assertEqual(expected_commands, commands)
 
   def testGetHistory(self):
@@ -545,12 +546,13 @@ class TestOverlay2Storage(DockerTestCase):
     container_obj = self.de_object.GetContainer(container_id)
     commands = container_obj.storage_object.MakeMountCommands(
         container_obj, '/mnt')
+    commands = [' '.join(x) for x in commands]
     expected_commands = [(
-        'mount -t overlay overlay -o ro,lowerdir='
+        '/bin/mount -t overlay overlay -o ro,lowerdir='
         '"test_data/docker/overlay2/'
         '92fd3b3e7d6101bb701743c9518c45b0d036b898c8a3d7cae84e1a06e6829b53/diff:'
         'test_data/docker/overlay2/l/OTFSLJCXWCECIG6FVNGRTWUZ7D:'
-        'test_data/docker/overlay2/l/CH5A7XWSBP2DUPV7V47B7DOOGY" "/mnt"'
+        'test_data/docker/overlay2/l/CH5A7XWSBP2DUPV7V47B7DOOGY" /mnt'
         )]
     self.assertEqual(expected_commands, commands)
 
