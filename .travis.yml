@@ -7,3 +7,6 @@ install:
 
 script:
       python tests.py
+
+after_success:
+    - if test ${TARGET} = "linux-python27"; then curl -o codecov.sh -s https://codecov.io/bash && /bin/bash ./codecov.sh; fi
