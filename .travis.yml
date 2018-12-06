@@ -7,7 +7,7 @@ install:
       - pip install coverage
 
 script:
-      python tests.py
+      coverage run tests.py
 
 after_success:
     - curl -o codecov.sh -s https://codecov.io/bash && /bin/bash ./codecov.sh
