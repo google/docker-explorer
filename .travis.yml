@@ -4,6 +4,7 @@ python:
 
 install:
       - python setup.py install
+      - pip install coverage
 
 script:
       python tests.py
