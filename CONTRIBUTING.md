@@ -23,8 +23,8 @@ use GitHub pull requests for this purpose. Consult
 information on using pull requests.
 
 Before submitting a pull request for review, please make sure that your code
-follows the Style Guide, have proper testing implemented, and that they pass
-successfully
+follows the Style Guide, has proper tests implemented, and that they pass
+successfully.
 
 ```
 $ python ./tests.py
