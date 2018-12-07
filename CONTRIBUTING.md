@@ -22,6 +22,34 @@ use GitHub pull requests for this purpose. Consult
 [GitHub Help](https://help.github.com/articles/about-pull-requests/) for more
 information on using pull requests.
 
+Before submitting a pull request for review, please make sure that your code
+follows the Style Guide, has proper tests implemented, and that they pass
+successfully.
+
+```
+$ python ./tests.py
+```
+
+## Style guide
+
+We primarily follow the Google Python Style Guide. Some variations are:
+
+* Quote strings as ' or """ instead of "
+* Textual strings should be Unicode strings so please include
+`from __future__ import unicode_literals` in new python files.
+* Use the format() function instead of the %-way of formatting strings.
+* Use positional or parameter format specifiers with typing e.g. '{0:s}' or
+  '{text:s}' instead of '{0}', '{}' or '{:s}'. If we ever want to have
+  language specific output strings we don't need to change the entire
+  codebase. It also makes is easier in determining what type every parameter
+  is expected to be.
+* Use "cls" as the name of the class variable in preference of "klass"
+* When catching exceptions use "as exception:" not some alternative form like
+  "as error:" or "as details:"
+* Use textual pylint overrides e.g. "# pylint: disable=no-self-argument"
+  instead of "# pylint: disable=E0213". For a list of overrides see:
+  http://docs.pylint.org/features.html
+
 ## Community Guidelines
 
 This project follows [Google's Open Source Community
