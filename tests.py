@@ -387,7 +387,7 @@ class TestOverlayStorage(DockerTestCase):
     container_obj = self.de_object.GetContainer(container_id)
     commands = container_obj.storage_object.MakeMountCommands(
         container_obj, '/mnt')
-    commands = [' '.join(x) for x in commands]
+    commands = [' '.join(cmd) for cmd in commands]
     expected_commands = [(
         '/bin/mount -t overlay overlay -o ro,lowerdir='
         '"test_data/docker/overlay/974e2b994f9db74e1ddd6fc546843bc65920e786612'
