@@ -176,6 +176,8 @@ class TestAufsStorage(DockerTestCase):
          '7968321274dc6b6171697c33df7815310468e694ac5be0ec03ff053bb135e768',
          'container_id':
          '7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966',
+         'mount_id':
+         'b16a494082bba0091e572b58ff80af1b7b5d28737a3eedbe01e73cd7f4e01d23',
          'start_date': '2017-02-13T16:45:05.785658',
          'image_name': 'busybox'}
     ]
@@ -339,6 +341,8 @@ class TestOverlayStorage(DockerTestCase):
          '5b0d59026729b68570d99bc4f3f7c31a2e4f2a5736435641565d93e7c25bd2c3',
          'container_id':
          '5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a',
+         'mount_id':
+         '974e2b994f9db74e1ddd6fc546843bc65920e786612a388f25685acf84b3fed1',
          'start_date': '2018-01-26T14:55:56.574924',
          'image_name': 'busybox:latest'}
     ]
@@ -494,6 +498,8 @@ class TestOverlay2Storage(DockerTestCase):
          '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7',
          'container_id':
          '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206',
+         'mount_id':
+         '92fd3b3e7d6101bb701743c9518c45b0d036b898c8a3d7cae84e1a06e6829b53',
          'start_date': '2018-05-16T10:51:39.625989',
          'image_name': 'busybox'}
     ]
