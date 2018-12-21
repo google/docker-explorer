@@ -1,10 +1,11 @@
 language: python
 python:
-      - "2.7"
+    - "2.7"
+    - '3.5'
 
 install:
-      - python setup.py install
-      - pip install coverage
+    - python setup.py install
+    - pip install coverage
 
 script:
       coverage run tests.py
