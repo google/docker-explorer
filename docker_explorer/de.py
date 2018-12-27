@@ -257,6 +257,9 @@ class DockerExplorer(object):
           container_object.start_timestamp)
       container_json['image_name'] = container_object.config_image_name
 
+      if container_object.mount_id:
+        container_json['mount_id'] = container_object.mount_id
+
       result.append(container_json)
 
     return result
