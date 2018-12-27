@@ -40,7 +40,6 @@ class DockerExplorer(object):
   def __init__(self):
     """Initializes the ContainerInfo class."""
     self._argument_parser = None
-    self.container_config_filename = 'config.v2.json'
     self.containers_directory = None
     self.docker_directory = '/var/lib/docker'
     self.docker_version = 2
@@ -199,12 +198,11 @@ class DockerExplorer(object):
               self.containers_directory))
     container_ids_list = os.listdir(self.containers_directory)
     if not container_ids_list:
-      print('Could not find container configuration files ({0:s}) in {1:s}.\n'
-            'Make sure the docker directory ({2:s}) is correct.\n'
+      print('Could not find container directory in {0:s}.\n'
+            'Make sure the docker directory ({1:s}) is correct.\n'
             'If it is correct, you might want to run this script'
             ' with higher privileges.'.format(
-                self.container_config_filename, self.containers_directory,
-                self.docker_directory))
+                self.containers_directory, self.docker_directory))
     return [self.GetContainer(cid) for cid in container_ids_list]
 
   def GetContainersList(self, only_running=False):
@@ -317,6 +315,37 @@ class DockerExplorer(object):
 
     return utils.PrettyPrintJSON(result)
 
+  def _DetectDockerStorageVersion(self):
+    """Detects Docker storage version (v1 or v2).
+
+    Raises:
+      errors.BadStorageException: when we couldn't detect the Docker storage
+        version.
+    """
+    if not os.path.isdir(self.containers_directory):
+      raise errors.BadStorageException(
+          'Containers directory {0} does not exist'.format(
+              self.containers_directory))
+    container_ids_list = os.listdir(self.containers_directory)
+    if not container_ids_list:
+      print('Could not find container directoried in {0:s}.\n'
+            'Make sure the docker directory ({1:s}) is correct.\n'
+            'If it is correct, you might want to run this script'
+            ' with higher privileges.'.format(
+                self.containers_directory, self.docker_directory))
+    path_to_a_container = os.path.join(
+        self.containers_directory, container_ids_list[0])
+    if os.path.isfile(os.path.join(path_to_a_container, 'config.v2.json')):
+      self.docker_version = 2
+    elif os.path.isfile(os.path.join(path_to_a_container, 'config.json')):
+      self.docker_version = 1
+    else:
+      raise errors.BadStorageException(
+          'Could not find any container configuration file:\n'
+          'Neither config.json nor config.v2.json found in {0:s}'.format(
+              path_to_a_container)
+      )
+
   def Main(self):
     """The main method for the DockerExplorer class.
 
@@ -329,6 +358,7 @@ class DockerExplorer(object):
     self.ParseOptions(options)
 
     self._SetDockerDirectory(self.docker_directory)
+    self._DetectDockerStorageVersion()
 
     if options.command == 'mount':
       self.Mount(options.container_id, options.mountpoint)
