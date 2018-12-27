@@ -40,7 +40,6 @@ class DockerExplorer(object):
   def __init__(self):
     """Initializes the ContainerInfo class."""
     self._argument_parser = None
-    self.container_config_filename = 'config.v2.json'
     self.containers_directory = None
     self.docker_directory = '/var/lib/docker'
     self.docker_version = 2
@@ -199,12 +198,11 @@ class DockerExplorer(object):
               self.containers_directory))
     container_ids_list = os.listdir(self.containers_directory)
     if not container_ids_list:
-      print('Could not find container configuration files ({0:s}) in {1:s}.\n'
-            'Make sure the docker directory ({2:s}) is correct.\n'
+      print('Could not find container directoried in {0:s}.\n'
+            'Make sure the docker directory ({1:s}) is correct.\n'
             'If it is correct, you might want to run this script'
             ' with higher privileges.'.format(
-                self.container_config_filename, self.containers_directory,
-                self.docker_directory))
+                self.containers_directory, self.docker_directory))
     return [self.GetContainer(cid) for cid in container_ids_list]
 
   def GetContainersList(self, only_running=False):
