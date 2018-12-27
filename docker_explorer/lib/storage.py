@@ -143,7 +143,14 @@ class AufsStorage(BaseStorage):
         self.docker_directory, self.STORAGE_METHOD, 'layers', mount_id)
     layer_id = os.path.join(
         self.docker_directory, self.STORAGE_METHOD, 'diff', mount_id)
+    if self.docker_version == 2:
+      container_layers_filepath = os.path.join(
+          self.docker_directory, self.STORAGE_METHOD, 'layers', mount_id)
+      layer_id = os.path.join(
+          self.docker_directory, self.STORAGE_METHOD, 'diff', mount_id)
     if self.docker_version == 1:
+      layer_id = container_object.container_id
+
       container_layers_filepath = os.path.join(
           self.docker_directory, self.STORAGE_METHOD, 'layers', layer_id)
 

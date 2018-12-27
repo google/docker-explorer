@@ -92,19 +92,23 @@ class DockerTestCase(unittest.TestCase):
     shutil.rmtree(os.path.join('test_data', 'docker'))
 
   @classmethod
-  def _setup(cls, driver, driver_class):
+  def _setup(cls, driver, driver_class, storage_version=2):
     """Internal method to set up the TestCase on a specific storage."""
     cls.driver = driver
     docker_directory_path = os.path.join('test_data', 'docker')
     if not os.path.isdir(docker_directory_path):
-      docker_tar = os.path.join('test_data', cls.driver+'.tgz')
+      docker_tar = os.path.join(
+          'test_data', '{0:s}.v{1:d}.tgz'.format(driver, storage_version))
       tar = tarfile.open(docker_tar, 'r:gz')
       tar.extractall('test_data')
       tar.close()
     cls.de_object = de.DockerExplorer()
+    cls.de_object.docker_version = storage_version
     cls.de_object._SetDockerDirectory(docker_directory_path)
+    cls.de_object._SetDockerStorageVersion()
 
     cls.driver_class = driver_class
+    cls.storage_version = storage_version
 
   def testDetectStorage(self):
     """Tests the DockerExplorer.DetectStorage function."""
@@ -113,10 +117,13 @@ class DockerTestCase(unittest.TestCase):
       self.assertEqual(container_obj.storage_name, self.driver)
       self.assertIsInstance(container_obj.storage_object, self.driver_class)
 
-      self.assertEqual(2, container_obj.docker_version)
-      self.assertEqual(
-          'config.v2.json', container_obj.container_config_filename)
-
+      self.assertEqual(self.storage_version, container_obj.docker_version)
+      if self.storage_version == 1:
+        self.assertEqual(
+            'config.json', container_obj.container_config_filename)
+      elif self.storage_version == 2:
+        self.assertEqual(
+            'config.v2.json', container_obj.container_config_filename)
 
 class TestAufsStorage(DockerTestCase):
   """Tests methods in the BaseStorage object."""
@@ -273,6 +280,165 @@ class TestAufsStorage(DockerTestCase):
         'b6f881bfc566ed604da1dc9bc8782a3540380c094154d703a77113b1ecfca660, '
         'c8a38b6c29b0c901c37c2bb17bfcd73942c44bb71cc528505385c62f3c6fff35, '
         'dd39804186d4f649f1e9cec89df1583e7a12a48193223a16cc40958f7e76b858',
+        err.exception.message)
+
+    with self.assertRaises(Exception) as err:
+      self.de_object._GetFullContainerID('xx')
+    self.assertEqual(
+        'Could not find any container ID starting with "xx"',
+        err.exception.message)
+
+
+class TestAufsV1Storage(DockerTestCase):
+  """Tests methods in the BaseStorage object."""
+
+  @classmethod
+  def setUpClass(cls):
+    cls._setup('aufs', storage.AufsStorage, storage_version=1)
+
+  def testGetAllContainers(self):
+    """Tests the GetAllContainers function on a AuFS storage."""
+    containers_list = self.de_object.GetAllContainers()
+    containers_list = sorted(containers_list, key=lambda ci: ci.name)
+    self.assertEqual(3, len(containers_list))
+
+    container_obj = containers_list[0]
+
+    self.assertEqual('/angry_rosalind', container_obj.name)
+    self.assertEqual('2018-12-27T10:53:17.096746609Z',
+                     container_obj.creation_timestamp)
+    self.assertEqual('busybox', container_obj.config_image_name)
+    self.assertTrue(container_obj.running)
+
+    expected_container_id = (
+        'de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c')
+    self.assertEqual(expected_container_id, container_obj.container_id)
+
+  def testGetOrderedLayers(self):
+    """Tests the BaseStorage.GetOrderedLayers function on a AUFS storage."""
+    container_id = (
+        'de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c')
+    container_obj = self.de_object.GetContainer(container_id)
+    layers = container_obj.GetOrderedLayers()
+    self.assertEqual(2, len(layers))
+    self.assertEqual(
+        '1cee97b18f87b5fa91633db35f587e2c65c093facfa2cbbe83d5ebe06e1d9125',
+        layers[0])
+
+  def testGetRunningContainersList(self):
+    """Tests the BaseStorage.GetContainersList function on a AUFS storage."""
+    running_containers = self.de_object.GetContainersList(only_running=True)
+    running_containers = sorted(
+        running_containers, key=lambda ci: ci.container_id)
+    self.assertEqual(1, len(running_containers))
+    container = running_containers[0]
+    self.assertEqual('/angry_rosalind', container.name)
+    self.assertEqual(
+        '2018-12-27T10:53:17.096746609Z', container.creation_timestamp)
+    self.assertEqual('busybox', container.config_image_name)
+    self.assertTrue(container.running)
+
+  def testGetContainersJson(self):
+    """Tests the GetContainersJson function on a AUFS storage."""
+    result = self.de_object.GetContainersJson(only_running=True)
+    expected = [
+        {'image_id':
+         '1cee97b18f87b5fa91633db35f587e2c65c093facfa2cbbe83d5ebe06e1d9125',
+         'container_id':
+         'de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c',
+         'start_date': '2018-12-27T10:53:17.409426',
+         'image_name': 'busybox'}
+    ]
+    self.assertEqual(expected, result)
+
+  def testGetLayerInfo(self):
+    """Tests the BaseStorage.GetLayerInfo function on a AUFS storage."""
+    container_id = (
+        'de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c')
+    container_obj = self.de_object.GetContainer(container_id)
+    layer_info = container_obj.GetLayerInfo(
+        '1cee97b18f87b5fa91633db35f587e2c65c093facfa2cbbe83d5ebe06e1d9125')
+    self.assertEqual('2018-12-26T08:20:42.831353376Z', layer_info['created'])
+    self.assertEqual(['/bin/sh', '-c', '#(nop) ', 'CMD ["sh"]'],
+                     layer_info['container_config']['Cmd'])
+
+  def testGetRepositoriesString(self):
+    """Tests GetRepositoriesString() on a AUFS storage."""
+    self.maxDiff = None
+    result_string = self.de_object.GetRepositoriesString()
+    expected_string = (
+        '[\n'
+        '    {\n'
+        '        "Repositories": {\n'
+        '            "busybox": {\n'
+        '                "latest": "'
+        '1cee97b18f87b5fa91633db35f587e2c65c093facfa2cbbe83d5ebe06e1d9125"\n'
+        '            }\n'
+        '        }, \n'
+        '        "path": "test_data/docker/repositories-aufs"\n'
+        '    }\n'
+        ']\n'
+    )
+    self.assertEqual(expected_string, result_string)
+
+  def testMakeMountCommands(self):
+    """Tests the BaseStorage.MakeMountCommands function on a AUFS storage."""
+    container_id = (
+        'de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c')
+    container_obj = self.de_object.GetContainer(container_id)
+    commands = container_obj.storage_object.MakeMountCommands(
+        container_obj, '/mnt')
+    commands = [' '.join(x) for x in commands]
+    expected_commands = [
+        ('/bin/mount -t aufs -o ro,br=test_data/'
+         'docker/aufs/diff/'
+         'de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c'
+         '=ro+wh none /mnt'),
+        ('/bin/mount -t aufs -o ro,remount,append:test_data/docker/aufs/diff/'
+         'de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c'
+         '-init=ro+wh none /mnt'),
+        ('/bin/mount -t aufs -o ro,remount,append:test_data/docker/aufs/diff/'
+         '1cee97b18f87b5fa91633db35f587e2c65c093facfa2cbbe83d5ebe06e1d9125'
+         '=ro+wh none /mnt'),
+        ('/bin/mount -t aufs -o ro,remount,append:test_data/docker/aufs/diff/'
+         'df557f39d413a1408f5c28d8aab2892f927237ec22e903ef04b331305130ab38'
+         '=ro+wh none /mnt')
+    ]
+    self.assertEqual(expected_commands, commands)
+
+  def testGetHistory(self):
+    """Tests the BaseStorage.GetHistory function on a AUFS storage."""
+    self.maxDiff = None
+    container_id = (
+        'de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c')
+    container_obj = self.de_object.GetContainer(container_id)
+    expected = {
+        '1cee97b18f87b5fa91633db35f587e2c65c093facfa2cbbe83d5ebe06e1d9125': {
+            'size': 0},
+        'df557f39d413a1408f5c28d8aab2892f927237ec22e903ef04b331305130ab38': {
+            'created_at': '2018-12-26T08:20:42.687925',
+            'container_cmd':
+                ('/bin/sh -c #(nop) ADD file:ce026b62356eec3ad1214f92be2c'
+                 '9dc063fe205bd5e600be3492c4dfb17148bd in / '),
+            'size': 1154361}
+    }
+
+    self.assertEqual(expected, container_obj.GetHistory())
+
+  def testGetFullContainerID(self):
+    """Tests the DockerExplorer._GetFullContainerID function on AuFS."""
+    self.assertEqual(
+        'de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c',
+        self.de_object._GetFullContainerID('de44dd'))
+
+    self.maxDiff = None
+    with self.assertRaises(Exception) as err:
+      self.de_object._GetFullContainerID('')
+    self.assertEqual(
+        ('Too many container IDs starting with "": '
+         '3b03d0958390ccfb92e9f1ee67de628ab315c532120d4512cb72a1805465fb35, '
+         'de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c, '
+         'fbb6711cefc70193cb6cb0b113fc9ed6b9eaddcdd33667adb5cb690a4dca413a'),
         err.exception.message)
 
     with self.assertRaises(Exception) as err:
