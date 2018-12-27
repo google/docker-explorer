@@ -315,8 +315,13 @@ class DockerExplorer(object):
 
     return utils.PrettyPrintJSON(result)
 
-  def _SetDockerStorageVersion(self):
-    """Detects Docker storage version (v1 or v2)."""
+  def _DetectDockerStorageVersion(self):
+    """Detects Docker storage version (v1 or v2).
+
+    Raises:
+      errors.BadStorageException: when we couldn't detect the Docker storage
+        version.
+    """
     if not os.path.isdir(self.containers_directory):
       raise errors.BadStorageException(
           'Containers directory {0} does not exist'.format(
@@ -334,7 +339,12 @@ class DockerExplorer(object):
       self.docker_version = 2
     elif os.path.isfile(os.path.join(path_to_a_container, 'config.json')):
       self.docker_version = 1
-
+    else:
+      raise errors.BadStorageException(
+          'Could not find any container configuration file:\n'
+          'Neither config.json nor config.v2.json found in {0:s}'.format(
+              path_to_a_container)
+      )
 
   def Main(self):
     """The main method for the DockerExplorer class.
@@ -348,7 +358,7 @@ class DockerExplorer(object):
     self.ParseOptions(options)
 
     self._SetDockerDirectory(self.docker_directory)
-    self._SetDockerStorageVersion()
+    self._DetectDockerStorageVersion()
 
     if options.command == 'mount':
       self.Mount(options.container_id, options.mountpoint)
