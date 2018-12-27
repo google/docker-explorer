@@ -141,15 +141,15 @@ class AufsStorage(BaseStorage):
 
     container_layers_filepath = os.path.join(
         self.docker_directory, self.STORAGE_METHOD, 'layers', mount_id)
-    container_id = os.path.join(
+    layer_id = os.path.join(
         self.docker_directory, self.STORAGE_METHOD, 'diff', mount_id)
     if self.docker_version == 1:
       container_layers_filepath = os.path.join(
-          self.docker_directory, self.STORAGE_METHOD, 'layers', container_id)
+          self.docker_directory, self.STORAGE_METHOD, 'layers', layer_id)
 
     commands = []
     mountpoint_path = os.path.join(
-        self.docker_directory, self.STORAGE_METHOD, 'diff', container_id)
+        self.docker_directory, self.STORAGE_METHOD, 'diff', layer_id)
     commands.append(
         ['/bin/mount', '-t', 'aufs', '-o',
          'ro,br={0:s}=ro+wh'.format(mountpoint_path), 'none', mount_dir])
