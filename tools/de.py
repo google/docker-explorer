@@ -24,9 +24,9 @@ import argparse
 import json
 import os
 
+from docker_explorer import container
 from docker_explorer import errors
-from docker_explorer.lib import container
-from docker_explorer.lib import utils
+from docker_explorer import utils
 
 
 class DockerExplorer(object):
