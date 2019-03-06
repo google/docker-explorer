@@ -30,6 +30,6 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python',
     ],
-    scripts=['docker_explorer/de.py'],
+    scripts=['tools/de.py'],
     test_suite="tests"
 )

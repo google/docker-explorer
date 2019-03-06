@@ -22,11 +22,10 @@ import sys
 import tarfile
 import unittest
 
-from docker_explorer import de
 from docker_explorer import errors
-
-from docker_explorer.lib import storage
-from docker_explorer.lib import utils
+from docker_explorer import storage
+from docker_explorer import utils
+from tools import de
 
 
 # pylint: disable=protected-access

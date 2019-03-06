@@ -21,8 +21,8 @@ import os
 import subprocess
 
 from docker_explorer import errors
-from docker_explorer.lib import storage
-from docker_explorer.lib import utils
+from docker_explorer import storage
+from docker_explorer import utils
 
 # Ugly Py2/Py3 compat code.
 # Undo in 2020+
