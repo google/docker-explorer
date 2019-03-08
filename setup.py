@@ -24,7 +24,7 @@ setup(
     url='https://github.com/google/docker-explorer',
     author='docker-explorer development team',
     license='Apache License, Version 2.0',
-    packages=find_packages(exclude=['tests']),
+    packages=find_packages(exclude=['tests', 'tools']),
     classifiers=[
         'Development Status :: 4 - Beta',
         'Operating System :: OS Independent',
