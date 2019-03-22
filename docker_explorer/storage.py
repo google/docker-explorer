@@ -211,7 +211,7 @@ class OverlayStorage(BaseStorage):
 
     cmd = [
         '/bin/mount', '-t', 'overlay', 'overlay', '-o',
-        'ro,lowerdir="{0:s}:{1:s}"'.format(upper_dir, lower_dir), mount_dir]
+        'ro,lowerdir={0:s}:{1:s}'.format(upper_dir, lower_dir), mount_dir]
     return [cmd]
 
 
