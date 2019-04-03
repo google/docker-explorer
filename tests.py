@@ -22,6 +22,13 @@ import sys
 import tarfile
 import unittest
 
+import mock
+try:
+  from StringIO import StringIO
+except ImportError:
+  from io import StringIO
+
+from docker_explorer import container
 from docker_explorer import errors
 from docker_explorer import storage
 from docker_explorer import utils
@@ -51,6 +58,23 @@ class UtilsTests(unittest.TestCase):
 class TestDEMain(unittest.TestCase):
   """Tests DockerExplorer object methods."""
 
+  @classmethod
+  def tearDownClass(cls):
+    shutil.rmtree(cls.docker_directory_path)
+
+  @classmethod
+  def setUpClass(cls):
+    cls.driver = 'overlay2'
+    cls.docker_directory_path = os.path.join('test_data', 'docker')
+    if not os.path.isdir(cls.docker_directory_path):
+      docker_tar = os.path.join('test_data', 'overlay2.v2.tgz')
+      tar = tarfile.open(docker_tar, 'r:gz')
+      tar.extractall('test_data')
+      tar.close()
+    cls.de_object = de.DockerExplorer()
+    cls.de_object._SetDockerDirectory(cls.docker_directory_path)
+    cls.de_object._DetectDockerStorageVersion()
+
   def testParseArguments(self):
     """Tests the DockerExplorer.ParseArguments function."""
     de_object = de.DockerExplorer()
@@ -69,6 +93,42 @@ class TestDEMain(unittest.TestCase):
 
     de_object.ParseOptions(options)
     self.assertEqual(expected_docker_root, options.docker_directory)
+
+  def testShowHistory(self):
+    """Tests that ShowHistory shows history."""
+    de_object = de.DockerExplorer()
+    container_id = container.GetAllContainersIDs(self.docker_directory_path)[0]
+    with mock.patch('sys.stdout', new=StringIO()) as fake_output:
+      de_object.ShowHistory(container_id)
+      expected_dict = {
+          ('sha256:'
+           '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7'):
+          {
+              'container_cmd': '/bin/sh -c #(nop)  CMD [\"sh\"]',
+              'created_at': '2018-04-05T10:41:28.876407', 'size': 0}
+      }
+      self.assertEqual(
+          utils.PrettyPrintJSON(expected_dict)+'\n', fake_output.getvalue())
+
+  def testShowContainers(self):
+    """Tests that ShowHistory shows history."""
+    de_object = de.DockerExplorer()
+    container_id = container.GetAllContainersIDs(self.docker_directory_path)[0]
+    self.maxDiff = None
+    with mock.patch('sys.stdout', new=StringIO()) as fake_output:
+      de_object.ShowContainers(container_id)
+      expected_list = [{
+          'container_id': '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f0'
+                          '78dfb2690206',
+          'image_id': '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc0300230'
+                      '0856d8c7',
+          'image_name': 'busybox',
+          'mount_id': '92fd3b3e7d6101bb701743c9518c45b0d036b898c8a3d7cae84e1a06'
+                      'e6829b53',
+          'start_date': '2018-05-16T10:51:39.625989'
+      }]
+      self.assertEqual(
+          utils.PrettyPrintJSON(expected_list)+'\n', fake_output.getvalue())
 
   def testDetectStorageFail(self):
     """Tests that the DockerExplorer.DetectStorage function fails on
