@@ -225,12 +225,12 @@ class TestAufsStorage(DockerTestCase):
     running_containers = sorted(
         running_containers, key=lambda ci: ci.container_id)
     self.assertEqual(1, len(running_containers))
-    container = running_containers[0]
-    self.assertEqual('/dreamy_snyder', container.name)
+    container_obj = running_containers[0]
+    self.assertEqual('/dreamy_snyder', container_obj.name)
     self.assertEqual(
-        '2017-02-13T16:45:05.629904159Z', container.creation_timestamp)
-    self.assertEqual('busybox', container.config_image_name)
-    self.assertTrue(container.running)
+        '2017-02-13T16:45:05.629904159Z', container_obj.creation_timestamp)
+    self.assertEqual('busybox', container_obj.config_image_name)
+    self.assertTrue(container_obj.running)
 
   def testGetContainersJson(self):
     """Tests the GetContainersJson function on a AuFS storage."""
@@ -384,12 +384,12 @@ class TestAufsV1Storage(DockerTestCase):
     running_containers = sorted(
         running_containers, key=lambda ci: ci.container_id)
     self.assertEqual(1, len(running_containers))
-    container = running_containers[0]
-    self.assertEqual('/angry_rosalind', container.name)
+    container_obj = running_containers[0]
+    self.assertEqual('/angry_rosalind', container_obj.name)
     self.assertEqual(
-        '2018-12-27T10:53:17.096746609Z', container.creation_timestamp)
-    self.assertEqual('busybox', container.config_image_name)
-    self.assertTrue(container.running)
+        '2018-12-27T10:53:17.096746609Z', container_obj.creation_timestamp)
+    self.assertEqual('busybox', container_obj.config_image_name)
+    self.assertTrue(container_obj.running)
 
   def testGetContainersJson(self):
     """Tests the GetContainersJson function on a AuFS storage."""
@@ -540,13 +540,13 @@ class TestOverlayStorage(DockerTestCase):
     running_containers = sorted(
         running_containers, key=lambda ci: ci.container_id)
     self.assertEqual(1, len(running_containers))
-    container = running_containers[0]
-    self.assertEqual('/elastic_booth', container.name)
+    container_obj = running_containers[0]
+    self.assertEqual('/elastic_booth', container_obj.name)
     self.assertEqual(
-        '2018-01-26T14:55:56.280943771Z', container.creation_timestamp)
-    self.assertEqual('busybox:latest', container.config_image_name)
+        '2018-01-26T14:55:56.280943771Z', container_obj.creation_timestamp)
+    self.assertEqual('busybox:latest', container_obj.config_image_name)
 
-    self.assertTrue(container.running)
+    self.assertTrue(container_obj.running)
 
   def testGetContainersJson(self):
     """Tests the GetContainersJson function on a Overlay storage."""
@@ -693,13 +693,13 @@ class TestOverlay2Storage(DockerTestCase):
     running_containers = sorted(
         running_containers, key=lambda ci: ci.container_id)
     self.assertEqual(1, len(running_containers))
-    container = running_containers[0]
-    self.assertEqual('/festive_perlman', container.name)
+    container_obj = running_containers[0]
+    self.assertEqual('/festive_perlman', container_obj.name)
     self.assertEqual(
-        '2018-05-16T10:51:39.271019533Z', container.creation_timestamp)
-    self.assertEqual('busybox', container.config_image_name)
+        '2018-05-16T10:51:39.271019533Z', container_obj.creation_timestamp)
+    self.assertEqual('busybox', container_obj.config_image_name)
 
-    self.assertTrue(container.running)
+    self.assertTrue(container_obj.running)
 
   def testGetContainersJson(self):
     """Tests the GetContainersJson function on a Overlay2 storage."""
