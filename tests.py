@@ -420,7 +420,8 @@ class TestAufsV1Storage(DockerTestCase):
 
   def testGetRunningContainersList(self):
     """Tests the BaseStorage.GetContainersList function on a AuFS storage."""
-    running_containers = self.explorer_object.GetContainersList(only_running=True)
+    running_containers = self.explorer_object.GetContainersList(
+        only_running=True)
     running_containers = sorted(
         running_containers, key=lambda ci: ci.container_id)
     self.assertEqual(1, len(running_containers))
@@ -576,7 +577,8 @@ class TestOverlayStorage(DockerTestCase):
 
   def testGetRunningContainersList(self):
     """Tests the BaseStorage.GetContainersList function on a Overlay storage."""
-    running_containers = self.explorer_object.GetContainersList(only_running=True)
+    running_containers = self.explorer_object.GetContainersList(
+        only_running=True)
     running_containers = sorted(
         running_containers, key=lambda ci: ci.container_id)
     self.assertEqual(1, len(running_containers))
@@ -729,7 +731,8 @@ class TestOverlay2Storage(DockerTestCase):
 
   def testGetRunningContainersList(self):
     """Tests the BaseStorage.GetContainersList function on Overlay2 storage."""
-    running_containers = self.explorer_object.GetContainersList(only_running=True)
+    running_containers = self.explorer_object.GetContainersList(
+        only_running=True)
     running_containers = sorted(
         running_containers, key=lambda ci: ci.container_id)
     self.assertEqual(1, len(running_containers))
