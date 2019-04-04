@@ -99,6 +99,7 @@ class TestDEMain(unittest.TestCase):
     de_object = de.DockerExplorer()
     container_id = container.GetAllContainersIDs(self.docker_directory_path)[0]
     with mock.patch('sys.stdout', new=StringIO()) as fake_output:
+      de_object.docker_directory = self.docker_directory_path
       de_object.ShowHistory(container_id)
       expected_dict = {
           ('sha256:'
@@ -113,20 +114,56 @@ class TestDEMain(unittest.TestCase):
   def testShowContainers(self):
     """Tests that ShowHistory shows history."""
     de_object = de.DockerExplorer()
-    container_id = container.GetAllContainersIDs(self.docker_directory_path)[0]
     self.maxDiff = None
     with mock.patch('sys.stdout', new=StringIO()) as fake_output:
-      de_object.ShowContainers(container_id)
-      expected_list = [{
-          'container_id': '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f0'
-                          '78dfb2690206',
-          'image_id': '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc0300230'
-                      '0856d8c7',
-          'image_name': 'busybox',
-          'mount_id': '92fd3b3e7d6101bb701743c9518c45b0d036b898c8a3d7cae84e1a06'
-                      'e6829b53',
-          'start_date': '2018-05-16T10:51:39.625989'
-      }]
+      de_object.docker_directory = self.docker_directory_path
+      de_object.ShowContainers()
+      expected_list = [
+          {
+              'container_id': '10acac0b3466813c9e1f85e2aa7d06298e51fbfe86bbcb6b'
+                              '7a19dd33d3798f6a',
+              'image_id': '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc030'
+                          '02300856d8c7',
+              'image_name': 'busybox',
+              'mount_id': 'd877fe1ffb0a1da27204bc1ae4e356c7a7a235e7392d04a81d5d'
+                          '7df3471c74b6',
+              'start_date': '0001-01-01T00:00:00'},
+          {
+              'container_id': '61ba4e6c012c782186c649466157e05adfd7caa5b551432d'
+                              'e51043893cae5353',
+              'image_id': '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc030'
+                          '02300856d8c7',
+              'image_name': 'busybox',
+              'mount_id': '04cc041c6e1a41007c2c7f19574194244e81ea7dc0b3c32848b9'
+                          'e06915065cc4',
+              'start_date': '0001-01-01T00:00:00'},
+          {
+              'container_id': '9949fa153b778e39d6cab0a4e0ba60fa34a13fedb1f256d6'
+                              '13a2f88c0c98408a',
+              'image_id': '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc030'
+                          '02300856d8c7',
+              'image_name': 'busybox',
+              'mount_id': 'fc790748d90675e0934c6ade53f68b6f73b920ca1f08df718c27'
+                          '2e51abdabea7',
+              'start_date': '2018-05-16T10:50:57.324126'},
+          {
+              'container_id': 'f83f963c67cbd36055f690fc988c1e42be06c1253e80113d'
+                              '1d516778c06b2841',
+              'image_id': '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc030'
+                          '02300856d8c7',
+              'image_name': 'busybox',
+              'mount_id': '8ed5fc296a7930f4faf7812c081cb1b310dfc29f6b23f5f2425e'
+                          '36f51d5cb9d1',
+              'start_date': '2018-05-16T10:51:05.177987'},
+          {
+              'container_id': '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d501135'
+                              '59f078dfb2690206',
+              'image_id': '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc030'
+                          '02300856d8c7',
+              'image_name': 'busybox',
+              'mount_id': '92fd3b3e7d6101bb701743c9518c45b0d036b898c8a3d7cae84e'
+                          '1a06e6829b53',
+              'start_date': '2018-05-16T10:51:39.625989'}]
       self.assertEqual(
           utils.PrettyPrintJSON(expected_list)+'\n', fake_output.getvalue())
 
