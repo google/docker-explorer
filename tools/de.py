@@ -192,17 +192,12 @@ class DockerExplorer(object):
       errors.BadStorageException: If required files or directories are not found
         in the provided Docker directory.
     """
-    if not os.path.isdir(self.containers_directory):
-      raise errors.BadStorageException(
-          'Containers directory {0} does not exist'.format(
-              self.containers_directory))
-    container_ids_list = os.listdir(self.containers_directory)
+    container_ids_list = container.GetAllContainersIDs(self.docker_directory)
     if not container_ids_list:
-      print('Could not find container directory in {0:s}.\n'
-            'Make sure the docker directory ({1:s}) is correct.\n'
+      print('Could not find any containers.\n'
+            'Make sure the docker directory ({0:s}) is correct.\n'
             'If it is correct, you might want to run this script'
-            ' with higher privileges.'.format(
-                self.containers_directory, self.docker_directory))
+            ' with higher privileges.'.format(self.docker_directory))
     return [self.GetContainer(cid) for cid in container_ids_list]
 
   def GetContainersList(self, only_running=False):

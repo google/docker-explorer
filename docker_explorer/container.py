@@ -32,6 +32,33 @@ except NameError:
   pass
 
 
+def GetAllContainersIDs(docker_root_directory):
+  """Gets a list of containers IDs.
+
+   Args:
+     docker_root_directory(str): the path to the Docker root directory.
+       ie: '/var/lib/docker'.
+
+   Returns:
+     list(str): the list of containers ID.
+
+   Raises:
+     errors.BadStorageException: If required files or directories are not found
+       in the provided Docker directory.
+  """
+  if not os.path.isdir(docker_root_directory):
+    raise errors.BadStorageException(
+        'Provided path is not a directory "{0}"'.format(docker_root_directory))
+  containers_directory = os.path.join(docker_root_directory, 'containers')
+
+  if not os.path.isdir(containers_directory):
+    raise errors.BadStorageException(
+        'Containers directory {0} does not exist'.format(containers_directory))
+  container_ids_list = os.listdir(containers_directory)
+
+  return container_ids_list
+
+
 class Container(object):
   """Implements methods to access information about a Docker container.
 
