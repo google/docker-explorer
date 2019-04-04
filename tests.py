@@ -64,6 +64,8 @@ class TestDEMain(unittest.TestCase):
 
   @classmethod
   def setUpClass(cls):
+    # We setup one overlay2 backed Docker root folder for all the following
+    # tests.
     cls.driver = 'overlay2'
     cls.docker_directory_path = os.path.join('test_data', 'docker')
     if not os.path.isdir(cls.docker_directory_path):
@@ -97,6 +99,7 @@ class TestDEMain(unittest.TestCase):
   def testShowHistory(self):
     """Tests that ShowHistory shows history."""
     de_object = de.DockerExplorer()
+    # We pick one of the container IDs.
     container_id = container.GetAllContainersIDs(self.docker_directory_path)[0]
     with mock.patch('sys.stdout', new=StringIO()) as fake_output:
       de_object.docker_directory = self.docker_directory_path
