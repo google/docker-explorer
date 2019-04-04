@@ -49,11 +49,11 @@ class UtilsTests(unittest.TestCase):
 
 
 class TestDEMain(unittest.TestCase):
-  """Tests DockerExplorer object methods."""
+  """Tests DockerExplorerTool object methods."""
 
   def testParseArguments(self):
-    """Tests the DockerExplorer.ParseArguments function."""
-    de_object = de.DockerExplorer()
+    """Tests the DockerExplorerTool.ParseArguments function."""
+    de_object = de.DockerExplorerTool()
 
     prog = sys.argv[0]
 
@@ -71,9 +71,9 @@ class TestDEMain(unittest.TestCase):
     self.assertEqual(expected_docker_root, options.docker_directory)
 
   def testDetectStorageFail(self):
-    """Tests that the DockerExplorer.DetectStorage function fails on
+    """Tests that the DockerExplorerTool.DetectStorage function fails on
     Docker directory."""
-    de_object = de.DockerExplorer()
+    de_object = de.DockerExplorerTool()
     de_object.docker_directory = 'this_dir_shouldnt_exist'
 
     expected_error_message = (
@@ -101,7 +101,7 @@ class DockerTestCase(unittest.TestCase):
       tar = tarfile.open(docker_tar, 'r:gz')
       tar.extractall('test_data')
       tar.close()
-    cls.de_object = de.DockerExplorer()
+    cls.de_object = de.DockerExplorerTool()
     cls.de_object._SetDockerDirectory(docker_directory_path)
     cls.de_object._DetectDockerStorageVersion()
 
@@ -109,7 +109,7 @@ class DockerTestCase(unittest.TestCase):
     cls.storage_version = storage_version
 
   def testDetectStorage(self):
-    """Tests the DockerExplorer.DetectStorage function."""
+    """Tests the DockerExplorerTool.DetectStorage function."""
     for container_obj in self.de_object.GetAllContainers():
       self.assertIsNotNone(container_obj.storage_object)
       self.assertEqual(container_obj.storage_name, self.driver)
@@ -258,7 +258,7 @@ class TestAufsStorage(DockerTestCase):
     self.assertEqual(expected, container_obj.GetHistory())
 
   def testGetFullContainerID(self):
-    """Tests the DockerExplorer._GetFullContainerID function on AuFS."""
+    """Tests the DockerExplorerTool._GetFullContainerID function on AuFS."""
     self.assertEqual(
         '2cc4b0d9c1dfdf71099c5e9a109e6a0fe286152a5396bd1850689478e8f70625',
         self.de_object._GetFullContainerID('2cc4b0d'))
@@ -416,7 +416,7 @@ class TestAufsV1Storage(DockerTestCase):
     self.assertEqual(expected, container_obj.GetHistory())
 
   def testGetFullContainerID(self):
-    """Tests the DockerExplorer._GetFullContainerID function on AuFS."""
+    """Tests the DockerExplorerTool._GetFullContainerID function on AuFS."""
     self.assertEqual(
         'de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c',
         self.de_object._GetFullContainerID('de44dd'))
@@ -571,7 +571,7 @@ class TestOverlayStorage(DockerTestCase):
     self.assertEqual(expected, container_obj.GetHistory())
 
   def testGetFullContainerID(self):
-    """Tests the DockerExplorer._GetFullContainerID function on Overlay."""
+    """Tests the DockerExplorerTool._GetFullContainerID function on Overlay."""
     self.assertEqual(
         '5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a',
         self.de_object._GetFullContainerID('5dc287aa80'))
@@ -727,7 +727,7 @@ class TestOverlay2Storage(DockerTestCase):
     self.assertEqual(expected, container_obj.GetHistory(container_obj))
 
   def testGetFullContainerID(self):
-    """Tests the DockerExplorer._GetFullContainerID function on Overlay2."""
+    """Tests the DockerExplorerTool._GetFullContainerID function on Overlay2."""
     self.assertEqual(
         '61ba4e6c012c782186c649466157e05adfd7caa5b551432de51043893cae5353',
         self.de_object._GetFullContainerID('61ba4e6c012c782'))
