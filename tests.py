@@ -22,7 +22,15 @@ import sys
 import tarfile
 import unittest
 
+import mock
+try:
+  from StringIO import StringIO
+except ImportError:
+  from io import StringIO
+
+from docker_explorer import container
 from docker_explorer import errors
+from docker_explorer import explorer
 from docker_explorer import storage
 from docker_explorer import utils
 from tools import de
@@ -51,6 +59,25 @@ class UtilsTests(unittest.TestCase):
 class TestDEMain(unittest.TestCase):
   """Tests DockerExplorer object methods."""
 
+  @classmethod
+  def tearDownClass(cls):
+    shutil.rmtree(cls.docker_directory_path)
+
+  @classmethod
+  def setUpClass(cls):
+    # We setup one overlay2 backed Docker root folder for all the following
+    # tests.
+    cls.driver = 'overlay2'
+    cls.docker_directory_path = os.path.join('test_data', 'docker')
+    if not os.path.isdir(cls.docker_directory_path):
+      docker_tar = os.path.join('test_data', 'overlay2.v2.tgz')
+      tar = tarfile.open(docker_tar, 'r:gz')
+      tar.extractall('test_data')
+      tar.close()
+    cls.explorer_object = explorer.Explorer()
+    cls.explorer_object.SetDockerDirectory(cls.docker_directory_path)
+    cls.explorer_object.DetectDockerStorageVersion()
+
   def testParseArguments(self):
     """Tests the DockerExplorer.ParseArguments function."""
     de_object = de.DockerExplorer()
@@ -66,20 +93,92 @@ class TestDEMain(unittest.TestCase):
     usage_string = de_object._argument_parser.format_usage()
     expected_usage = '[-h] [-r DOCKER_DIRECTORY] {mount,list,history} ...\n'
     self.assertTrue(expected_usage in usage_string)
-
-    de_object.ParseOptions(options)
     self.assertEqual(expected_docker_root, options.docker_directory)
+
+  def testShowHistory(self):
+    """Tests that ShowHistory shows history."""
+    de_object = de.DockerExplorerTool()
+    de_object._explorer = self.explorer_object
+    # We pick one of the container IDs.
+    container_id = container.GetAllContainersIDs(self.docker_directory_path)[0]
+    with mock.patch('sys.stdout', new=StringIO()) as fake_output:
+      de_object.ShowHistory(container_id)
+      expected_dict = {
+          ('sha256:'
+           '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7'):
+          {
+              'container_cmd': '/bin/sh -c #(nop)  CMD [\"sh\"]',
+              'created_at': '2018-04-05T10:41:28.876407', 'size': 0}
+      }
+      self.assertEqual(
+          utils.PrettyPrintJSON(expected_dict)+'\n', fake_output.getvalue())
+
+  def testShowContainers(self):
+    """Tests that ShowHistory shows history."""
+    de_object = de.DockerExplorerTool()
+    de_object._explorer = self.explorer_object
+    self.maxDiff = None
+    with mock.patch('sys.stdout', new=StringIO()) as fake_output:
+      de_object.ShowContainers()
+      expected_list = [
+          {
+              'container_id': '10acac0b3466813c9e1f85e2aa7d06298e51fbfe86bbcb6b'
+                              '7a19dd33d3798f6a',
+              'image_id': '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc030'
+                          '02300856d8c7',
+              'image_name': 'busybox',
+              'mount_id': 'd877fe1ffb0a1da27204bc1ae4e356c7a7a235e7392d04a81d5d'
+                          '7df3471c74b6',
+              'start_date': '0001-01-01T00:00:00'},
+          {
+              'container_id': '61ba4e6c012c782186c649466157e05adfd7caa5b551432d'
+                              'e51043893cae5353',
+              'image_id': '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc030'
+                          '02300856d8c7',
+              'image_name': 'busybox',
+              'mount_id': '04cc041c6e1a41007c2c7f19574194244e81ea7dc0b3c32848b9'
+                          'e06915065cc4',
+              'start_date': '0001-01-01T00:00:00'},
+          {
+              'container_id': '9949fa153b778e39d6cab0a4e0ba60fa34a13fedb1f256d6'
+                              '13a2f88c0c98408a',
+              'image_id': '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc030'
+                          '02300856d8c7',
+              'image_name': 'busybox',
+              'mount_id': 'fc790748d90675e0934c6ade53f68b6f73b920ca1f08df718c27'
+                          '2e51abdabea7',
+              'start_date': '2018-05-16T10:50:57.324126'},
+          {
+              'container_id': 'f83f963c67cbd36055f690fc988c1e42be06c1253e80113d'
+                              '1d516778c06b2841',
+              'image_id': '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc030'
+                          '02300856d8c7',
+              'image_name': 'busybox',
+              'mount_id': '8ed5fc296a7930f4faf7812c081cb1b310dfc29f6b23f5f2425e'
+                          '36f51d5cb9d1',
+              'start_date': '2018-05-16T10:51:05.177987'},
+          {
+              'container_id': '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d501135'
+                              '59f078dfb2690206',
+              'image_id': '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc030'
+                          '02300856d8c7',
+              'image_name': 'busybox',
+              'mount_id': '92fd3b3e7d6101bb701743c9518c45b0d036b898c8a3d7cae84e'
+                          '1a06e6829b53',
+              'start_date': '2018-05-16T10:51:39.625989'}]
+      self.assertEqual(
+          utils.PrettyPrintJSON(expected_list)+'\n', fake_output.getvalue())
 
   def testDetectStorageFail(self):
     """Tests that the DockerExplorer.DetectStorage function fails on
     Docker directory."""
-    de_object = de.DockerExplorer()
-    de_object.docker_directory = 'this_dir_shouldnt_exist'
+    explorer_object = explorer.Explorer()
+    explorer_object.docker_directory = 'this_dir_shouldnt_exist'
 
     expected_error_message = (
         'this_dir_shouldnt_exist is not a Docker directory')
     with self.assertRaises(errors.BadStorageException) as err:
-      de_object._SetDockerDirectory('this_dir_shouldnt_exist')
+      explorer_object.SetDockerDirectory('this_dir_shouldnt_exist')
     self.assertEqual(expected_error_message, err.exception.message)
 
 
@@ -101,16 +200,16 @@ class DockerTestCase(unittest.TestCase):
       tar = tarfile.open(docker_tar, 'r:gz')
       tar.extractall('test_data')
       tar.close()
-    cls.de_object = de.DockerExplorer()
-    cls.de_object._SetDockerDirectory(docker_directory_path)
-    cls.de_object._DetectDockerStorageVersion()
+    cls.explorer_object = explorer.Explorer()
+    cls.explorer_object.SetDockerDirectory(docker_directory_path)
+    cls.explorer_object.DetectDockerStorageVersion()
 
     cls.driver_class = driver_class
     cls.storage_version = storage_version
 
   def testDetectStorage(self):
-    """Tests the DockerExplorer.DetectStorage function."""
-    for container_obj in self.de_object.GetAllContainers():
+    """Tests the Explorer.DetectStorage function."""
+    for container_obj in self.explorer_object.GetAllContainers():
       self.assertIsNotNone(container_obj.storage_object)
       self.assertEqual(container_obj.storage_name, self.driver)
       self.assertIsInstance(container_obj.storage_object, self.driver_class)
@@ -132,7 +231,7 @@ class TestAufsStorage(DockerTestCase):
 
   def testGetAllContainers(self):
     """Tests the GetAllContainers function on a AuFS storage."""
-    containers_list = self.de_object.GetAllContainers()
+    containers_list = self.explorer_object.GetAllContainers()
     containers_list = sorted(containers_list, key=lambda ci: ci.name)
     self.assertEqual(7, len(containers_list))
 
@@ -150,7 +249,7 @@ class TestAufsStorage(DockerTestCase):
 
   def testGetOrderedLayers(self):
     """Tests the BaseStorage.GetOrderedLayers function on a AuFS storage."""
-    container_obj = self.de_object.GetContainer(
+    container_obj = self.explorer_object.GetContainer(
         '7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966')
     layers = container_obj.GetOrderedLayers()
     self.assertEqual(1, len(layers))
@@ -161,20 +260,21 @@ class TestAufsStorage(DockerTestCase):
 
   def testGetRunningContainersList(self):
     """Tests the BaseStorage.GetContainersList function on a AuFS storage."""
-    running_containers = self.de_object.GetContainersList(only_running=True)
+    running_containers = self.explorer_object.GetContainersList(
+        only_running=True)
     running_containers = sorted(
         running_containers, key=lambda ci: ci.container_id)
     self.assertEqual(1, len(running_containers))
-    container = running_containers[0]
-    self.assertEqual('/dreamy_snyder', container.name)
+    container_obj = running_containers[0]
+    self.assertEqual('/dreamy_snyder', container_obj.name)
     self.assertEqual(
-        '2017-02-13T16:45:05.629904159Z', container.creation_timestamp)
-    self.assertEqual('busybox', container.config_image_name)
-    self.assertTrue(container.running)
+        '2017-02-13T16:45:05.629904159Z', container_obj.creation_timestamp)
+    self.assertEqual('busybox', container_obj.config_image_name)
+    self.assertTrue(container_obj.running)
 
   def testGetContainersJson(self):
     """Tests the GetContainersJson function on a AuFS storage."""
-    result = self.de_object.GetContainersJson(only_running=True)
+    result = self.explorer_object.GetContainersJson(only_running=True)
     expected = [
         {'image_id':
          '7968321274dc6b6171697c33df7815310468e694ac5be0ec03ff053bb135e768',
@@ -189,7 +289,7 @@ class TestAufsStorage(DockerTestCase):
 
   def testGetLayerInfo(self):
     """Tests the BaseStorage.GetLayerInfo function on a AuFS storage."""
-    container_obj = self.de_object.GetContainer(
+    container_obj = self.explorer_object.GetContainer(
         '7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966')
     layer_info = container_obj.GetLayerInfo(
         'sha256:'
@@ -201,7 +301,7 @@ class TestAufsStorage(DockerTestCase):
   def testGetRepositoriesString(self):
     """Tests GetRepositoriesString() on a AuFS storage."""
     self.maxDiff = None
-    result_string = self.de_object.GetRepositoriesString()
+    result_string = self.explorer_object.GetRepositoriesString()
     expected_string = (
         '[\n'
         '    {\n'
@@ -219,7 +319,7 @@ class TestAufsStorage(DockerTestCase):
 
   def testMakeMountCommands(self):
     """Tests the BaseStorage.MakeMountCommands function on a AuFS storage."""
-    container_obj = self.de_object.GetContainer(
+    container_obj = self.explorer_object.GetContainer(
         '7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966')
     commands = container_obj.storage_object.MakeMountCommands(
         container_obj, '/mnt')
@@ -244,7 +344,7 @@ class TestAufsStorage(DockerTestCase):
   def testGetHistory(self):
     """Tests the BaseStorage.GetHistory function on a AuFS storage."""
     self.maxDiff = None
-    container_obj = self.de_object.GetContainer(
+    container_obj = self.explorer_object.GetContainer(
         '7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966')
     expected = {
         'sha256:'
@@ -261,10 +361,10 @@ class TestAufsStorage(DockerTestCase):
     """Tests the DockerExplorer._GetFullContainerID function on AuFS."""
     self.assertEqual(
         '2cc4b0d9c1dfdf71099c5e9a109e6a0fe286152a5396bd1850689478e8f70625',
-        self.de_object._GetFullContainerID('2cc4b0d'))
+        self.explorer_object._GetFullContainerID('2cc4b0d'))
 
     with self.assertRaises(Exception) as err:
-      self.de_object._GetFullContainerID('')
+      self.explorer_object._GetFullContainerID('')
     self.assertEqual(
         'Too many container IDs starting with "": '
         '1171e9631158156ba2b984d335b2bf31838403700df3882c51aed70beebb604f, '
@@ -277,7 +377,7 @@ class TestAufsStorage(DockerTestCase):
         err.exception.message)
 
     with self.assertRaises(Exception) as err:
-      self.de_object._GetFullContainerID('xx')
+      self.explorer_object._GetFullContainerID('xx')
     self.assertEqual(
         'Could not find any container ID starting with "xx"',
         err.exception.message)
@@ -292,7 +392,7 @@ class TestAufsV1Storage(DockerTestCase):
 
   def testGetAllContainers(self):
     """Tests the GetAllContainers function on a AuFS storage."""
-    containers_list = self.de_object.GetAllContainers()
+    containers_list = self.explorer_object.GetAllContainers()
     containers_list = sorted(containers_list, key=lambda ci: ci.name)
     self.assertEqual(3, len(containers_list))
 
@@ -310,7 +410,7 @@ class TestAufsV1Storage(DockerTestCase):
 
   def testGetOrderedLayers(self):
     """Tests the BaseStorage.GetOrderedLayers function on a AuFS storage."""
-    container_obj = self.de_object.GetContainer(
+    container_obj = self.explorer_object.GetContainer(
         'de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c')
     layers = container_obj.GetOrderedLayers()
     self.assertEqual(2, len(layers))
@@ -320,20 +420,20 @@ class TestAufsV1Storage(DockerTestCase):
 
   def testGetRunningContainersList(self):
     """Tests the BaseStorage.GetContainersList function on a AuFS storage."""
-    running_containers = self.de_object.GetContainersList(only_running=True)
+    running_containers = self.explorer_object.GetContainersList(only_running=True)
     running_containers = sorted(
         running_containers, key=lambda ci: ci.container_id)
     self.assertEqual(1, len(running_containers))
-    container = running_containers[0]
-    self.assertEqual('/angry_rosalind', container.name)
+    container_obj = running_containers[0]
+    self.assertEqual('/angry_rosalind', container_obj.name)
     self.assertEqual(
-        '2018-12-27T10:53:17.096746609Z', container.creation_timestamp)
-    self.assertEqual('busybox', container.config_image_name)
-    self.assertTrue(container.running)
+        '2018-12-27T10:53:17.096746609Z', container_obj.creation_timestamp)
+    self.assertEqual('busybox', container_obj.config_image_name)
+    self.assertTrue(container_obj.running)
 
   def testGetContainersJson(self):
     """Tests the GetContainersJson function on a AuFS storage."""
-    result = self.de_object.GetContainersJson(only_running=True)
+    result = self.explorer_object.GetContainersJson(only_running=True)
     expected = [
         {'image_id':
          '1cee97b18f87b5fa91633db35f587e2c65c093facfa2cbbe83d5ebe06e1d9125',
@@ -346,7 +446,7 @@ class TestAufsV1Storage(DockerTestCase):
 
   def testGetLayerInfo(self):
     """Tests the BaseStorage.GetLayerInfo function on a AuFS storage."""
-    container_obj = self.de_object.GetContainer(
+    container_obj = self.explorer_object.GetContainer(
         'de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c')
     layer_info = container_obj.GetLayerInfo(
         '1cee97b18f87b5fa91633db35f587e2c65c093facfa2cbbe83d5ebe06e1d9125')
@@ -357,7 +457,7 @@ class TestAufsV1Storage(DockerTestCase):
   def testGetRepositoriesString(self):
     """Tests GetRepositoriesString() on a AuFS storage."""
     self.maxDiff = None
-    result_string = self.de_object.GetRepositoriesString()
+    result_string = self.explorer_object.GetRepositoriesString()
     expected_string = (
         '[\n'
         '    {\n'
@@ -375,7 +475,7 @@ class TestAufsV1Storage(DockerTestCase):
 
   def testMakeMountCommands(self):
     """Tests the BaseStorage.MakeMountCommands function on a AuFS storage."""
-    container_obj = self.de_object.GetContainer(
+    container_obj = self.explorer_object.GetContainer(
         'de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c')
     commands = container_obj.storage_object.MakeMountCommands(
         container_obj, '/mnt')
@@ -400,7 +500,7 @@ class TestAufsV1Storage(DockerTestCase):
   def testGetHistory(self):
     """Tests the BaseStorage.GetHistory function on a AuFS storage."""
     self.maxDiff = None
-    container_obj = self.de_object.GetContainer(
+    container_obj = self.explorer_object.GetContainer(
         'de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c')
     expected = {
         '1cee97b18f87b5fa91633db35f587e2c65c093facfa2cbbe83d5ebe06e1d9125': {
@@ -419,11 +519,11 @@ class TestAufsV1Storage(DockerTestCase):
     """Tests the DockerExplorer._GetFullContainerID function on AuFS."""
     self.assertEqual(
         'de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c',
-        self.de_object._GetFullContainerID('de44dd'))
+        self.explorer_object._GetFullContainerID('de44dd'))
 
     self.maxDiff = None
     with self.assertRaises(Exception) as err:
-      self.de_object._GetFullContainerID('')
+      self.explorer_object._GetFullContainerID('')
     self.assertEqual(
         ('Too many container IDs starting with "": '
          '3b03d0958390ccfb92e9f1ee67de628ab315c532120d4512cb72a1805465fb35, '
@@ -432,7 +532,7 @@ class TestAufsV1Storage(DockerTestCase):
         err.exception.message)
 
     with self.assertRaises(Exception) as err:
-      self.de_object._GetFullContainerID('xx')
+      self.explorer_object._GetFullContainerID('xx')
     self.assertEqual(
         'Could not find any container ID starting with "xx"',
         err.exception.message)
@@ -447,7 +547,7 @@ class TestOverlayStorage(DockerTestCase):
 
   def testGetAllContainers(self):
     """Tests the GetAllContainers function on a Overlay storage."""
-    containers_list = self.de_object.GetAllContainers()
+    containers_list = self.explorer_object.GetAllContainers()
     containers_list = sorted(containers_list, key=lambda ci: ci.name)
     self.assertEqual(6, len(containers_list))
 
@@ -465,7 +565,7 @@ class TestOverlayStorage(DockerTestCase):
 
   def testGetOrderedLayers(self):
     """Tests the BaseStorage.GetOrderedLayers function on a Overlay storage."""
-    container_obj = self.de_object.GetContainer(
+    container_obj = self.explorer_object.GetContainer(
         '5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a')
     layers = container_obj.GetOrderedLayers()
     self.assertEqual(1, len(layers))
@@ -476,21 +576,21 @@ class TestOverlayStorage(DockerTestCase):
 
   def testGetRunningContainersList(self):
     """Tests the BaseStorage.GetContainersList function on a Overlay storage."""
-    running_containers = self.de_object.GetContainersList(only_running=True)
+    running_containers = self.explorer_object.GetContainersList(only_running=True)
     running_containers = sorted(
         running_containers, key=lambda ci: ci.container_id)
     self.assertEqual(1, len(running_containers))
-    container = running_containers[0]
-    self.assertEqual('/elastic_booth', container.name)
+    container_obj = running_containers[0]
+    self.assertEqual('/elastic_booth', container_obj.name)
     self.assertEqual(
-        '2018-01-26T14:55:56.280943771Z', container.creation_timestamp)
-    self.assertEqual('busybox:latest', container.config_image_name)
+        '2018-01-26T14:55:56.280943771Z', container_obj.creation_timestamp)
+    self.assertEqual('busybox:latest', container_obj.config_image_name)
 
-    self.assertTrue(container.running)
+    self.assertTrue(container_obj.running)
 
   def testGetContainersJson(self):
     """Tests the GetContainersJson function on a Overlay storage."""
-    result = self.de_object.GetContainersJson(only_running=True)
+    result = self.explorer_object.GetContainersJson(only_running=True)
     expected = [
         {'image_id':
          '5b0d59026729b68570d99bc4f3f7c31a2e4f2a5736435641565d93e7c25bd2c3',
@@ -505,7 +605,7 @@ class TestOverlayStorage(DockerTestCase):
 
   def testGetLayerInfo(self):
     """Tests the BaseStorage.GetLayerInfo function on a Overlay storage."""
-    container_obj = self.de_object.GetContainer(
+    container_obj = self.explorer_object.GetContainer(
         '5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a')
     layer_info = container_obj.GetLayerInfo(
         'sha256:'
@@ -516,7 +616,7 @@ class TestOverlayStorage(DockerTestCase):
 
   def testGetRepositoriesString(self):
     """Tests GetRepositoriesString() on a Overlay storage."""
-    result_string = self.de_object.GetRepositoriesString()
+    result_string = self.explorer_object.GetRepositoriesString()
     self.maxDiff = None
     expected_string = (
         '[\n'
@@ -540,7 +640,7 @@ class TestOverlayStorage(DockerTestCase):
 
   def testMakeMountCommands(self):
     """Tests the BaseStorage.MakeMountCommands function on a Overlay storage."""
-    container_obj = self.de_object.GetContainer(
+    container_obj = self.explorer_object.GetContainer(
         '5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a')
     commands = container_obj.storage_object.MakeMountCommands(
         container_obj, '/mnt')
@@ -557,7 +657,7 @@ class TestOverlayStorage(DockerTestCase):
   def testGetHistory(self):
     """Tests the BaseStorage.GetHistory function on a Overlay storage."""
     self.maxDiff = None
-    container_obj = self.de_object.GetContainer(
+    container_obj = self.explorer_object.GetContainer(
         '5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a')
     expected = {
         'sha256:'
@@ -574,10 +674,10 @@ class TestOverlayStorage(DockerTestCase):
     """Tests the DockerExplorer._GetFullContainerID function on Overlay."""
     self.assertEqual(
         '5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a',
-        self.de_object._GetFullContainerID('5dc287aa80'))
+        self.explorer_object._GetFullContainerID('5dc287aa80'))
 
     with self.assertRaises(Exception) as err:
-      self.de_object._GetFullContainerID('4')
+      self.explorer_object._GetFullContainerID('4')
     self.assertEqual(
         'Too many container IDs starting with "4": '
         '42e8679f78d6ea623391cdbcb928740ed804f928bd94f94e1d98687f34c48311, '
@@ -585,7 +685,7 @@ class TestOverlayStorage(DockerTestCase):
         err.exception.message)
 
     with self.assertRaises(Exception) as err:
-      self.de_object._GetFullContainerID('xx')
+      self.explorer_object._GetFullContainerID('xx')
     self.assertEqual(
         'Could not find any container ID starting with "xx"',
         err.exception.message)
@@ -600,7 +700,7 @@ class TestOverlay2Storage(DockerTestCase):
 
   def testGetAllContainers(self):
     """Tests the GetAllContainers function on a Overlay2 storage."""
-    containers_list = self.de_object.GetAllContainers()
+    containers_list = self.explorer_object.GetAllContainers()
     containers_list = sorted(containers_list, key=lambda ci: ci.name)
     self.assertEqual(5, len(containers_list))
 
@@ -618,7 +718,7 @@ class TestOverlay2Storage(DockerTestCase):
 
   def testGetOrderedLayers(self):
     """Tests the BaseStorage.GetOrderedLayers function on a Overlay2 storage."""
-    container_obj = self.de_object.GetContainer(
+    container_obj = self.explorer_object.GetContainer(
         '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206')
     layers = container_obj.GetOrderedLayers()
     self.assertEqual(1, len(layers))
@@ -629,21 +729,21 @@ class TestOverlay2Storage(DockerTestCase):
 
   def testGetRunningContainersList(self):
     """Tests the BaseStorage.GetContainersList function on Overlay2 storage."""
-    running_containers = self.de_object.GetContainersList(only_running=True)
+    running_containers = self.explorer_object.GetContainersList(only_running=True)
     running_containers = sorted(
         running_containers, key=lambda ci: ci.container_id)
     self.assertEqual(1, len(running_containers))
-    container = running_containers[0]
-    self.assertEqual('/festive_perlman', container.name)
+    container_obj = running_containers[0]
+    self.assertEqual('/festive_perlman', container_obj.name)
     self.assertEqual(
-        '2018-05-16T10:51:39.271019533Z', container.creation_timestamp)
-    self.assertEqual('busybox', container.config_image_name)
+        '2018-05-16T10:51:39.271019533Z', container_obj.creation_timestamp)
+    self.assertEqual('busybox', container_obj.config_image_name)
 
-    self.assertTrue(container.running)
+    self.assertTrue(container_obj.running)
 
   def testGetContainersJson(self):
     """Tests the GetContainersJson function on a Overlay2 storage."""
-    result = self.de_object.GetContainersJson(only_running=True)
+    result = self.explorer_object.GetContainersJson(only_running=True)
     expected = [
         {'image_id':
          '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7',
@@ -658,7 +758,7 @@ class TestOverlay2Storage(DockerTestCase):
 
   def testGetLayerInfo(self):
     """Tests the BaseStorage.GetLayerInfo function on a Overlay2 storage."""
-    container_obj = self.de_object.GetContainer(
+    container_obj = self.explorer_object.GetContainer(
         '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206')
     layer_info = container_obj.GetLayerInfo(
         'sha256:'
@@ -669,7 +769,7 @@ class TestOverlay2Storage(DockerTestCase):
 
   def testGetRepositoriesString(self):
     """Tests GetRepositoriesString() on a Overlay2 storage."""
-    result_string = self.de_object.GetRepositoriesString()
+    result_string = self.explorer_object.GetRepositoriesString()
     self.maxDiff = None
     expected_string = (
         '[\n'
@@ -697,7 +797,7 @@ class TestOverlay2Storage(DockerTestCase):
   def testMakeMountCommands(self):
     """Tests the BaseStorage.MakeMountCommands function on Overlay2 storage."""
     self.maxDiff = None
-    container_obj = self.de_object.GetContainer(
+    container_obj = self.explorer_object.GetContainer(
         '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206')
     commands = container_obj.storage_object.MakeMountCommands(
         container_obj, '/mnt')
@@ -714,7 +814,7 @@ class TestOverlay2Storage(DockerTestCase):
   def testGetHistory(self):
     """Tests the BaseStorage.GetHistory function on a Overlay2 storage."""
     self.maxDiff = None
-    container_obj = self.de_object.GetContainer(
+    container_obj = self.explorer_object.GetContainer(
         '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206')
     expected = {
         'sha256:'
@@ -730,10 +830,10 @@ class TestOverlay2Storage(DockerTestCase):
     """Tests the DockerExplorer._GetFullContainerID function on Overlay2."""
     self.assertEqual(
         '61ba4e6c012c782186c649466157e05adfd7caa5b551432de51043893cae5353',
-        self.de_object._GetFullContainerID('61ba4e6c012c782'))
+        self.explorer_object._GetFullContainerID('61ba4e6c012c782'))
 
     with self.assertRaises(Exception) as err:
-      self.de_object._GetFullContainerID('')
+      self.explorer_object._GetFullContainerID('')
     self.assertEqual(
         'Too many container IDs starting with "": '
         '10acac0b3466813c9e1f85e2aa7d06298e51fbfe86bbcb6b7a19dd33d3798f6a, '
@@ -744,7 +844,7 @@ class TestOverlay2Storage(DockerTestCase):
         err.exception.message)
 
     with self.assertRaises(Exception) as err:
-      self.de_object._GetFullContainerID('xx')
+      self.explorer_object._GetFullContainerID('xx')
     self.assertEqual(
         'Could not find any container ID starting with "xx"',
         err.exception.message)
