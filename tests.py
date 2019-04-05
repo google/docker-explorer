@@ -57,7 +57,7 @@ class UtilsTests(unittest.TestCase):
 
 
 class TestDEMain(unittest.TestCase):
-  """Tests DockerExplorer object methods."""
+  """Tests DockerExplorerTool object methods."""
 
   @classmethod
   def tearDownClass(cls):
@@ -79,8 +79,8 @@ class TestDEMain(unittest.TestCase):
     cls.explorer_object.DetectDockerStorageVersion()
 
   def testParseArguments(self):
-    """Tests the DockerExplorer.ParseArguments function."""
-    de_object = de.DockerExplorer()
+    """Tests the DockerExplorerTool.ParseArguments function."""
+    de_object = de.DockerExplorerTool()
 
     prog = sys.argv[0]
 
@@ -102,16 +102,19 @@ class TestDEMain(unittest.TestCase):
     # We pick one of the container IDs.
     container_id = container.GetAllContainersIDs(self.docker_directory_path)[0]
     with mock.patch('sys.stdout', new=StringIO()) as fake_output:
+      de_object.docker_directory = self.docker_directory_path
       de_object.ShowHistory(container_id)
-      expected_dict = {
-          ('sha256:'
-           '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7'):
-          {
-              'container_cmd': '/bin/sh -c #(nop)  CMD [\"sh\"]',
-              'created_at': '2018-04-05T10:41:28.876407', 'size': 0}
-      }
+      expected_string = """{
+    "sha256:8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7": {
+        "container_cmd": "/bin/sh -c #(nop)  CMD [\\"sh\\"]", 
+        "created_at": "2018-04-05T10:41:28.876407", 
+        "size": 0
+    }
+}
+
+"""
       self.assertEqual(
-          utils.PrettyPrintJSON(expected_dict)+'\n', fake_output.getvalue())
+          expected_string, fake_output.getvalue())
 
   def testShowContainers(self):
     """Tests that ShowHistory shows history."""
@@ -119,55 +122,63 @@ class TestDEMain(unittest.TestCase):
     de_object._explorer = self.explorer_object
     self.maxDiff = None
     with mock.patch('sys.stdout', new=StringIO()) as fake_output:
+      de_object.docker_directory = self.docker_directory_path
       de_object.ShowContainers()
-      expected_list = [
-          {
-              'container_id': '10acac0b3466813c9e1f85e2aa7d06298e51fbfe86bbcb6b'
-                              '7a19dd33d3798f6a',
-              'image_id': '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc030'
-                          '02300856d8c7',
-              'image_name': 'busybox',
-              'mount_id': 'd877fe1ffb0a1da27204bc1ae4e356c7a7a235e7392d04a81d5d'
-                          '7df3471c74b6',
-              'start_date': '0001-01-01T00:00:00'},
-          {
-              'container_id': '61ba4e6c012c782186c649466157e05adfd7caa5b551432d'
-                              'e51043893cae5353',
-              'image_id': '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc030'
-                          '02300856d8c7',
-              'image_name': 'busybox',
-              'mount_id': '04cc041c6e1a41007c2c7f19574194244e81ea7dc0b3c32848b9'
-                          'e06915065cc4',
-              'start_date': '0001-01-01T00:00:00'},
-          {
-              'container_id': '9949fa153b778e39d6cab0a4e0ba60fa34a13fedb1f256d6'
-                              '13a2f88c0c98408a',
-              'image_id': '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc030'
-                          '02300856d8c7',
-              'image_name': 'busybox',
-              'mount_id': 'fc790748d90675e0934c6ade53f68b6f73b920ca1f08df718c27'
-                          '2e51abdabea7',
-              'start_date': '2018-05-16T10:50:57.324126'},
-          {
-              'container_id': 'f83f963c67cbd36055f690fc988c1e42be06c1253e80113d'
-                              '1d516778c06b2841',
-              'image_id': '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc030'
-                          '02300856d8c7',
-              'image_name': 'busybox',
-              'mount_id': '8ed5fc296a7930f4faf7812c081cb1b310dfc29f6b23f5f2425e'
-                          '36f51d5cb9d1',
-              'start_date': '2018-05-16T10:51:05.177987'},
-          {
-              'container_id': '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d501135'
-                              '59f078dfb2690206',
-              'image_id': '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc030'
-                          '02300856d8c7',
-              'image_name': 'busybox',
-              'mount_id': '92fd3b3e7d6101bb701743c9518c45b0d036b898c8a3d7cae84e'
-                          '1a06e6829b53',
-              'start_date': '2018-05-16T10:51:39.625989'}]
-      self.assertEqual(
-          utils.PrettyPrintJSON(expected_list)+'\n', fake_output.getvalue())
+      expected_string = """[
+    {
+        "container_id": "10acac0b3466813c9e1f85e2aa7d06298e51fbfe86bbcb6b7a19dd\
+33d3798f6a", 
+        "image_id": "8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc030023008\
+56d8c7", 
+        "image_name": "busybox", 
+        "mount_id": "d877fe1ffb0a1da27204bc1ae4e356c7a7a235e7392d04a81d5d7df347\
+1c74b6", 
+        "start_date": "0001-01-01T00:00:00"
+    }, 
+    {
+        "container_id": "61ba4e6c012c782186c649466157e05adfd7caa5b551432de51043\
+893cae5353", 
+        "image_id": "8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc030023008\
+56d8c7", 
+        "image_name": "busybox", 
+        "mount_id": "04cc041c6e1a41007c2c7f19574194244e81ea7dc0b3c32848b9e06915\
+065cc4", 
+        "start_date": "0001-01-01T00:00:00"
+    }, 
+    {
+        "container_id": "9949fa153b778e39d6cab0a4e0ba60fa34a13fedb1f256d613a2f8\
+8c0c98408a", 
+        "image_id": "8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc030023008\
+56d8c7", 
+        "image_name": "busybox", 
+        "mount_id": "fc790748d90675e0934c6ade53f68b6f73b920ca1f08df718c272e51ab\
+dabea7", 
+        "start_date": "2018-05-16T10:50:57.324126"
+    }, 
+    {
+        "container_id": "f83f963c67cbd36055f690fc988c1e42be06c1253e80113d1d5167\
+78c06b2841", 
+        "image_id": "8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc030023008\
+56d8c7", 
+        "image_name": "busybox", 
+        "mount_id": "8ed5fc296a7930f4faf7812c081cb1b310dfc29f6b23f5f2425e36f51d\
+5cb9d1", 
+        "start_date": "2018-05-16T10:51:05.177987"
+    }, 
+    {
+        "container_id": "8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078\
+dfb2690206", 
+        "image_id": "8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc030023008\
+56d8c7", 
+        "image_name": "busybox", 
+        "mount_id": "92fd3b3e7d6101bb701743c9518c45b0d036b898c8a3d7cae84e1a06e6\
+829b53", 
+        "start_date": "2018-05-16T10:51:39.625989"
+    }
+]
+
+"""
+      self.assertEqual(expected_string, fake_output.getvalue())
 
   def testDetectStorageFail(self):
     """Tests that the DockerExplorer.DetectStorage function fails on
@@ -358,7 +369,7 @@ class TestAufsStorage(DockerTestCase):
     self.assertEqual(expected, container_obj.GetHistory())
 
   def testGetFullContainerID(self):
-    """Tests the DockerExplorer._GetFullContainerID function on AuFS."""
+    """Tests the DockerExplorerTool._GetFullContainerID function on AuFS."""
     self.assertEqual(
         '2cc4b0d9c1dfdf71099c5e9a109e6a0fe286152a5396bd1850689478e8f70625',
         self.explorer_object._GetFullContainerID('2cc4b0d'))
@@ -517,7 +528,7 @@ class TestAufsV1Storage(DockerTestCase):
     self.assertEqual(expected, container_obj.GetHistory())
 
   def testGetFullContainerID(self):
-    """Tests the DockerExplorer._GetFullContainerID function on AuFS."""
+    """Tests the DockerExplorerTool._GetFullContainerID function on AuFS."""
     self.assertEqual(
         'de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c',
         self.explorer_object._GetFullContainerID('de44dd'))
@@ -673,7 +684,7 @@ class TestOverlayStorage(DockerTestCase):
     self.assertEqual(expected, container_obj.GetHistory())
 
   def testGetFullContainerID(self):
-    """Tests the DockerExplorer._GetFullContainerID function on Overlay."""
+    """Tests the DockerExplorerTool._GetFullContainerID function on Overlay."""
     self.assertEqual(
         '5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a',
         self.explorer_object._GetFullContainerID('5dc287aa80'))
@@ -830,7 +841,7 @@ class TestOverlay2Storage(DockerTestCase):
     self.assertEqual(expected, container_obj.GetHistory(container_obj))
 
   def testGetFullContainerID(self):
-    """Tests the DockerExplorer._GetFullContainerID function on Overlay2."""
+    """Tests the DockerExplorerTool._GetFullContainerID function on Overlay2."""
     self.assertEqual(
         '61ba4e6c012c782186c649466157e05adfd7caa5b551432de51043893cae5353',
         self.explorer_object._GetFullContainerID('61ba4e6c012c782'))
