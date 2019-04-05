@@ -181,7 +181,7 @@ dfb2690206",
       self.assertEqual(expected_string, fake_output.getvalue())
 
   def testDetectStorageFail(self):
-    """Tests that the DockerExplorer.DetectStorage function fails on
+    """Tests that the DockerExplorerTool.DetectStorage function fails on
     Docker directory."""
     explorer_object = explorer.Explorer()
     explorer_object.docker_directory = 'this_dir_shouldnt_exist'
