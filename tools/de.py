@@ -29,8 +29,8 @@ from docker_explorer import errors
 from docker_explorer import utils
 
 
-class DockerExplorer(object):
-  """Main class for the DockerExplorer tool.
+class DockerExplorerTool(object):
+  """Main class for the DockerExplorerTool tool.
 
   Attributes:
     docker_directory (str): Path to use as the root of the Docker runtime.
@@ -342,7 +342,7 @@ class DockerExplorer(object):
       )
 
   def Main(self):
-    """The main method for the DockerExplorer class.
+    """The main method for the DockerExplorerTool class.
 
     It instantiates the Storage Object and Handles arguments parsing.
 
@@ -376,7 +376,7 @@ class DockerExplorer(object):
 
 if __name__ == '__main__':
   try:
-    DockerExplorer().Main()
+    DockerExplorerTool().Main()
   except errors.BadStorageException as exc:
     print('ERROR: {0}\n'.format(exc.message))
     print('Please specify a proper Docker directory path.\n'
