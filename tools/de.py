@@ -21,10 +21,8 @@ A tool to parse offline Docker installation.
 from __future__ import print_function, unicode_literals
 
 import argparse
-import json
-import os
 
-from docker_explorer import container
+from docker_explorer import explorer
 from docker_explorer import errors
 from docker_explorer import utils
 
@@ -38,25 +36,10 @@ class DockerExplorerTool(object):
   """
 
   def __init__(self):
-    """Initializes the ContainerInfo class."""
+    """Initializes the DockerExplorerTool class."""
     self._argument_parser = None
-    self.containers_directory = None
-    self.docker_directory = '/var/lib/docker'
-    self.docker_version = 2
-
-  def _SetDockerDirectory(self, docker_path):
-    """Sets the Docker main directory.
-
-    Args:
-      docker_path(str): the absolute path to the docker directory.
-    """
-    self.docker_directory = docker_path
-    if not os.path.isdir(self.docker_directory):
-      msg = '{0:s} is not a Docker directory'.format(self.docker_directory)
-      raise errors.BadStorageException(msg)
-
-    self.containers_directory = os.path.join(
-        self.docker_directory, 'containers')
+    self._docker_directory = None
+    self._explorer = None
 
   def AddBasicOptions(self, argument_parser):
     """Adds the global options to the argument_parser.
@@ -132,89 +115,6 @@ class DockerExplorerTool(object):
 
     return opts
 
-  def ParseOptions(self, options):
-    """Parses the command line options."""
-    self.docker_directory = os.path.abspath(options.docker_directory)
-
-  def _GetFullContainerID(self, short_id):
-    """Searches for a container ID from its first characters.
-
-    Args:
-      short_id (str): the first few characters of a container ID.
-    Returns:
-      str: the full container ID
-    Raises:
-      errors.DockerExplorerError: when we couldn't map the short version to
-        exactly one full container ID.
-    """
-    if len(short_id) == 64:
-      return short_id
-
-    containers_dir = os.path.join(self.docker_directory, 'containers')
-    possible_cids = []
-    for container_dirs in sorted(os.listdir(containers_dir)):
-      possible_cid = os.path.basename(container_dirs)
-      if possible_cid.startswith(short_id):
-        possible_cids.append(possible_cid)
-
-    possible_cids_len = len(possible_cids)
-    if possible_cids_len == 0:
-      raise errors.DockerExplorerError(
-          'Could not find any container ID starting with "{0}"'.format(
-              short_id))
-    if possible_cids_len > 1:
-      raise errors.DockerExplorerError(
-          'Too many container IDs starting with "{0}": {1}'.format(
-              short_id, ', '.join(possible_cids)))
-
-    return possible_cids[0]
-
-  def GetContainer(self, container_id_part):
-    """Returns a Container object given the first characters of a container_id.
-
-    Args:
-      container_id_part (str): the first characters of a container ID.
-
-    Returns:
-      container.Container: the container object.
-    """
-    container_id = self._GetFullContainerID(container_id_part)
-    return container.Container(
-        self.docker_directory, container_id, docker_version=self.docker_version)
-
-  def GetAllContainers(self):
-    """Gets a list containing information about all containers.
-
-    Returns:
-      list(Container): the list of Container objects.
-
-    Raises:
-      errors.BadStorageException: If required files or directories are not found
-        in the provided Docker directory.
-    """
-    container_ids_list = container.GetAllContainersIDs(self.docker_directory)
-    if not container_ids_list:
-      print('Could not find any containers.\n'
-            'Make sure the docker directory ({0:s}) is correct.\n'
-            'If it is correct, you might want to run this script'
-            ' with higher privileges.'.format(self.docker_directory))
-    return [self.GetContainer(cid) for cid in container_ids_list]
-
-  def GetContainersList(self, only_running=False):
-    """Returns a list of Container objects, sorted by start time.
-
-    Args:
-      only_running (bool): Whether we return only running Containers.
-
-    Returns:
-      list(Container): list of Containers information objects.
-    """
-    containers_list = sorted(
-        self.GetAllContainers(), key=lambda x: x.start_timestamp)
-    if only_running:
-      containers_list = [x for x in containers_list if x.running]
-    return containers_list
-
   def Mount(self, container_id, mountpoint):
     """Mounts the specified container's filesystem.
 
@@ -222,40 +122,8 @@ class DockerExplorerTool(object):
       container_id (str): the ID of the container.
       mountpoint (str): the path to the destination mount point.
     """
-    container_object = self.GetContainer(container_id)
+    container_object = self._explorer.GetContainer(container_id)
     container_object.Mount(mountpoint)
-
-  def GetContainersJson(self, only_running=False):
-    """Returns a dict describing the running containers.
-
-    Args:
-      only_running (bool): Whether we display only running Containers.
-
-    Returns:
-      dict: A dict object representing the containers.
-    """
-    result = []
-    for container_object in self.GetContainersList(only_running=only_running):
-      image_id = container_object.image_id
-      if self.docker_version == 2:
-        image_id = image_id.split(':')[1]
-      container_json = {
-          'container_id': container_object.container_id,
-          'image_id': image_id
-      }
-
-      if container_object.config_labels:
-        container_json['labels'] = container_object.config_labels
-      container_json['start_date'] = utils.FormatDatetime(
-          container_object.start_timestamp)
-      container_json['image_name'] = container_object.config_image_name
-
-      if container_object.mount_id:
-        container_json['mount_id'] = container_object.mount_id
-
-      result.append(container_json)
-
-    return result
 
   def ShowContainers(self, only_running=False):
     """Displays the running containers.
@@ -264,8 +132,7 @@ class DockerExplorerTool(object):
       only_running (bool): Whether we display only running Containers.
     """
     print(utils.PrettyPrintJSON(
-        self.GetContainersJson(only_running=only_running)))
-
+        self._explorer.GetContainersJson(only_running=only_running)))
 
   def ShowHistory(self, container_id, show_empty_layers=False):
     """Prints the modification history of a container.
@@ -274,72 +141,8 @@ class DockerExplorerTool(object):
       container_id (str): the ID of the container.
       show_empty_layers (bool): whether to display empty layers.
     """
-    container_object = self.GetContainer(container_id)
+    container_object = self._explorer.GetContainer(container_id)
     print(utils.PrettyPrintJSON(container_object.GetHistory(show_empty_layers)))
-
-  def GetRepositoriesString(self):
-    """Returns information about images in the local Docker repositories.
-
-    Returns:
-      str: human readable list of images in local Docker repositories.
-
-    Raises:
-      errors.BadStorageException: If required files or directories are not found
-        in the provided Docker directory.
-    """
-    repositories = []
-    if self.docker_version == 1:
-      repositories = [os.path.join(self.docker_directory, 'repositories-aufs')]
-    else:
-      image_path = os.path.join(self.docker_directory, 'image')
-      if not os.path.isdir(image_path):
-        raise errors.BadStorageException(
-            'Expected image directory {0} does not exist.'.format(image_path))
-      for storage_method in os.listdir(image_path):
-        repositories_file_path = os.path.join(
-            image_path, storage_method, 'repositories.json')
-        if os.path.isfile(repositories_file_path):
-          repositories.append(repositories_file_path)
-
-    result = []
-    for repositories_file_path in sorted(repositories):
-      with open(repositories_file_path) as rf:
-        repo_obj = json.loads(rf.read())
-        repo_obj['path'] = repositories_file_path
-        result.append(repo_obj)
-
-    return utils.PrettyPrintJSON(result)
-
-  def _DetectDockerStorageVersion(self):
-    """Detects Docker storage version (v1 or v2).
-
-    Raises:
-      errors.BadStorageException: when we couldn't detect the Docker storage
-        version.
-    """
-    if not os.path.isdir(self.containers_directory):
-      raise errors.BadStorageException(
-          'Containers directory {0} does not exist'.format(
-              self.containers_directory))
-    container_ids_list = os.listdir(self.containers_directory)
-    if not container_ids_list:
-      print('Could not find container directoried in {0:s}.\n'
-            'Make sure the docker directory ({1:s}) is correct.\n'
-            'If it is correct, you might want to run this script'
-            ' with higher privileges.'.format(
-                self.containers_directory, self.docker_directory))
-    path_to_a_container = os.path.join(
-        self.containers_directory, container_ids_list[0])
-    if os.path.isfile(os.path.join(path_to_a_container, 'config.v2.json')):
-      self.docker_version = 2
-    elif os.path.isfile(os.path.join(path_to_a_container, 'config.json')):
-      self.docker_version = 1
-    else:
-      raise errors.BadStorageException(
-          'Could not find any container configuration file:\n'
-          'Neither config.json nor config.v2.json found in {0:s}'.format(
-              path_to_a_container)
-      )
 
   def Main(self):
     """The main method for the DockerExplorerTool class.
@@ -350,10 +153,11 @@ class DockerExplorerTool(object):
       ValueError: If the arguments couldn't be parsed.
     """
     options = self.ParseArguments()
-    self.ParseOptions(options)
 
-    self._SetDockerDirectory(self.docker_directory)
-    self._DetectDockerStorageVersion()
+    self._explorer = explorer.Explorer()
+
+    self._explorer.SetDockerDirectory(self.docker_directory)
+    self._explorer.DetectDockerStorageVersion()
 
     if options.command == 'mount':
       self.Mount(options.container_id, options.mountpoint)
