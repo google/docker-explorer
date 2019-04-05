@@ -73,7 +73,7 @@ class TestDEMain(unittest.TestCase):
       tar = tarfile.open(docker_tar, 'r:gz')
       tar.extractall('test_data')
       tar.close()
-    cls.de_object = de.DockerExplorer()
+    cls.de_object = de.DockerExplorerTool()
     cls.de_object._SetDockerDirectory(cls.docker_directory_path)
     cls.de_object._DetectDockerStorageVersion()
 
@@ -98,7 +98,7 @@ class TestDEMain(unittest.TestCase):
 
   def testShowHistory(self):
     """Tests that ShowHistory shows history."""
-    de_object = de.DockerExplorer()
+    de_object = de.DockerExplorerTool()
     # We pick one of the container IDs.
     container_id = container.GetAllContainersIDs(self.docker_directory_path)[0]
     with mock.patch('sys.stdout', new=StringIO()) as fake_output:
@@ -118,7 +118,7 @@ class TestDEMain(unittest.TestCase):
 
   def testShowContainers(self):
     """Tests that ShowHistory shows history."""
-    de_object = de.DockerExplorer()
+    de_object = de.DockerExplorerTool()
     self.maxDiff = None
     with mock.patch('sys.stdout', new=StringIO()) as fake_output:
       de_object.docker_directory = self.docker_directory_path
