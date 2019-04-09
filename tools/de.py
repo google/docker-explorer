@@ -28,17 +28,11 @@ from docker_explorer import utils
 
 
 class DockerExplorerTool(object):
-  """Main class for the DockerExplorerTool tool.
-
-  Attributes:
-    docker_directory (str): Path to use as the root of the Docker runtime.
-      Default is '/var/lib/docker'.
-  """
+  """Main class for the DockerExplorerTool tool."""
 
   def __init__(self):
     """Initializes the DockerExplorerTool class."""
     self._argument_parser = None
-    self._docker_directory = None
     self._explorer = None
 
   def AddBasicOptions(self, argument_parser):
@@ -156,7 +150,7 @@ class DockerExplorerTool(object):
 
     self._explorer = explorer.Explorer()
 
-    self._explorer.SetDockerDirectory(self.docker_directory)
+    self._explorer.SetDockerDirectory(options.docker_directory)
     self._explorer.DetectDockerStorageVersion()
 
     if options.command == 'mount':
