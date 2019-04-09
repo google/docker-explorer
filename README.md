@@ -16,6 +16,14 @@ or OverlayFS.
 Each layer is actually stored on the host's filesystem as multiple folders, and
 some JSON files are used by Docker to know what is what;
 
+## Installation
+
+This project is released on [PyPi](https://pypi.org/project/docker-explorer/) as
+well as the [GIFT PPA](https://launchpad.net/~gift).
+
+You can also clone this repository, as running the script doesn't require any
+external dependency.
+
 ## Usage
 
 For the forensicator, this usually goes:
