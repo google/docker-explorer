@@ -282,13 +282,4 @@ class Container(object):
 
     commands = self.storage_object.MakeMountCommands(self, mount_dir)
     for c in commands:
-      print(' '.join(c))
-    print('Do you want to mount this container ID: {0:s} on {1:s} ?\n'
-          '(ie: run these commands) [Y/n]'.format(self.container_id, mount_dir))
-    choice = input().lower()
-    if choice in ['y', 'yes', '']:
-      for c in commands:
-        # TODO() this is quite unsafe, need to properly split args
-        subprocess.call(c, shell=False)
-    else:
-      print('Not mounting')
+      subprocess.call(c, shell=False)
