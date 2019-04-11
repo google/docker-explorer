@@ -1,15 +1,14 @@
 #!/bin/bash
-#!/bin/bash
 
 set -e
 
 TMP_MOUNTPOINT="$(mktemp -d)"
 
 function install_packages {
-  apt -y install docker.io jq
+  sudo apt -y install docker.io jq
   git clone https://github.com/google/docker-explorer || echo 'Already cloned'
   cd docker-explorer
-  python setup.py install
+  sudo python setup.py install
 }
 
 function assert_equal {
