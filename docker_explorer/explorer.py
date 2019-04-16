@@ -40,6 +40,9 @@ class Explorer(object):
 
     Args:
       docker_path(str): the absolute path to the docker directory.
+    Raises:
+      errors.BadStorageException: if the path doesn't point to a Docker
+        directory.
     """
     self.docker_directory = docker_path
     if not os.path.isdir(self.docker_directory):
