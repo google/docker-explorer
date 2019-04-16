@@ -60,7 +60,7 @@ function test_containers_nb {
 function test_container_name {
   local result
   result="$(de.py -r /var/lib/docker list running_containers | jq '.[0]["image_name"]' )"
-  assert_equal "First container name should be wordpress:latest" \
+  assert_equal "First container name" \
     "\"wordpress:latest\"" $result
   return 0
 }
