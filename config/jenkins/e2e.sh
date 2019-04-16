@@ -72,7 +72,7 @@ function test_container_mount {
   local fake_bad_content
   local content
 
-  container_id="$(de.py -r /var/lib/docker list running_containers | jq '.[0]["container_id"]'  | cut -d '"' -f 2)"
+  container_id="$(de.py -r /var/lib/docker list running_containers | jq '.[0]["container_id"]' | cut -d '"' -f 2)"
   echo "Trying to mount container ID ${container_id} on ${TMP_MOUNTPOINT}"
   de.py -r /var/lib/docker mount "${container_id}" "${TMP_MOUNTPOINT}"
 
