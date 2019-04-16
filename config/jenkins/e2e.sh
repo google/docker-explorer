@@ -79,7 +79,7 @@ function test_container_mount {
   fake_bad_path="/tmp/definitely_bad"
   fake_bad_content="NOT A MALWARE"
   echo "Adding bad file in ${fake_bad_path}"
-  docker exec -i -t "${container_id}" sh -c "echo '${fake_bad_content}' > '${fake_bad_path}'"
+  docker exec -i "${container_id}" sh -c "echo '${fake_bad_content}' > '${fake_bad_path}'"
   path_to_file="${TMP_MOUNTPOINT}/${fake_bad_path}"
   if [[ -f "${path_to_file}" ]]; then
     content=$(cat "${path_to_file}")
