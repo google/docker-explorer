@@ -26,7 +26,7 @@ function assert_equal {
   if [[ "${expected}" != "${result}" ]]; then
       echo "Expected:"
       echo "${expected}"
-      echo "Got:"
+      echo "Assert ERROR - Got: \"${result}\""
       echo "${result}"
       return 1
   fi
