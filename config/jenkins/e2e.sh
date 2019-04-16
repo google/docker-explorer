@@ -52,7 +52,7 @@ function start_docker {
 function test_containers_nb {
   local result
   result="$(de.py -r /var/lib/docker list running_containers | jq '. | length' )"
-  assert_equal "Number of containers should be 1" "1" "${result}"
+  assert_equal "Number of containers" "1" "${result}"
   return 0
 }
 
