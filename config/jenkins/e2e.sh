@@ -37,8 +37,8 @@ function cleanup {
   # Killing all containers
   docker kill $(docker ps -q) || true
 
-  apt -y remove --purge docker.io
   rm -rf /etc/docker
+  apt -y remove --purge docker.io
   rm -rf /var/lib/docker
 }
 
@@ -103,16 +103,9 @@ function run_de_tests {
 function main {
   install_packages
   start_docker
-  run_de
+  run_de_tests
   cleanup
+  return 0
 }
-
-trap "{
-    cleanup
-}" EXIT
-
-trap "{
-    exit 1
-}" INT
 
 main
