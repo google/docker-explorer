@@ -48,6 +48,10 @@ class DockerExplorerTool(object):
         help='Set the root docker directory. Default is /var/lib/docker',
         action='store', default='/var/lib/docker')
 
+    argument_parser.add_argument(
+        '-s', '--sudo',
+        help='Runs the mount commands with sudo', action='store_true')
+
   def AddMountCommand(self, args):
     """Adds the mount command to the argument_parser.
 
@@ -109,15 +113,16 @@ class DockerExplorerTool(object):
 
     return opts
 
-  def Mount(self, container_id, mountpoint):
+  def Mount(self, container_id, mountpoint, sudo=False):
     """Mounts the specified container's filesystem.
 
     Args:
       container_id (str): the ID of the container.
       mountpoint (str): the path to the destination mount point.
+      sudo(bool): whether to run the mount command with sudo.
     """
     container_object = self._explorer.GetContainer(container_id)
-    container_object.Mount(mountpoint)
+    container_object.Mount(mountpoint, sudo=sudo)
 
   def ShowContainers(self, only_running=False):
     """Displays the running containers.
@@ -154,7 +159,7 @@ class DockerExplorerTool(object):
     self._explorer.DetectDockerStorageVersion()
 
     if options.command == 'mount':
-      self.Mount(options.container_id, options.mountpoint)
+      self.Mount(options.container_id, options.mountpoint, sudo=options.sudo)
 
     elif options.command == 'history':
       self.ShowHistory(

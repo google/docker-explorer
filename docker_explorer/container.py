@@ -273,13 +273,17 @@ class Container(object):
     self.storage_object = storage_class(
         self.docker_directory, self.docker_version)
 
-  def Mount(self, mount_dir):
+  def Mount(self, mount_dir, sudo=False):
     """Mounts the specified container's filesystem.
 
     Args:
       mount_dir (str): the path to the destination mount point
+      sudo(bool): whether to run the mount command with sudo.
     """
 
     commands = self.storage_object.MakeMountCommands(self, mount_dir)
     for c in commands:
-      subprocess.call(c, shell=False)
+      if sudo:
+        subprocess.call(['sudo']+c, shell=False)
+      else:
+        subprocess.call(c, shell=False)
