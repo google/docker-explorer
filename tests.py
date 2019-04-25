@@ -91,7 +91,8 @@ class TestDEMain(unittest.TestCase):
 
     options = de_object.ParseArguments()
     usage_string = de_object._argument_parser.format_usage()
-    expected_usage = '[-h] [-r DOCKER_DIRECTORY] [-s] {mount,list,history} ...\n'
+    expected_usage = (
+        '[-h] [-r DOCKER_DIRECTORY] [-s] {mount,list,history} ...\n')
     self.assertTrue(expected_usage in usage_string)
     self.assertEqual(expected_docker_root, options.docker_directory)
 
