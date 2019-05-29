@@ -19,6 +19,7 @@ from __future__ import print_function, unicode_literals
 import os
 import sys
 
+import docker_explorer
 
 class BaseStorage(object):
   """This class provides tools to list and access containers metadata.
@@ -27,7 +28,9 @@ class BaseStorage(object):
   btrfs, etc.).
   """
 
-  def __init__(self, docker_directory='/var/lib/docker', docker_version=2):
+  def __init__(
+      self, docker_directory=docker_explorer.DEFAULT_DOCKER_DIRECTORY,
+      docker_version=2):
     """Initializes a BaseStorage object.
 
     Args:
@@ -110,17 +113,6 @@ class AufsStorage(BaseStorage):
   """This class implements AuFS storage specific methods."""
 
   STORAGE_METHOD = 'aufs'
-
-  def __init__(self, docker_directory='/var/lib/docker', docker_version=2):
-    """Initializes the AufsStorage class.
-
-    Args:
-      docker_directory (str): Path to the Docker root directory.
-      docker_version (int): Docker storage version.
-    """
-
-    super(AufsStorage, self).__init__(
-        docker_directory=docker_directory, docker_version=docker_version)
 
   def MakeMountCommands(self, container_object, mount_dir):
     """Generates the required shell commands to mount a container given its ID.

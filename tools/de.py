@@ -22,6 +22,8 @@ from __future__ import print_function, unicode_literals
 
 import argparse
 
+import docker_explorer
+
 from docker_explorer import explorer
 from docker_explorer import errors
 from docker_explorer import utils
@@ -45,8 +47,9 @@ class DockerExplorerTool(object):
 
     argument_parser.add_argument(
         '-r', '--docker-directory',
-        help='Set the root docker directory. Default is /var/lib/docker',
-        action='store', default='/var/lib/docker')
+        help='Set the root docker directory. Default is {0:s}'.format(
+            docker_explorer.DEFAULT_DOCKER_DIRECTORY),
+        action='store', default=docker_explorer.DEFAULT_DOCKER_DIRECTORY)
 
   def AddMountCommand(self, args):
     """Adds the mount command to the argument_parser.
