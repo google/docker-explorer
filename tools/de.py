@@ -22,6 +22,8 @@ from __future__ import print_function, unicode_literals
 
 import argparse
 
+import docker_explorer
+
 from docker_explorer import explorer
 from docker_explorer import errors
 from docker_explorer import utils
@@ -42,11 +44,17 @@ class DockerExplorerTool(object):
       argument_parser (argparse.ArgumentParser):
         the argument parser to add the command to.
     """
+    version_string = 'docker-explorer - version {0:s}'.format(
+        docker_explorer.__version__)
 
     argument_parser.add_argument(
         '-r', '--docker-directory',
         help='Set the root docker directory. Default is /var/lib/docker',
         action='store', default='/var/lib/docker')
+
+    argument_parser.add_argument(
+        '-V', '--version', dest='version', action='version',
+        version=version_string, help='Show the version information.')
 
   def AddMountCommand(self, args):
     """Adds the mount command to the argument_parser.
