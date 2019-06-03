@@ -44,12 +44,18 @@ class DockerExplorerTool(object):
       argument_parser (argparse.ArgumentParser):
         the argument parser to add the command to.
     """
+    version_string = 'docker-explorer - version {0:s}'.format(
+        docker_explorer.__version__)
 
     argument_parser.add_argument(
         '-r', '--docker-directory',
         help='Set the root docker directory. Default is {0:s}'.format(
             docker_explorer.DEFAULT_DOCKER_DIRECTORY),
         action='store', default=docker_explorer.DEFAULT_DOCKER_DIRECTORY)
+
+    argument_parser.add_argument(
+        '-V', '--version', dest='version', action='version',
+        version=version_string, help='Show the version information.')
 
   def AddMountCommand(self, args):
     """Adds the mount command to the argument_parser.
