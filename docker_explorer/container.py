@@ -111,8 +111,7 @@ class Container(object):
 
     if not os.path.isfile(container_info_json_path):
       raise errors.BadContainerException(
-          'Unable to find container configuration file {0}. \n'
-          'Make sure you are providing a Docker directory (hint: -r).'.format(
+          'Unable to find container configuration file {0:s}'.format(
               container_info_json_path)
       )
     with open(container_info_json_path) as container_info_json_file:

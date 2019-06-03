@@ -15,6 +15,8 @@
 # limitations under the License.
 """Module for the Explorer object."""
 
+from __future__ import print_function, unicode_literals
+
 import json
 import os
 
@@ -147,7 +149,13 @@ class Explorer(object):
             'If it is correct, you might want to run this script'
             ' with higher privileges.'.format(
                 self.containers_directory, self.docker_directory))
-    return [self.GetContainer(cid) for cid in container_ids_list]
+    containers_list = []
+    for cid in container_ids_list:
+      try:
+        containers_list.append(self.GetContainer(cid))
+      except errors.BadContainerException as e:
+        print('WARNING: Error loading container {0:s}: {1!s}'.format(cid, e))
+    return containers_list
 
   def GetContainersList(self, only_running=False):
     """Returns a list of Container objects, sorted by start time.
