@@ -18,10 +18,28 @@ some JSON files are used by Docker to know what is what;
 
 ## Installation
 
-This project is released on [PyPi](https://pypi.org/project/docker-explorer/) as
-well as the [GIFT PPA](https://launchpad.net/~gift).
+### PPA
 
-You can also clone this repository, as running the script doesn't require any
+A .deb package is available in the [GIFT PPA](https://launchpad.net/~gift)
+
+```
+add-apt-repository ppa:gift/stable
+apt update
+apt install docker-explorer-tools
+```
+
+### PyPI
+
+This project is released on [PyPi](https://pypi.org/project/docker-explorer/).
+
+```
+virtualenv docker-explorer ; cd docker-explorer ; source bin/activate
+pip install docker-explorer
+```
+
+### Source
+
+You can clone this repository, as running the script doesn't require any
 external dependency.
 
 ## Usage
@@ -29,12 +47,13 @@ external dependency.
 For the forensicator, this usually goes:
 
 0. find the interesting container ID
-0. mount the container's filesystem in `/mnt/aufs`
-0. `log2timeline.py /tmp/container.plaso /mnt/aufs`
+0. mount the container's filesystem in `/mnt/container`
+0. `log2timeline.py /tmp/container.plaso /mnt/container`
+0. or `ls -lta /mnt/container/tmp`
 
 ### List the running containers
 
-On the live host:
+On a live host running the compromised container you would run:
 
 ```
 # docker ps
@@ -42,20 +61,24 @@ CONTAINER ID        IMAGE               COMMAND             CREATED         STAT
 7b02fb3e8a66        busybox             "sleep 10d"         19 hours ago    Up 19 hours                             dreamy_snyder
 ```
 
-On a disk image mounted in
-`/mnt/root`:
+If you mount the disk image of the same host in `/mnt/root`, you can use `de.py`
+to access the same information:
 
 ```
 # de.py -r /mnt/root/var/lib/docker list running_containers
-Container id: 7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966 / Labels :
-    Start date: 2017-02-13T16:45:05.785658046Z
-    Image ID: 7968321274dc6b6171697c33df7815310468e694ac5be0ec03ff053bb135e768
-    Image Name: busybox
+[
+    {
+        "container_id": "7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966",
+        "image_id": "7968321274dc6b6171697c33df7815310468e694ac5be0ec03ff053bb135e768",
+        "image_name": "busybox",
+        "start_date": "2016-09-16T11:50:15.253796"
+    }
+]
 ```
 
 ### Mount the container's filesystem:
 
-On the live host:
+On a live host running the compromised container you would run:
 
 ```
 # find ID of your running container:
@@ -68,8 +91,8 @@ docker commit 12345678904b5 mysnapshot
 docker run -t -i mysnapshot /bin/bash
 ```
 
-On a disk image mounted in
-`/mnt/root`:
+If you mount the disk image of the same host in `/mnt/root`, you can use `de.py`
+to access the same information:
 
 ```
 # de.py -r /tmp/ mount 7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966 /tmp
@@ -79,42 +102,13 @@ You'll needs the aufs-tools package. If you install aufs-tools, I can run these 
 Whoops... Let's try again
 
 ```
-# apt-get install aufs-tools
+# apt install aufs-tools
 # de.py -r /tmp/ mount 7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966 /tmp/test
 mount -t aufs -o ro,br=/tmp/docker/aufs/diff/b16a494082bba0091e572b58ff80af1b7b5d28737a3eedbe01e73cd7f4e01d23=ro+wh none /tmp/test
 mount -t aufs -o ro,remount,append:/tmp/docker/aufs/diff/b16a494082bba0091e572b58ff80af1b7b5d28737a3eedbe01e73cd7f4e01d23-init=ro+wh none /tmp/test
 mount -t aufs -o ro,remount,append:/tmp/docker/aufs/diff/d1c54c46d331de21587a16397e8bd95bdbb1015e1a04797c76de128107da83ae=ro+wh none /tmp/test
-Do you want to mount this container Id: /tmp/docker/aufs/diff/b16a494082bba0091e572b58ff80af1b7b5d28737a3eedbe01e73cd7f4e01d23 on /tmp/test?
-      (ie: run these commands) [Y/n]
-
 root@test-VirtualBox:~# ls /tmp/test
 bin  dev  etc  home  proc  root  sys  tmp  usr  var
-```
-
-
-### List the available images
-
-On the live host:
-
-```
-# docker images
-REPOSITORY          TAG                 IMAGE ID            CREATED       SIZE
-busybox             latest              7968321274dc        4 weeks ago   1.11 MB
-```
-
-On a disk image mounted in
-`/mnt/root`:
-
-```
-# de.py -r /mnt/root/var/lib/docker list repositories
-Listing repositories from file /tmp/docker/image/aufs/repositories.json
-{
-    "Repositories": {
-        "busybox": {
-            "busybox:latest": "sha256:7968321274dc6b6171697c33df7815310468e694ac5be0ec03ff053bb135e768"
-        }
-    }
-}
 ```
 
 ### Show a container's image history
@@ -134,14 +128,13 @@ On a disk image mounted in
 
 ```
 # de.py -r /mnt/root/var/lib/docker history 7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966
---------------------------------------------------------------
-sha256:7968321274dc6b6171697c33df7815310468e694ac5be0ec03ff053bb135e768
-        size : 0
-        created at : 2017/01/13 22:13:54
-        with command : /bin/sh \
--c \
-#(nop)  \
-CMD ["sh"]
+{
+    "sha256:7968321274dc6b6171697c33df7815310468e694ac5be0ec03ff053bb135e768": {
+        "container_cmd": "/bin/sh -c #(nop)  CMD [\"sh\"]",
+        "created_at : "2018-09-20T18:41:05.770133",
+        "size" : 0
+    }
+}
 ```
 
 ## Troubleshooting
