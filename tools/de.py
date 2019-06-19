@@ -49,8 +49,9 @@ class DockerExplorerTool(object):
 
     argument_parser.add_argument(
         '-r', '--docker-directory',
-        help='Set the root docker directory. Default is /var/lib/docker',
-        action='store', default='/var/lib/docker')
+        help='Set the root docker directory. Default is {0:s}'.format(
+            docker_explorer.DEFAULT_DOCKER_DIRECTORY),
+        action='store', default=docker_explorer.DEFAULT_DOCKER_DIRECTORY)
 
     argument_parser.add_argument(
         '-V', '--version', dest='version', action='version',

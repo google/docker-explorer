@@ -14,3 +14,5 @@
 # limitations under the License.
 """docker-explorer tool."""
 __version__ = '20190529'
+
+DEFAULT_DOCKER_DIRECTORY = '/var/lib/docker'

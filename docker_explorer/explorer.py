@@ -20,6 +20,8 @@ from __future__ import print_function, unicode_literals
 import json
 import os
 
+import docker_explorer
+
 from docker_explorer import container
 from docker_explorer import errors
 from docker_explorer import utils
@@ -28,13 +30,12 @@ from docker_explorer import utils
 class Explorer(object):
   """Class for a DockerExplorer object."""
 
-  DEFAULT_DOCKER_DIRECTORY = '/var/lib/docker'
   DEFAULT_DOCKER_VERSION = 2
 
   def __init__(self):
     """Initializes the DockerExplorer class."""
     self.containers_directory = None
-    self.docker_directory = self.DEFAULT_DOCKER_DIRECTORY
+    self.docker_directory = docker_explorer.DEFAULT_DOCKER_DIRECTORY
     self.docker_version = self.DEFAULT_DOCKER_VERSION
 
   def SetDockerDirectory(self, docker_path):
