@@ -14,7 +14,7 @@
 # limitations under the License.
 """Module to provide some helper methods."""
 
-from __future__ import print_function, unicode_literals
+from __future__ import unicode_literals
 
 from datetime import datetime
 import json

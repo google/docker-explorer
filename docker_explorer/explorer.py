@@ -68,11 +68,12 @@ class Explorer(object):
               self.containers_directory))
     container_ids_list = os.listdir(self.containers_directory)
     if not container_ids_list:
-      print('Could not find container directoried in {0:s}.\n'
-            'Make sure the docker directory ({1:s}) is correct.\n'
-            'If it is correct, you might want to run this script'
-            ' with higher privileges.'.format(
-                self.containers_directory, self.docker_directory))
+      raise errors.DockerExplorerError(
+          'Could not find any container in {0:s}.\n'
+          'Make sure the docker directory ({1:s}) is correct.\n'
+          'If it is correct, you might want to run this script'
+          ' with higher privileges.'.format(
+              self.containers_directory, self.docker_directory))
     path_to_a_container = os.path.join(
         self.containers_directory, container_ids_list[0])
     if os.path.isfile(os.path.join(path_to_a_container, 'config.v2.json')):
@@ -144,11 +145,12 @@ class Explorer(object):
     """
     container_ids_list = container.GetAllContainersIDs(self.docker_directory)
     if not container_ids_list:
-      print('Could not find container directory in {0:s}.\n'
-            'Make sure the docker directory ({1:s}) is correct.\n'
-            'If it is correct, you might want to run this script'
-            ' with higher privileges.'.format(
-                self.containers_directory, self.docker_directory))
+      raise errors.DockerExplorerError(
+          'Could not find container directory in {0:s}.\n'
+          'Make sure the docker directory ({1:s}) is correct.\n'
+          'If it is correct, you might want to run this script'
+          ' with higher privileges.'.format(
+              self.containers_directory, self.docker_directory))
     containers_list = []
     for cid in container_ids_list:
       try:

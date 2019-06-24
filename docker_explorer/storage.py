@@ -14,12 +14,15 @@
 # limitations under the License.
 """Base class for a Docker BaseStorage object."""
 
-from __future__ import print_function, unicode_literals
+from __future__ import unicode_literals
 
+import logging
 import os
-import sys
 
 import docker_explorer
+from docker_explorer.errors import BadStorageException
+
+logger = logging.getLogger('docker-explorer')
 
 class BaseStorage(object):
   """This class provides tools to list and access containers metadata.
@@ -38,8 +41,9 @@ class BaseStorage(object):
       docker_version (int): Docker storage version.
     """
     if docker_version not in [1, 2]:
-      print('Unsupported Docker version number {0:d}'.format(docker_version))
-      sys.exit(1)
+      error_message = 'Unsupported Docker version number {0:d}'.format(
+          docker_version)
+      raise BadStorageException(error_message)
 
     self.docker_version = docker_version
     self.storage_name = None
@@ -126,8 +130,9 @@ class AufsStorage(BaseStorage):
         of the file system.
     """
     if not os.path.isfile('/sbin/mount.aufs'):
-      print('Could not find /sbin/mount.aufs. Please install the aufs-tools '
-            'package.')
+      raise BadStorageException(
+          'Could not find /sbin/mount.aufs. Please install the aufs-tools '
+          'package.')
 
     mount_id = container_object.mount_id
 
