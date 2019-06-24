@@ -129,10 +129,6 @@ class AufsStorage(BaseStorage):
       list: a list commands that needs to be run to mount the container's view
         of the file system.
     """
-    if not os.path.isfile('/sbin/mount.aufs'):
-      raise BadStorageException(
-          'Could not find /sbin/mount.aufs. Please install the aufs-tools '
-          'package.')
 
     mount_id = container_object.mount_id
 
