@@ -20,7 +20,7 @@ import logging
 import os
 
 import docker_explorer
-from docker_explorer.errors import BadStorageException
+from docker_explorer import errors
 
 logger = logging.getLogger('docker-explorer')
 
@@ -43,7 +43,7 @@ class BaseStorage(object):
     if docker_version not in [1, 2]:
       error_message = 'Unsupported Docker version number {0:d}'.format(
           docker_version)
-      raise BadStorageException(error_message)
+      raise errors.BadStorageException(error_message)
 
     self.docker_version = docker_version
     self.storage_name = None
