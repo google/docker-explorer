@@ -21,12 +21,15 @@ A tool to parse offline Docker installation.
 from __future__ import print_function, unicode_literals
 
 import argparse
+import logging
 
 import docker_explorer
 
 from docker_explorer import explorer
 from docker_explorer import errors
 from docker_explorer import utils
+
+logger = logging.getLogger('docker-explorer')
 
 
 class DockerExplorerTool(object):
@@ -46,6 +49,10 @@ class DockerExplorerTool(object):
     """
     version_string = 'docker-explorer - version {0:s}'.format(
         docker_explorer.__version__)
+
+    argument_parser.add_argument(
+        '-d', '--debug', dest='debug', action='store_true', default=False,
+        help='Enable debug messages.')
 
     argument_parser.add_argument(
         '-r', '--docker-directory',
@@ -147,6 +154,25 @@ class DockerExplorerTool(object):
     container_object = self._explorer.GetContainer(container_id)
     print(utils.PrettyPrintJSON(container_object.GetHistory(show_empty_layers)))
 
+  def _SetLogging(self, debug):
+    """Configures the logging module.
+
+    Args:
+      debug(bool): whether to show debug messages.
+    """
+    handler = logging.StreamHandler()
+
+    if debug:
+      level = logging.DEBUG
+      logger.setLevel(level)
+      handler.setLevel(level)
+
+    formatter = logging.Formatter(
+        '%(asctime)s [%(levelname)s] (%(processName)-10s) PID:%(process)d '
+        '<%(module)s> %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
   def Main(self):
     """The main method for the DockerExplorerTool class.
 
@@ -156,6 +182,8 @@ class DockerExplorerTool(object):
       ValueError: If the arguments couldn't be parsed.
     """
     options = self.ParseArguments()
+
+    self._SetLogging(debug=options.debug)
 
     self._explorer = explorer.Explorer()
 
@@ -185,6 +213,6 @@ if __name__ == '__main__':
   try:
     DockerExplorerTool().Main()
   except errors.BadStorageException as exc:
-    print('ERROR: {0}\n'.format(exc.message))
-    print('Please specify a proper Docker directory path.\n'
-          '	hint: de.py -r /var/lib/docker')
+    logger.debug(exc.message)
+    logger.error('Please specify a proper Docker directory path.\n'
+                 '	hint: de.py -r /var/lib/docker')

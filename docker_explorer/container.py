@@ -14,7 +14,7 @@
 # limitations under the License.
 """Base class for a Docker Container object."""
 
-from __future__ import print_function, unicode_literals
+from __future__ import unicode_literals
 
 import json
 import os
