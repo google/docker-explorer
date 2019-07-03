@@ -167,7 +167,8 @@ class Container(object):
     if self.docker_version == 1:
       path = os.path.join(self.docker_directory, 'graph',
                           layer_id, 'layersize')
-      size = int(open(path).read())
+      with open(path) as layer_file:
+        size = int(layer_file.read())
     # TODO: Add docker storage v2 support
     return size
 
