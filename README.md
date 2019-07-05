@@ -160,3 +160,61 @@ Try this:
 ```
 sudo apt-get install linux-image-extra-$(uname -r)
 ```
+
+## Maintainer notes
+
+### PPA push
+
+Make a new version tag:
+```
+DATE="$(date +%Y%m%d)"
+git checkout master
+git pull upstream master
+git tag "${DATE}"
+git push upstream "${DATE}"
+```
+
+Build with [l2tdevtools](https://github.com/log2timeline/l2tdevtools).
+```
+cd /tmp
+git clone https://github.com/log2timeline/l2tdevtools
+```
+
+Make the build environment:
+```
+mkdir /tmp/build
+```
+
+First we need 2 files, `post-dpkg-source.sh`:
+```
+PROJECT=$1;
+VERSION=$2;
+VERSION_SUFFIX=$3;
+DISTRIBUTION=$4;
+ARCHITECTURE=$5;
+
+dput ppa:docker-explorer-dev-team_staging ../${PROJECT}_${VERSION}-1${VERSION_SUFFIX}~${DISTRIBUTION}_${ARCHITECTURE}.changes
+```
+
+and `prep-dpkg-source.sh`:
+```
+export NAME="Docker-Explorer devs";
+export EMAIL="docker-explorer-devs@google.com";
+
+PROJECT=$1;
+VERSION=$2;
+VERSION_SUFFIX=$3;
+DISTRIBUTION=$4;
+ARCHITECTURE=$5;
+
+dch --preserve -v ${VERSION}-1${VERSION_SUFFIX}~${DISTRIBUTION} --distribution ${DISTRIBUTION} --urgency low "Modifications for PPA release."
+```
+
+Start the build:
+
+```
+PYTHONPATH=. python tools/build.py --build-directory=/tmp/build/  --project docker-explorer dpkg-source
+```
+
+Then wait for launchpad to build the package, and move it from
+ppa:docker-explorer-dev-team_staging to ppa:gift_stable
