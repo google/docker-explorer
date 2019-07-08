@@ -29,6 +29,7 @@ except ImportError:
   from io import StringIO
 
 from docker_explorer import container
+from docker_explorer import downloader
 from docker_explorer import errors
 from docker_explorer import explorer
 from docker_explorer import storage
@@ -862,6 +863,20 @@ class TestOverlay2Storage(DockerTestCase):
     self.assertEqual(
         'Could not find any container ID starting with "xx"',
         err.exception.message)
+
+
+class TestDownloader(unittest.TestCase):
+  """Tests methods in the DockerImageDownloader object."""
+
+  def testSetupRepository(self):
+    """Tests the DockerImageDownloader._SetupRepository() method."""
+
+    dl = downloader.DockerImageDownloader('')
+
+    self.assertEqual(('library/foo', 'latest'), dl._SetupRepository('foo'))
+    self.assertEqual(('foo/bar', 'latest'), dl._SetupRepository('foo/bar'))
+    self.assertEqual(('library/foo', 'bar'), dl._SetupRepository('foo:bar'))
+    self.assertEqual(('foo/bar', 'baz'), dl._SetupRepository('foo/bar:baz'))
 
 
 del DockerTestCase
