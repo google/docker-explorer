@@ -91,6 +91,13 @@ class DockerImageDownloader(object):
     return response
 
   def _GetManifest(self):
+    """Downloads a Manifest from Docker Hub API.
+
+    Returns:
+      (dict) the manifest for the image.
+    Raises:
+      errors.DownloaderException: if there was an error fetching the manifest.
+    """
     if not self._manifest:
       try:
         self._manifest = self._RegistryAPIGet('/manifests/' + self.tag).json()
