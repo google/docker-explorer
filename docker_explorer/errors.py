@@ -36,3 +36,18 @@ class BadContainerException(DockerExplorerError):
 
 class BadStorageException(DockerExplorerError):
   """Raised when the Storage method detection failed."""
+
+
+class DownloaderException(DockerExplorerError):
+  """Raised when querying the Docker hub API failed."""
+
+  def __init__(self, message):
+    """Constructor for a DockerExplorerError.
+
+    Args:
+      message (str): the error message.
+    """
+    super(DownloaderException, self).__init__(message)
+    self.message = message
+    self.http_code = None
+    self.http_message = None

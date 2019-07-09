@@ -1,8 +1,11 @@
 """Module for downloading information from Docker Hub registry"""
 
 import logging
+import os
 import re
 import requests
+
+from docker_explorer import errors
 
 logger = logging.getLogger('docker-explorer')
 
@@ -12,14 +15,16 @@ class DockerImageDownloader(object):
 
   BASE_API_URL = 'https://registry-1.docker.io/v2/'
 
-  def __init__(self, image_name):
+  def __init__(self, image_name, output_directory=None):
     """Initializes a DockerImageDownloader.
 
     Args:
       image_name(str): the input argument to select the image from the registry.
+      output_directory(str): the option destination directory for downloads.
     """
     self._access_token = None
     self._manifest = None
+    self._output_directory = output_directory
 
     self.repository, self.tag = self._SetupRepository(image_name)
 
@@ -46,8 +51,12 @@ class DockerImageDownloader(object):
     else:
       image = repo_and_image
 
+    if not self._output_directory:
+      self._output_directory = os.path.join(repository, image, tag)
+      os.makedirs(self._output_directory, exist_ok=True)
+
     repository = '{}/{}'.format(repository, image)
-    tag = tag
+
     return (repository, tag)
 
   def _GetToken(self):
@@ -72,35 +81,48 @@ class DockerImageDownloader(object):
         'Accept':'application/vnd.docker.distribution.manifest.v2+json'}
     response = requests.get(self.repository_url+url, headers=headers)
     if response.status_code != 200:
-      return None
+      api_error = errors.DownloaderException(
+          'Error querying Docker Hub API: "{0:s}"'.format(
+              self.repository_url+url))
+      api_error.http_code = response.status_code
+      api_error.http_message = response.content
+      raise api_error
     return response
+
+  def _GetManifest(self):
+    if not self._manifest:
+      try:
+        self._manifest = self._RegistryAPIGet('/manifests/' + self.tag).json()
+      except errors.DownloaderException as e:
+        container = '{0:s}:{1:s}'.format(self.repository, self.tag)
+        logger.error('Error getting manifest for {0:s}'.format(container))
+        raise e
+    return self._manifest
 
   def DownloadPseudoDockerfile(self):
     """Downloads a pseudo DockerFile for the image."""
 
-    if not self._manifest:
-      manifest = self._RegistryAPIGet('/manifests/' + self.tag).json()
-
-    if manifest.get('config'):
-      digest = manifest.get('config').get('digest')
+    if self._GetManifest().get('config'):
+      digest = self._manifest.get('config').get('digest')
       docker_configuration = self._RegistryAPIGet('/blobs/' + digest).json()
-      with open('Dockerfile', 'w') as dockerfile:
+      docker_filepath = os.path.join(self._output_directory, 'Dockerfile')
+      with open(docker_filepath, 'w') as dockerfile:
         dockerfile.write(self.BuildDockerfileFromManifest(docker_configuration))
-      logger.info('Downloaded Dockerfile')
+      logger.info(
+          'Downloaded Dockerfile to {0:s}'.format(self._output_directory))
 
   def DownloadLayers(self):
     """Downloads layers for the image."""
 
-    if not self._manifest:
-      manifest = self._RegistryAPIGet('/manifests/' + self.tag).json()
-
-    for layer in manifest.get('layers', []):
+    for layer in self._GetManifest().get('layers', []):
       digest = layer.get('digest')
       response = self._RegistryAPIGet('/blobs/' + digest)
       layer_filename = '{0:s}.tgz'.format(digest.split(':')[1])
-      with open(layer_filename, 'wb') as layer_blob:
+      layer_path = os.path.join(self._output_directory, layer_filename)
+      with open(layer_path, 'wb') as layer_blob:
         layer_blob.write(response.content)
-      logger.info('Downloaded {0:s}'.format(layer_filename))
+      logger.info('Downloaded {0:s} to {1:s}'.format(
+          layer_filename, self._output_directory))
 
   def BuildDockerfileFromManifest(self, docker_configuration):
     """Generates a pseudo-Dockerfile from a parsed Docker configuration.

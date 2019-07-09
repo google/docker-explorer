@@ -180,6 +180,7 @@ class DockerExplorerTool(object):
       debug(bool): whether to show debug messages.
     """
     handler = logging.StreamHandler()
+    logger.setLevel(logging.INFO)
 
     if debug:
       level = logging.DEBUG
@@ -207,14 +208,22 @@ class DockerExplorerTool(object):
     self._explorer = explorer.Explorer()
 
     if options.command == 'download':
-      dl = downloader.DockerImageDownloader(options.image_name)
-      if options.what == 'all':
-        dl.DownloadPseudoDockerfile()
-        dl.DownloadLayers()
-      if options.what == 'dockerfile':
-        dl.DownloadPseudoDockerfile()
-      if options.what == 'layers':
-        dl.DownloadLayers()
+      try:
+        dl = downloader.DockerImageDownloader(options.image_name)
+        if options.what == 'all':
+          dl.DownloadPseudoDockerfile()
+          dl.DownloadLayers()
+        if options.what == 'dockerfile':
+          dl.DownloadPseudoDockerfile()
+        if options.what == 'layers':
+          dl.DownloadLayers()
+      except errors.DownloaderException as exc:
+        logger.debug(exc.message)
+        logger.debug(exc.http_message)
+        logger.error(
+            'Make sure the image \'{0:s}:{1:s}\' exists in the public Docker '
+            'Hub registry: https://hub.docker.com/r/{2:s}/tags'.format(
+                dl.repository, dl.tag, dl.repository))
       return
 
     self._explorer.SetDockerDirectory(options.docker_directory)
