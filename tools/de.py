@@ -25,8 +25,9 @@ import logging
 
 import docker_explorer
 
-from docker_explorer import explorer
+from docker_explorer import downloader
 from docker_explorer import errors
+from docker_explorer import explorer
 from docker_explorer import utils
 
 logger = logging.getLogger('docker-explorer')
@@ -79,6 +80,23 @@ class DockerExplorerTool(object):
         help='The container id (can be the first few characters of the id)')
     mount_parser.add_argument('mountpoint', help='Where to mount')
 
+  def AddDownloadCommand(self, args):
+    """Adds the download command to the argument_parser.
+
+    Args:
+      args (argument_parser): the argument parser to add the command to.
+    """
+    download_parser = args.add_parser(
+        'download',
+        help=('Downloads information from Docker Hub Registry base on an image'
+              'name.'))
+    download_parser.add_argument(
+        'what', help='What to download', choices=[
+            'all', 'dockerfile', 'layers'])
+    download_parser.add_argument(
+        'image_name',
+        help='the image to download artifacts of (ie: \'busybox\')')
+
   def AddListCommand(self, args):
     """Adds the list command to the argument_parser.
 
@@ -117,6 +135,7 @@ class DockerExplorerTool(object):
     self.AddBasicOptions(self._argument_parser)
 
     command_parser = self._argument_parser.add_subparsers(dest='command')
+    self.AddDownloadCommand(command_parser)
     self.AddMountCommand(command_parser)
     self.AddListCommand(command_parser)
     self.AddHistoryCommand(command_parser)
@@ -161,6 +180,7 @@ class DockerExplorerTool(object):
       debug(bool): whether to show debug messages.
     """
     handler = logging.StreamHandler()
+    logger.setLevel(logging.INFO)
 
     if debug:
       level = logging.DEBUG
@@ -187,6 +207,25 @@ class DockerExplorerTool(object):
 
     self._explorer = explorer.Explorer()
 
+    if options.command == 'download':
+      try:
+        dl = downloader.DockerImageDownloader(options.image_name)
+        if options.what == 'all':
+          dl.DownloadPseudoDockerfile()
+          dl.DownloadLayers()
+        if options.what == 'dockerfile':
+          dl.DownloadPseudoDockerfile()
+        if options.what == 'layers':
+          dl.DownloadLayers()
+      except errors.DownloaderException as exc:
+        logger.debug(exc.message)
+        logger.debug(exc.http_message)
+        logger.error(
+            'Make sure the image \'{0:s}:{1:s}\' exists in the public Docker '
+            'Hub registry: https://hub.docker.com/r/{2:s}/tags'.format(
+                dl.repository, dl.tag, dl.repository))
+      return
+
     self._explorer.SetDockerDirectory(options.docker_directory)
     self._explorer.DetectDockerStorageVersion()
 
@@ -204,6 +243,7 @@ class DockerExplorerTool(object):
         self.ShowContainers(only_running=True)
       elif options.what == 'repositories':
         print(self.GetRepositoriesString())
+
 
     else:
       raise ValueError('Unhandled command %s' % options.command)
