@@ -124,66 +124,6 @@ class TestDEMain(unittest.TestCase):
 
       self.assertEqual(expected_string, fake_output.getvalue())
 
-  def testShowContainers(self):
-    """Tests that ShowHistory shows history."""
-    de_object = de.DockerExplorerTool()
-    de_object._explorer = self.explorer_object
-    self.maxDiff = None
-    with unittest.mock.patch('sys.stdout', new=StringIO()) as fake_output:
-      de_object.docker_directory = self.docker_directory_path
-      de_object.ShowContainers()
-
-      expected_string = """[
-    {
-        "image_name": "busybox", 
-        "container_id": "61ba4e6c012c782186c649466157e05adfd7caa5b551432de51043893cae5353", 
-        "image_id": "8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7", 
-        "start_date": "0001-01-01T00:00:00", 
-        "mount_id": "04cc041c6e1a41007c2c7f19574194244e81ea7dc0b3c32848b9e06915065cc4", 
-        "upper_dir": "test_data/docker/overlay2/04cc041c6e1a41007c2c7f19574194244e81ea7dc0b3c32848b9e06915065cc4/diff", 
-        "log_path": "/var/lib/docker/containers/61ba4e6c012c782186c649466157e05adfd7caa5b551432de51043893cae5353/61ba4e6c012c782186c649466157e05adfd7caa5b551432de51043893cae5353-json.log"
-    }, 
-    {
-        "image_name": "busybox", 
-        "container_id": "10acac0b3466813c9e1f85e2aa7d06298e51fbfe86bbcb6b7a19dd33d3798f6a", 
-        "image_id": "8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7", 
-        "start_date": "0001-01-01T00:00:00", 
-        "mount_id": "d877fe1ffb0a1da27204bc1ae4e356c7a7a235e7392d04a81d5d7df3471c74b6", 
-        "upper_dir": "test_data/docker/overlay2/d877fe1ffb0a1da27204bc1ae4e356c7a7a235e7392d04a81d5d7df3471c74b6/diff", 
-        "log_path": "/var/lib/docker/containers/10acac0b3466813c9e1f85e2aa7d06298e51fbfe86bbcb6b7a19dd33d3798f6a/10acac0b3466813c9e1f85e2aa7d06298e51fbfe86bbcb6b7a19dd33d3798f6a-json.log"
-    }, 
-    {
-        "image_name": "busybox", 
-        "container_id": "9949fa153b778e39d6cab0a4e0ba60fa34a13fedb1f256d613a2f88c0c98408a", 
-        "image_id": "8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7", 
-        "start_date": "2018-05-16T10:50:57.324126", 
-        "mount_id": "fc790748d90675e0934c6ade53f68b6f73b920ca1f08df718c272e51abdabea7", 
-        "upper_dir": "test_data/docker/overlay2/fc790748d90675e0934c6ade53f68b6f73b920ca1f08df718c272e51abdabea7/diff", 
-        "log_path": "/var/lib/docker/containers/9949fa153b778e39d6cab0a4e0ba60fa34a13fedb1f256d613a2f88c0c98408a/9949fa153b778e39d6cab0a4e0ba60fa34a13fedb1f256d613a2f88c0c98408a-json.log"
-    }, 
-    {
-        "image_name": "busybox", 
-        "container_id": "f83f963c67cbd36055f690fc988c1e42be06c1253e80113d1d516778c06b2841", 
-        "image_id": "8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7", 
-        "start_date": "2018-05-16T10:51:05.177987", 
-        "mount_id": "8ed5fc296a7930f4faf7812c081cb1b310dfc29f6b23f5f2425e36f51d5cb9d1", 
-        "upper_dir": "test_data/docker/overlay2/8ed5fc296a7930f4faf7812c081cb1b310dfc29f6b23f5f2425e36f51d5cb9d1/diff", 
-        "log_path": "/var/lib/docker/containers/f83f963c67cbd36055f690fc988c1e42be06c1253e80113d1d516778c06b2841/f83f963c67cbd36055f690fc988c1e42be06c1253e80113d1d516778c06b2841-json.log"
-    }, 
-    {
-        "image_name": "busybox", 
-        "container_id": "8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206", 
-        "image_id": "8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7", 
-        "start_date": "2018-05-16T10:51:39.625989", 
-        "mount_id": "92fd3b3e7d6101bb701743c9518c45b0d036b898c8a3d7cae84e1a06e6829b53", 
-        "upper_dir": "test_data/docker/overlay2/92fd3b3e7d6101bb701743c9518c45b0d036b898c8a3d7cae84e1a06e6829b53/diff", 
-        "log_path": "/var/lib/docker/containers/8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206/8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206-json.log"
-    }
-]
-
-"""
-      self.assertEqual(expected_string, fake_output.getvalue())
-
   def testDetectStorageFail(self):
     """Tests that the DockerExplorerTool.DetectStorage function fails on
     Docker directory."""
