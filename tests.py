@@ -186,7 +186,7 @@ class TestDEMain(unittest.TestCase):
 
   def testDetectStorageFail(self):
     """Tests that the DockerExplorerTool.DetectStorage function fails on
-  Docker directory."""
+    Docker directory."""
     explorer_object = explorer.Explorer()
     explorer_object.docker_directory = 'this_dir_shouldnt_exist'
 
@@ -306,7 +306,7 @@ class TestAufsStorage(DockerTestCase):
     expected['mount_points'] = {'/var/jenkins_home': mount_point}
     expected['log_path'] = '/tmp/docker/containers/7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966/7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966-json.log'
 
-    self.assertEqual(result[0], expected)
+    self.assertEqual([expected], result)
 
   def testGetLayerInfo(self):
     """Tests the BaseStorage.GetLayerInfo function on a AuFS storage."""
@@ -466,7 +466,6 @@ class TestAufsV1Storage(DockerTestCase):
     expected['image_id'] = '1cee97b18f87b5fa91633db35f587e2c65c093facfa2cbbe83d5ebe06e1d9125'
     expected['start_date'] = '2018-12-27T10:53:17.409426'
     expected['log_path'] = '/var/lib/docker/containers/de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c/de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c-json.log'
-
 
     self.assertEqual([expected], result)
 

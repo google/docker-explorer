@@ -77,7 +77,7 @@ class Container(object):
     start_timestamp (str): the container's start timestamp.
     storage_name (str): the container's storage driver name.
     storage_object (BaseStorage): the container's storage backend object.
-    upper_dir XXX
+    upper_dir (str): path to upper_dir folder.
     volumes (list(tuple)): list of mount points to bind from host to the
       container. (Docker storage backend v1).
   """
