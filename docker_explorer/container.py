@@ -16,6 +16,7 @@
 
 from __future__ import unicode_literals
 
+import collections
 import json
 import os
 import subprocess
@@ -76,6 +77,7 @@ class Container(object):
     start_timestamp (str): the container's start timestamp.
     storage_name (str): the container's storage driver name.
     storage_object (BaseStorage): the container's storage backend object.
+    upper_dir XXX
     volumes (list(tuple)): list of mount points to bind from host to the
       container. (Docker storage backend v1).
   """
@@ -145,6 +147,7 @@ class Container(object):
               container_info_json_path))
 
     self._SetStorage(self.storage_name)
+    self.upper_dir = None
     self.volumes = container_info_dict.get('Volumes', None)
 
     if self.docker_version == 2:
@@ -153,6 +156,15 @@ class Container(object):
           'mounts', container_id)
       with open(os.path.join(c_path, 'mount-id')) as mount_id_file:
         self.mount_id = mount_id_file.read()
+
+    if self.storage_name in ['overlay', 'overlay2']:
+      self.upper_dir = os.path.join(self.storage_object.docker_directory,
+                                    self.storage_object.STORAGE_METHOD,
+                                    self.mount_id,
+                                    self.storage_object.UPPERDIR_NAME)
+
+    self.log_path = container_info_dict.get('LogPath', None)
+
 
   def GetLayerSize(self, layer_id):
     """Returns the size of the layer.
@@ -235,12 +247,12 @@ class Container(object):
     result_dict = {}
     for layer in self.GetOrderedLayers():
       layer_info = self.GetLayerInfo(layer)
-      layer_dict = {}
+      layer_dict = collections.OrderedDict()
 
       if layer is None:
         raise ValueError('Layer {0:s} does not exist'.format(layer))
+
       layer_size = self.GetLayerSize(layer)
-      layer_dict['size'] = layer_size
       if layer_size > 0 or show_empty_layers or self.docker_version == 2:
         layer_dict['created_at'] = utils.FormatDatetime(layer_info['created'])
         container_cmd = layer_info['container_config'].get('Cmd', None)
@@ -249,6 +261,8 @@ class Container(object):
         comment = layer_info.get('comment', None)
         if comment:
           layer_dict['comment'] = comment
+
+      layer_dict['size'] = layer_size
       result_dict[layer] = layer_dict
 
     return result_dict

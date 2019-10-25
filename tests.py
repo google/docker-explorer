@@ -5,7 +5,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#      http://www.apache.org/licenses/LICENSE-2.0
+#   http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,14 +16,15 @@
 
 from __future__ import unicode_literals
 
+import collections
 import os
 import shutil
 import sys
 import tarfile
 import tempfile
 import unittest
+import unittest.mock
 
-import mock
 try:
   from StringIO import StringIO
 except ImportError:
@@ -38,8 +39,9 @@ from docker_explorer import storage
 from docker_explorer import utils
 from tools import de
 
-
 # pylint: disable=protected-access
+# pylint: disable=line-too-long
+
 
 class UtilsTests(unittest.TestCase):
   """Tests Utils methods."""
@@ -94,90 +96,88 @@ class TestDEMain(unittest.TestCase):
 
     options = de_object.ParseArguments()
     usage_string = de_object._argument_parser.format_usage()
-    expected_usage = ('[-h] [-d] [-r DOCKER_DIRECTORY] [-V]\n'
-                      '                {download,mount,list,history}')
+    expected_usage = (
+        '[-h] [-d] [-r DOCKER_DIRECTORY] [-V]\n'
+        '                {download,mount,list,history}')
     self.assertTrue(expected_usage in usage_string)
     self.assertEqual(expected_docker_root, options.docker_directory)
 
   def testShowHistory(self):
     """Tests that ShowHistory shows history."""
+    self.maxDiff = None
     de_object = de.DockerExplorerTool()
     de_object._explorer = self.explorer_object
     # We pick one of the container IDs.
     container_id = container.GetAllContainersIDs(self.docker_directory_path)[0]
-    with mock.patch('sys.stdout', new=StringIO()) as fake_output:
+    with unittest.mock.patch('sys.stdout', new=StringIO()) as fake_output:
       de_object.docker_directory = self.docker_directory_path
       de_object.ShowHistory(container_id)
       expected_string = """{
     "sha256:8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7": {
-        "container_cmd": "/bin/sh -c #(nop)  CMD [\\"sh\\"]", 
         "created_at": "2018-04-05T10:41:28.876407", 
+        "container_cmd": "/bin/sh -c #(nop)  CMD [\\"sh\\"]", 
         "size": 0
     }
 }
 
 """
-      self.assertEqual(
-          expected_string, fake_output.getvalue())
+
+      self.assertEqual(expected_string, fake_output.getvalue())
 
   def testShowContainers(self):
     """Tests that ShowHistory shows history."""
     de_object = de.DockerExplorerTool()
     de_object._explorer = self.explorer_object
     self.maxDiff = None
-    with mock.patch('sys.stdout', new=StringIO()) as fake_output:
+    with unittest.mock.patch('sys.stdout', new=StringIO()) as fake_output:
       de_object.docker_directory = self.docker_directory_path
       de_object.ShowContainers()
+
       expected_string = """[
     {
-        "container_id": "10acac0b3466813c9e1f85e2aa7d06298e51fbfe86bbcb6b7a19dd\
-33d3798f6a", 
-        "image_id": "8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc030023008\
-56d8c7", 
         "image_name": "busybox", 
-        "mount_id": "d877fe1ffb0a1da27204bc1ae4e356c7a7a235e7392d04a81d5d7df347\
-1c74b6", 
-        "start_date": "0001-01-01T00:00:00"
+        "container_id": "61ba4e6c012c782186c649466157e05adfd7caa5b551432de51043893cae5353", 
+        "image_id": "8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7", 
+        "start_date": "0001-01-01T00:00:00", 
+        "mount_id": "04cc041c6e1a41007c2c7f19574194244e81ea7dc0b3c32848b9e06915065cc4", 
+        "upper_dir": "test_data/docker/overlay2/04cc041c6e1a41007c2c7f19574194244e81ea7dc0b3c32848b9e06915065cc4/diff", 
+        "log_path": "/var/lib/docker/containers/61ba4e6c012c782186c649466157e05adfd7caa5b551432de51043893cae5353/61ba4e6c012c782186c649466157e05adfd7caa5b551432de51043893cae5353-json.log"
     }, 
     {
-        "container_id": "61ba4e6c012c782186c649466157e05adfd7caa5b551432de51043\
-893cae5353", 
-        "image_id": "8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc030023008\
-56d8c7", 
         "image_name": "busybox", 
-        "mount_id": "04cc041c6e1a41007c2c7f19574194244e81ea7dc0b3c32848b9e06915\
-065cc4", 
-        "start_date": "0001-01-01T00:00:00"
+        "container_id": "10acac0b3466813c9e1f85e2aa7d06298e51fbfe86bbcb6b7a19dd33d3798f6a", 
+        "image_id": "8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7", 
+        "start_date": "0001-01-01T00:00:00", 
+        "mount_id": "d877fe1ffb0a1da27204bc1ae4e356c7a7a235e7392d04a81d5d7df3471c74b6", 
+        "upper_dir": "test_data/docker/overlay2/d877fe1ffb0a1da27204bc1ae4e356c7a7a235e7392d04a81d5d7df3471c74b6/diff", 
+        "log_path": "/var/lib/docker/containers/10acac0b3466813c9e1f85e2aa7d06298e51fbfe86bbcb6b7a19dd33d3798f6a/10acac0b3466813c9e1f85e2aa7d06298e51fbfe86bbcb6b7a19dd33d3798f6a-json.log"
     }, 
     {
-        "container_id": "9949fa153b778e39d6cab0a4e0ba60fa34a13fedb1f256d613a2f8\
-8c0c98408a", 
-        "image_id": "8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc030023008\
-56d8c7", 
         "image_name": "busybox", 
-        "mount_id": "fc790748d90675e0934c6ade53f68b6f73b920ca1f08df718c272e51ab\
-dabea7", 
-        "start_date": "2018-05-16T10:50:57.324126"
+        "container_id": "9949fa153b778e39d6cab0a4e0ba60fa34a13fedb1f256d613a2f88c0c98408a", 
+        "image_id": "8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7", 
+        "start_date": "2018-05-16T10:50:57.324126", 
+        "mount_id": "fc790748d90675e0934c6ade53f68b6f73b920ca1f08df718c272e51abdabea7", 
+        "upper_dir": "test_data/docker/overlay2/fc790748d90675e0934c6ade53f68b6f73b920ca1f08df718c272e51abdabea7/diff", 
+        "log_path": "/var/lib/docker/containers/9949fa153b778e39d6cab0a4e0ba60fa34a13fedb1f256d613a2f88c0c98408a/9949fa153b778e39d6cab0a4e0ba60fa34a13fedb1f256d613a2f88c0c98408a-json.log"
     }, 
     {
-        "container_id": "f83f963c67cbd36055f690fc988c1e42be06c1253e80113d1d5167\
-78c06b2841", 
-        "image_id": "8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc030023008\
-56d8c7", 
         "image_name": "busybox", 
-        "mount_id": "8ed5fc296a7930f4faf7812c081cb1b310dfc29f6b23f5f2425e36f51d\
-5cb9d1", 
-        "start_date": "2018-05-16T10:51:05.177987"
+        "container_id": "f83f963c67cbd36055f690fc988c1e42be06c1253e80113d1d516778c06b2841", 
+        "image_id": "8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7", 
+        "start_date": "2018-05-16T10:51:05.177987", 
+        "mount_id": "8ed5fc296a7930f4faf7812c081cb1b310dfc29f6b23f5f2425e36f51d5cb9d1", 
+        "upper_dir": "test_data/docker/overlay2/8ed5fc296a7930f4faf7812c081cb1b310dfc29f6b23f5f2425e36f51d5cb9d1/diff", 
+        "log_path": "/var/lib/docker/containers/f83f963c67cbd36055f690fc988c1e42be06c1253e80113d1d516778c06b2841/f83f963c67cbd36055f690fc988c1e42be06c1253e80113d1d516778c06b2841-json.log"
     }, 
     {
-        "container_id": "8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078\
-dfb2690206", 
-        "image_id": "8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc030023008\
-56d8c7", 
         "image_name": "busybox", 
-        "mount_id": "92fd3b3e7d6101bb701743c9518c45b0d036b898c8a3d7cae84e1a06e6\
-829b53", 
-        "start_date": "2018-05-16T10:51:39.625989"
+        "container_id": "8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206", 
+        "image_id": "8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7", 
+        "start_date": "2018-05-16T10:51:39.625989", 
+        "mount_id": "92fd3b3e7d6101bb701743c9518c45b0d036b898c8a3d7cae84e1a06e6829b53", 
+        "upper_dir": "test_data/docker/overlay2/92fd3b3e7d6101bb701743c9518c45b0d036b898c8a3d7cae84e1a06e6829b53/diff", 
+        "log_path": "/var/lib/docker/containers/8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206/8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206-json.log"
     }
 ]
 
@@ -186,7 +186,7 @@ dfb2690206",
 
   def testDetectStorageFail(self):
     """Tests that the DockerExplorerTool.DetectStorage function fails on
-    Docker directory."""
+  Docker directory."""
     explorer_object = explorer.Explorer()
     explorer_object.docker_directory = 'this_dir_shouldnt_exist'
 
@@ -231,11 +231,11 @@ class DockerTestCase(unittest.TestCase):
 
       self.assertEqual(self.storage_version, container_obj.docker_version)
       if self.storage_version == 1:
-        self.assertEqual(
-            'config.json', container_obj.container_config_filename)
+        self.assertEqual('config.json', container_obj.container_config_filename)
       elif self.storage_version == 2:
         self.assertEqual(
             'config.v2.json', container_obj.container_config_filename)
+
 
 class TestAufsStorage(DockerTestCase):
   """Tests methods in the BaseStorage object."""
@@ -253,8 +253,8 @@ class TestAufsStorage(DockerTestCase):
     container_obj = containers_list[1]
 
     self.assertEqual('/dreamy_snyder', container_obj.name)
-    self.assertEqual('2017-02-13T16:45:05.629904159Z',
-                     container_obj.creation_timestamp)
+    self.assertEqual(
+        '2017-02-13T16:45:05.629904159Z', container_obj.creation_timestamp)
     self.assertEqual('busybox', container_obj.config_image_name)
     self.assertTrue(container_obj.running)
 
@@ -290,17 +290,23 @@ class TestAufsStorage(DockerTestCase):
   def testGetContainersJson(self):
     """Tests the GetContainersJson function on a AuFS storage."""
     result = self.explorer_object.GetContainersJson(only_running=True)
-    expected = [
-        {'image_id':
-         '7968321274dc6b6171697c33df7815310468e694ac5be0ec03ff053bb135e768',
-         'container_id':
-         '7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966',
-         'mount_id':
-         'b16a494082bba0091e572b58ff80af1b7b5d28737a3eedbe01e73cd7f4e01d23',
-         'start_date': '2017-02-13T16:45:05.785658',
-         'image_name': 'busybox'}
-    ]
-    self.assertEqual(expected, result)
+
+    mount_point = collections.OrderedDict()
+    mount_point['type'] = None
+    mount_point['mount_point'] = '/var/jenkins_home'
+    mount_point['source'] = ''
+    mount_point['RW'] = True
+
+    expected = collections.OrderedDict()
+    expected['image_name'] = 'busybox'
+    expected['container_id'] = '7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966'
+    expected['image_id'] = '7968321274dc6b6171697c33df7815310468e694ac5be0ec03ff053bb135e768'
+    expected['start_date'] = '2017-02-13T16:45:05.785658'
+    expected['mount_id'] = 'b16a494082bba0091e572b58ff80af1b7b5d28737a3eedbe01e73cd7f4e01d23'
+    expected['mount_points'] = {'/var/jenkins_home': mount_point}
+    expected['log_path'] = '/tmp/docker/containers/7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966/7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966-json.log'
+
+    self.assertEqual(result[0], expected)
 
   def testGetLayerInfo(self):
     """Tests the BaseStorage.GetLayerInfo function on a AuFS storage."""
@@ -328,8 +334,7 @@ class TestAufsStorage(DockerTestCase):
         '        }, \n'
         '        "path": "test_data/docker/image/aufs/repositories.json"\n'
         '    }\n'
-        ']\n'
-    )
+        ']\n')
     self.assertEqual(expected_string, result_string)
 
   def testMakeMountCommands(self):
@@ -340,19 +345,23 @@ class TestAufsStorage(DockerTestCase):
         container_obj, '/mnt')
     commands = [' '.join(x) for x in commands]
     expected_commands = [
-        ('/bin/mount -t aufs -o ro,br=test_data/docker/aufs/diff/test_data/'
-         'docker/aufs/diff/'
-         'b16a494082bba0091e572b58ff80af1b7b5d28737a3eedbe01e73cd7f4e01d23'
-         '=ro+wh none /mnt'),
-        ('/bin/mount -t aufs -o ro,remount,append:test_data/docker/aufs/diff/'
-         'b16a494082bba0091e572b58ff80af1b7b5d28737a3eedbe01e73cd7f4e01d23'
-         '-init=ro+wh none /mnt'),
-        ('/bin/mount -t aufs -o ro,remount,append:test_data/docker/aufs/diff/'
-         'd1c54c46d331de21587a16397e8bd95bdbb1015e1a04797c76de128107da83ae'
-         '=ro+wh none /mnt'),
-        ('/bin/mount --bind -o ro {0:s}/docker/volumes/'
-         '28297de547b5473a9aff90aaab45ed108ebf019981b40c3c35c226f54c13ac0d/'
-         '_data /mnt/var/jenkins_home').format(os.path.abspath('test_data'))
+        (
+            '/bin/mount -t aufs -o ro,br=test_data/docker/aufs/diff/test_data/'
+            'docker/aufs/diff/'
+            'b16a494082bba0091e572b58ff80af1b7b5d28737a3eedbe01e73cd7f4e01d23'
+            '=ro+wh none /mnt'),
+        (
+            '/bin/mount -t aufs -o ro,remount,append:test_data/docker/aufs/diff/'
+            'b16a494082bba0091e572b58ff80af1b7b5d28737a3eedbe01e73cd7f4e01d23'
+            '-init=ro+wh none /mnt'),
+        (
+            '/bin/mount -t aufs -o ro,remount,append:test_data/docker/aufs/diff/'
+            'd1c54c46d331de21587a16397e8bd95bdbb1015e1a04797c76de128107da83ae'
+            '=ro+wh none /mnt'),
+        (
+            '/bin/mount --bind -o ro {0:s}/docker/volumes/'
+            '28297de547b5473a9aff90aaab45ed108ebf019981b40c3c35c226f54c13ac0d/'
+            '_data /mnt/var/jenkins_home').format(os.path.abspath('test_data'))
     ]
     self.assertEqual(expected_commands, commands)
 
@@ -414,8 +423,8 @@ class TestAufsV1Storage(DockerTestCase):
     container_obj = containers_list[0]
 
     self.assertEqual('/angry_rosalind', container_obj.name)
-    self.assertEqual('2018-12-27T10:53:17.096746609Z',
-                     container_obj.creation_timestamp)
+    self.assertEqual(
+        '2018-12-27T10:53:17.096746609Z', container_obj.creation_timestamp)
     self.assertEqual('busybox', container_obj.config_image_name)
     self.assertTrue(container_obj.running)
 
@@ -450,15 +459,16 @@ class TestAufsV1Storage(DockerTestCase):
   def testGetContainersJson(self):
     """Tests the GetContainersJson function on a AuFS storage."""
     result = self.explorer_object.GetContainersJson(only_running=True)
-    expected = [
-        {'image_id':
-         '1cee97b18f87b5fa91633db35f587e2c65c093facfa2cbbe83d5ebe06e1d9125',
-         'container_id':
-         'de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c',
-         'start_date': '2018-12-27T10:53:17.409426',
-         'image_name': 'busybox'}
-    ]
-    self.assertEqual(expected, result)
+
+    expected = collections.OrderedDict()
+    expected['image_name'] = 'busybox'
+    expected['container_id'] = 'de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c'
+    expected['image_id'] = '1cee97b18f87b5fa91633db35f587e2c65c093facfa2cbbe83d5ebe06e1d9125'
+    expected['start_date'] = '2018-12-27T10:53:17.409426'
+    expected['log_path'] = '/var/lib/docker/containers/de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c/de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c-json.log'
+
+
+    self.assertEqual([expected], result)
 
   def testGetLayerInfo(self):
     """Tests the BaseStorage.GetLayerInfo function on a AuFS storage."""
@@ -485,8 +495,7 @@ class TestAufsV1Storage(DockerTestCase):
         '        }, \n'
         '        "path": "test_data/docker/repositories-aufs"\n'
         '    }\n'
-        ']\n'
-    )
+        ']\n')
     self.assertEqual(expected_string, result_string)
 
   def testMakeMountCommands(self):
@@ -497,19 +506,23 @@ class TestAufsV1Storage(DockerTestCase):
         container_obj, '/mnt')
     commands = [' '.join(x) for x in commands]
     expected_commands = [
-        ('/bin/mount -t aufs -o ro,br=test_data/'
-         'docker/aufs/diff/'
-         'de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c'
-         '=ro+wh none /mnt'),
-        ('/bin/mount -t aufs -o ro,remount,append:test_data/docker/aufs/diff/'
-         'de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c'
-         '-init=ro+wh none /mnt'),
-        ('/bin/mount -t aufs -o ro,remount,append:test_data/docker/aufs/diff/'
-         '1cee97b18f87b5fa91633db35f587e2c65c093facfa2cbbe83d5ebe06e1d9125'
-         '=ro+wh none /mnt'),
-        ('/bin/mount -t aufs -o ro,remount,append:test_data/docker/aufs/diff/'
-         'df557f39d413a1408f5c28d8aab2892f927237ec22e903ef04b331305130ab38'
-         '=ro+wh none /mnt')
+        (
+            '/bin/mount -t aufs -o ro,br=test_data/'
+            'docker/aufs/diff/'
+            'de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c'
+            '=ro+wh none /mnt'),
+        (
+            '/bin/mount -t aufs -o ro,remount,append:test_data/docker/aufs/diff/'
+            'de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c'
+            '-init=ro+wh none /mnt'),
+        (
+            '/bin/mount -t aufs -o ro,remount,append:test_data/docker/aufs/diff/'
+            '1cee97b18f87b5fa91633db35f587e2c65c093facfa2cbbe83d5ebe06e1d9125'
+            '=ro+wh none /mnt'),
+        (
+            '/bin/mount -t aufs -o ro,remount,append:test_data/docker/aufs/diff/'
+            'df557f39d413a1408f5c28d8aab2892f927237ec22e903ef04b331305130ab38'
+            '=ro+wh none /mnt')
     ]
     self.assertEqual(expected_commands, commands)
 
@@ -520,13 +533,17 @@ class TestAufsV1Storage(DockerTestCase):
         'de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c')
     expected = {
         '1cee97b18f87b5fa91633db35f587e2c65c093facfa2cbbe83d5ebe06e1d9125': {
-            'size': 0},
+            'size': 0
+        },
         'df557f39d413a1408f5c28d8aab2892f927237ec22e903ef04b331305130ab38': {
-            'created_at': '2018-12-26T08:20:42.687925',
-            'container_cmd':
-                ('/bin/sh -c #(nop) ADD file:ce026b62356eec3ad1214f92be2c'
-                 '9dc063fe205bd5e600be3492c4dfb17148bd in / '),
-            'size': 1154361}
+            'created_at':
+                '2018-12-26T08:20:42.687925',
+            'container_cmd': (
+                '/bin/sh -c #(nop) ADD file:ce026b62356eec3ad1214f92be2c'
+                '9dc063fe205bd5e600be3492c4dfb17148bd in / '),
+            'size':
+                1154361
+        }
     }
 
     self.assertEqual(expected, container_obj.GetHistory())
@@ -540,12 +557,12 @@ class TestAufsV1Storage(DockerTestCase):
     self.maxDiff = None
     with self.assertRaises(Exception) as err:
       self.explorer_object._GetFullContainerID('')
-    self.assertEqual(
-        ('Too many container IDs starting with "": '
-         '3b03d0958390ccfb92e9f1ee67de628ab315c532120d4512cb72a1805465fb35, '
-         'de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c, '
-         'fbb6711cefc70193cb6cb0b113fc9ed6b9eaddcdd33667adb5cb690a4dca413a'),
-        err.exception.message)
+    self.assertEqual((
+        'Too many container IDs starting with "": '
+        '3b03d0958390ccfb92e9f1ee67de628ab315c532120d4512cb72a1805465fb35, '
+        'de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c, '
+        'fbb6711cefc70193cb6cb0b113fc9ed6b9eaddcdd33667adb5cb690a4dca413a'),
+                     err.exception.message)
 
     with self.assertRaises(Exception) as err:
       self.explorer_object._GetFullContainerID('xx')
@@ -570,8 +587,8 @@ class TestOverlayStorage(DockerTestCase):
     container_obj = containers_list[0]
 
     self.assertEqual('/elastic_booth', container_obj.name)
-    self.assertEqual('2018-01-26T14:55:56.280943771Z',
-                     container_obj.creation_timestamp)
+    self.assertEqual(
+        '2018-01-26T14:55:56.280943771Z', container_obj.creation_timestamp)
     self.assertEqual('busybox:latest', container_obj.config_image_name)
     self.assertTrue(container_obj.running)
 
@@ -608,17 +625,17 @@ class TestOverlayStorage(DockerTestCase):
   def testGetContainersJson(self):
     """Tests the GetContainersJson function on a Overlay storage."""
     result = self.explorer_object.GetContainersJson(only_running=True)
-    expected = [
-        {'image_id':
-         '5b0d59026729b68570d99bc4f3f7c31a2e4f2a5736435641565d93e7c25bd2c3',
-         'container_id':
-         '5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a',
-         'mount_id':
-         '974e2b994f9db74e1ddd6fc546843bc65920e786612a388f25685acf84b3fed1',
-         'start_date': '2018-01-26T14:55:56.574924',
-         'image_name': 'busybox:latest'}
-    ]
-    self.assertEqual(expected, result)
+
+    expected = collections.OrderedDict()
+    expected['image_name'] = 'busybox:latest'
+    expected['container_id'] = '5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a'
+    expected['image_id'] = '5b0d59026729b68570d99bc4f3f7c31a2e4f2a5736435641565d93e7c25bd2c3'
+    expected['start_date'] = '2018-01-26T14:55:56.574924'
+    expected['mount_id'] = '974e2b994f9db74e1ddd6fc546843bc65920e786612a388f25685acf84b3fed1'
+    expected['upper_dir'] = 'test_data/docker/overlay/974e2b994f9db74e1ddd6fc546843bc65920e786612a388f25685acf84b3fed1/upper'
+    expected['log_path'] = '/var/lib/docker/containers/5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a/5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a-json.log'
+
+    self.assertEqual([expected], result)
 
   def testGetLayerInfo(self):
     """Tests the BaseStorage.GetLayerInfo function on a Overlay storage."""
@@ -650,8 +667,7 @@ class TestOverlayStorage(DockerTestCase):
         '        }, \n'
         '        "path": "test_data/docker/image/overlay/repositories.json"\n'
         '    }\n'
-        ']\n'
-    )
+        ']\n')
 
     self.assertEqual(expected_string, result_string)
 
@@ -678,8 +694,7 @@ class TestOverlayStorage(DockerTestCase):
         '5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a')
     expected = {
         'sha256:'
-        '5b0d59026729b68570d99bc4f3f7c31a2e4f2a5736435641565d93e7c25bd2c3':
-        {
+        '5b0d59026729b68570d99bc4f3f7c31a2e4f2a5736435641565d93e7c25bd2c3': {
             'created_at': '2018-01-24T04:29:35.590938',
             'container_cmd': '/bin/sh -c #(nop)  CMD ["sh"]',
             'size': 0
@@ -724,8 +739,8 @@ class TestOverlay2Storage(DockerTestCase):
     container_obj = containers_list[0]
 
     self.assertEqual('/festive_perlman', container_obj.name)
-    self.assertEqual('2018-05-16T10:51:39.271019533Z',
-                     container_obj.creation_timestamp)
+    self.assertEqual(
+        '2018-05-16T10:51:39.271019533Z', container_obj.creation_timestamp)
     self.assertEqual('busybox', container_obj.config_image_name)
     self.assertTrue(container_obj.running)
 
@@ -762,17 +777,17 @@ class TestOverlay2Storage(DockerTestCase):
   def testGetContainersJson(self):
     """Tests the GetContainersJson function on a Overlay2 storage."""
     result = self.explorer_object.GetContainersJson(only_running=True)
-    expected = [
-        {'image_id':
-         '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7',
-         'container_id':
-         '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206',
-         'mount_id':
-         '92fd3b3e7d6101bb701743c9518c45b0d036b898c8a3d7cae84e1a06e6829b53',
-         'start_date': '2018-05-16T10:51:39.625989',
-         'image_name': 'busybox'}
-    ]
-    self.assertEqual(expected, result)
+
+    expected = collections.OrderedDict()
+    expected['image_name'] = 'busybox'
+    expected['container_id'] = '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206'
+    expected['image_id'] = '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7'
+    expected['start_date'] = '2018-05-16T10:51:39.625989'
+    expected['mount_id'] = '92fd3b3e7d6101bb701743c9518c45b0d036b898c8a3d7cae84e1a06e6829b53'
+    expected['upper_dir'] = 'test_data/docker/overlay2/92fd3b3e7d6101bb701743c9518c45b0d036b898c8a3d7cae84e1a06e6829b53/diff'
+    expected['log_path'] = '/var/lib/docker/containers/8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206/8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206-json.log'
+
+    self.assertEqual([expected], result)
 
   def testGetLayerInfo(self):
     """Tests the BaseStorage.GetLayerInfo function on a Overlay2 storage."""
@@ -808,8 +823,7 @@ class TestOverlay2Storage(DockerTestCase):
         '        }, \n'
         '        "path": "test_data/docker/image/overlay2/repositories.json"\n'
         '    }\n'
-        ']\n'
-    )
+        ']\n')
     self.assertEqual(expected_string, result_string)
 
   def testMakeMountCommands(self):
@@ -825,8 +839,7 @@ class TestOverlay2Storage(DockerTestCase):
         'test_data/docker/overlay2/'
         '92fd3b3e7d6101bb701743c9518c45b0d036b898c8a3d7cae84e1a06e6829b53/diff:'
         'test_data/docker/overlay2/l/OTFSLJCXWCECIG6FVNGRTWUZ7D:'
-        'test_data/docker/overlay2/l/CH5A7XWSBP2DUPV7V47B7DOOGY /mnt'
-        )]
+        'test_data/docker/overlay2/l/CH5A7XWSBP2DUPV7V47B7DOOGY /mnt')]
     self.assertEqual(expected_commands, commands)
 
   def testGetHistory(self):
