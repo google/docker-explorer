@@ -5,9 +5,10 @@ python:
 
 install:
     - python setup.py install
-    - pip install coverage
+    - pip install coverage pylint
 
 script:
+    - pylint --rcfile=.pylintrc docker_explorer tests.py setup.py tools
       coverage run tests.py
 
 after_success:
