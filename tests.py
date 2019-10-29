@@ -828,17 +828,28 @@ class TestDownloader(unittest.TestCase):
   @classmethod
   def setUpClass(cls):
     cls.dl_object = downloader.DockerImageDownloader(cls.TEST_REPO)
-    cls.dl_object._GetToken()
 
   def testSetupRepository(self):
     """Tests the DockerImageDownloader._SetupRepository() method."""
 
     dl = downloader.DockerImageDownloader('')
+    with tempfile.TemporaryDirectory() as tmp_dir:
+      dl._output_directory = tmp_dir
+      dl._SetupRepository('foo')
+      self.assertEqual('library/foo', dl.repository)
+      self.assertEqual('latest', dl.tag)
 
-    self.assertEqual(('library/foo', 'latest'), dl._SetupRepository('foo'))
-    self.assertEqual(('foo/bar', 'latest'), dl._SetupRepository('foo/bar'))
-    self.assertEqual(('library/foo', 'bar'), dl._SetupRepository('foo:bar'))
-    self.assertEqual(('foo/bar', 'baz'), dl._SetupRepository('foo/bar:baz'))
+      dl._SetupRepository('foo/bar')
+      self.assertEqual('foo/bar', dl.repository)
+      self.assertEqual('latest', dl.tag)
+
+      dl._SetupRepository('foo:bar')
+      self.assertEqual('library/foo', dl.repository)
+      self.assertEqual('bar', dl.tag)
+
+      dl._SetupRepository('foo/bar:baz')
+      self.assertEqual('foo/bar', dl.repository)
+      self.assertEqual('baz', dl.tag)
 
   def testGetToken(self):
     """Tests that we properly get an access token."""
@@ -849,8 +860,10 @@ class TestDownloader(unittest.TestCase):
   def testGetBadManifest(self):
     """Tests that GetManifest failes on an unknown image."""
     dl = downloader.DockerImageDownloader('non/existing:image')
-    with self.assertRaises(errors.DownloaderException):
-      dl._GetManifest()
+    with tempfile.TemporaryDirectory() as tmp_dir:
+      dl._output_directory = tmp_dir
+      with self.assertRaises(errors.DownloaderException):
+        dl._GetManifest()
 
   def testGetManifest(self):
     """Tests the GetManifest method"""

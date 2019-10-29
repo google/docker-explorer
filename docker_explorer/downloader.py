@@ -27,9 +27,10 @@ class DockerImageDownloader(object):
     self._manifest = None
     self._output_directory = output_directory
 
-    self.repository, self.tag = self._SetupRepository(image_name)
-
-    self.repository_url = self.BASE_API_URL + '/' + self.repository
+    self.image_name = image_name
+    self.repository = None
+    self.repository_url = None
+    self.tag = None
 
   def _SetupRepository(self, image_name):
     """Sets the proper repository name and tag from an image_name input.
@@ -58,10 +59,16 @@ class DockerImageDownloader(object):
 
     repository = '{}/{}'.format(repository, image)
 
-    return (repository, tag)
+    self.repository = repository
+    self.tag = tag
+    self.repository_url = self.BASE_API_URL + '/' + self.repository
+
+    return
 
   def _GetToken(self):
     """Requests an access token from Docker registry."""
+    if not self.repository:
+      self._SetupRepository(self.image_name)
     auth_url = ('https://auth.docker.io/token?service=registry.docker.io'
                 '&scope=repository:{0:s}:pull'.format(self.repository))
     response = requests.get(auth_url)
@@ -75,6 +82,8 @@ class DockerImageDownloader(object):
     Returns:
       requests.Response: the HTTP response, or None if the request failed.
     """
+    if not self.repository_url:
+      self._SetupRepository(self.image_name)
     if not self._access_token:
       self._GetToken()
     headers = {
@@ -98,6 +107,8 @@ class DockerImageDownloader(object):
     Raises:
       errors.DownloaderException: if there was an error fetching the manifest.
     """
+    if not self.tag:
+      self._SetupRepository(self.image_name)
     if not self._manifest:
       try:
         self._manifest = self._RegistryAPIGet('/manifests/' + self.tag).json()
