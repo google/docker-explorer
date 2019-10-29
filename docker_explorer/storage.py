@@ -24,7 +24,7 @@ from docker_explorer import errors
 
 logger = logging.getLogger('docker-explorer')
 
-class BaseStorage(object):
+class BaseStorage:
   """This class provides tools to list and access containers metadata.
 
   Every method provided is agnostic of the implementation used (AuFS,

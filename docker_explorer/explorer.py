@@ -15,7 +15,7 @@
 # limitations under the License.
 """Module for the Explorer object."""
 
-from __future__ import print_function, unicode_literals
+from __future__ import unicode_literals
 
 import collections
 import json
@@ -28,7 +28,7 @@ from docker_explorer import errors
 from docker_explorer import utils
 
 
-class Explorer(object):
+class Explorer:
   """Class for a DockerExplorer object."""
 
   DEFAULT_DOCKER_VERSION = 2
