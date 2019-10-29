@@ -17,6 +17,7 @@
 
 from __future__ import print_function, unicode_literals
 
+import collections
 import json
 import os
 
@@ -188,19 +189,34 @@ class Explorer(object):
       image_id = container_object.image_id
       if self.docker_version == 2:
         image_id = image_id.split(':')[1]
-      container_json = {
-          'container_id': container_object.container_id,
-          'image_id': image_id
-      }
+      container_json = collections.OrderedDict()
+      container_json['image_name'] = container_object.config_image_name
+      container_json['container_id'] = container_object.container_id
+      container_json['image_id'] = image_id
 
       if container_object.config_labels:
         container_json['labels'] = container_object.config_labels
       container_json['start_date'] = utils.FormatDatetime(
           container_object.start_timestamp)
-      container_json['image_name'] = container_object.config_image_name
 
       if container_object.mount_id:
         container_json['mount_id'] = container_object.mount_id
+
+      if container_object.mount_points:
+        container_json['mount_points'] = {}
+        for mount_point, details in container_object.mount_points.items():
+          d = collections.OrderedDict()
+          d['type'] = details.get('Type')
+          d['mount_point'] = mount_point
+          d['source'] = details.get('Source')
+          d['RW'] = details.get('RW')
+          container_json['mount_points'][mount_point] = d
+
+      if container_object.upper_dir:
+        container_json['upper_dir'] = container_object.upper_dir
+
+      if container_object.log_path:
+        container_json['log_path'] = container_object.log_path
 
       result.append(container_json)
 

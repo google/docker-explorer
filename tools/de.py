@@ -161,7 +161,8 @@ class DockerExplorerTool(object):
       only_running (bool): Whether we display only running Containers.
     """
     print(utils.PrettyPrintJSON(
-        self._explorer.GetContainersJson(only_running=only_running)))
+        self._explorer.GetContainersJson(only_running=only_running),
+        sort_keys=False))
 
   def ShowHistory(self, container_id, show_empty_layers=False):
     """Prints the modification history of a container.
@@ -171,7 +172,8 @@ class DockerExplorerTool(object):
       show_empty_layers (bool): whether to display empty layers.
     """
     container_object = self._explorer.GetContainer(container_id)
-    print(utils.PrettyPrintJSON(container_object.GetHistory(show_empty_layers)))
+    print(utils.PrettyPrintJSON(container_object.GetHistory(show_empty_layers),
+                                sort_keys=False))
 
   def _SetLogging(self, debug):
     """Configures the logging module.
