@@ -1,4 +1,4 @@
-"""Module for downloading information from Docker Hub registry"""
+"""Module for downloading information from Docker Hub registry."""
 
 import logging
 import os
@@ -62,8 +62,6 @@ class DockerImageDownloader:
     self.repository = repository
     self.tag = tag
     self.repository_url = self.BASE_API_URL + '/' + self.repository
-
-    return
 
   def _GetToken(self):
     """Requests an access token from Docker registry."""
