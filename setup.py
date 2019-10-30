@@ -19,7 +19,7 @@ setup(
     description=de_description,
     long_description=de_long_description,
     url='https://github.com/google/docker-explorer',
-    author='docker-explorer development team',
+    author='Docker-Explorer devs',
     license='Apache License, Version 2.0',
     packages=find_packages(exclude=['tests', 'tools']),
     install_requires=[
