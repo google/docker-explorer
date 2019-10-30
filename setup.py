@@ -2,11 +2,8 @@
 # -*- coding: utf-8 -*-
 """Installation and deployment script."""
 
-try:
-  from setuptools import find_packages, setup
-except ImportError:
-  from distutils.core import find_packages, setup
-
+from setuptools import find_packages
+from setuptools import setup
 from docker_explorer import __version__ as de_version
 
 
@@ -34,5 +31,5 @@ setup(
         'Programming Language :: Python',
     ],
     scripts=['tools/de.py'],
-    test_suite="tests"
+    test_suite='tests'
 )
