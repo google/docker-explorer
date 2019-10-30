@@ -18,7 +18,7 @@
 A tool to parse offline Docker installation.
 """
 
-from __future__ import print_function, unicode_literals
+from __future__ import unicode_literals
 
 import argparse
 import logging
@@ -33,7 +33,7 @@ from docker_explorer import utils
 logger = logging.getLogger('docker-explorer')
 
 
-class DockerExplorerTool(object):
+class DockerExplorerTool:
   """Main class for the DockerExplorerTool tool."""
 
   def __init__(self):

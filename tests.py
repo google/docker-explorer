@@ -25,10 +25,7 @@ import tempfile
 import unittest
 import unittest.mock
 
-try:
-  from StringIO import StringIO
-except ImportError:
-  from io import StringIO
+from io import StringIO
 
 from docker_explorer import __version__ as de_version
 from docker_explorer import container

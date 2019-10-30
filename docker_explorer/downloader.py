@@ -11,7 +11,7 @@ from docker_explorer import errors
 logger = logging.getLogger('docker-explorer')
 
 
-class DockerImageDownloader(object):
+class DockerImageDownloader:
   """Helper class to download information for an image name (ie: 'busybox')."""
 
   BASE_API_URL = 'https://registry-1.docker.io/v2/'

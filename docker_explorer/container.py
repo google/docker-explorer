@@ -60,7 +60,7 @@ def GetAllContainersIDs(docker_root_directory):
   return container_ids_list
 
 
-class Container(object):
+class Container:
   """Implements methods to access information about a Docker container.
 
   Attributes:
