@@ -231,7 +231,10 @@ class DockerExplorerTool:
     self._explorer.SetDockerDirectory(options.docker_directory)
     self._explorer.DetectDockerStorageVersion()
 
-    if options.command == 'mount':
+    if not options.command:
+      self.ShowContainers()
+
+    elif options.command == 'mount':
       self.Mount(options.container_id, options.mountpoint)
 
     elif options.command == 'history':
@@ -245,8 +248,6 @@ class DockerExplorerTool:
         self.ShowContainers(only_running=True)
       elif options.what == 'repositories':
         print(self.GetRepositoriesString())
-
-
     else:
       raise ValueError('Unhandled command %s' % options.command)
 
