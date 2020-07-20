@@ -98,6 +98,14 @@ class BaseStorage:
       container_mount_points = container_object.mount_points
       if container_mount_points:
         for dst_mount_ihp, storage_info in container_mount_points.items():
+          src_mount_ihp = None
+          if 'Type' not in storage_info:
+            # Let's do some guesswork
+            if 'Source' in storage_info:
+              storage_info['Type'] = 'volume'
+            else:
+              storage_info['Type'] = 'bind'
+
           if storage_info.get('Type') == 'bind':
             src_mount_ihp = storage_info['Source']
 
@@ -107,8 +115,15 @@ class BaseStorage:
               logger.warning(
                   'Unsupported driver "{0:s}" for volume "{1:s}"'.format(
                       volume_driver, dst_mount_ihp))
+              continue
             volume_name = storage_info['Name']
             src_mount_ihp = os.path.join('volumes', volume_name, '_data')
+
+          else:
+            logger.warning(
+                'Unsupported storage type "{0!s}" for Volume "{1:s}"'.format(
+                    storage_info.get('Type'), dst_mount_ihp))
+            continue
 
           # Removing leading path separator, otherwise os.path.join is behaving
           # 'smartly' (read: 'terribly').

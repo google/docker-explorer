@@ -276,6 +276,7 @@ class TestAufsStorage(DockerTestCase):
 
   def testMakeMountCommands(self):
     """Tests the BaseStorage.MakeMountCommands function on a AuFS storage."""
+    self.maxDiff = None
     container_obj = self.explorer_object.GetContainer(
         '7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966')
     commands = container_obj.storage_object.MakeMountCommands(
@@ -296,7 +297,7 @@ class TestAufsStorage(DockerTestCase):
             'd1c54c46d331de21587a16397e8bd95bdbb1015e1a04797c76de128107da83ae'
             '=ro+wh none /mnt'),
         (
-            '/bin/mount --bind -o ro {0:s}/docker/volumes/'
+            '/bin/mount --bind -o ro {0:s}/volumes/'
             '28297de547b5473a9aff90aaab45ed108ebf019981b40c3c35c226f54c13ac0d/'
             '_data /mnt/var/jenkins_home').format(os.path.abspath('test_data'))
     ]
