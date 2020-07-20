@@ -904,6 +904,10 @@ class TestDEVolumes(unittest.TestCase):
     cls.driver_class = storage.Overlay2Storage
     cls.storage_version = 2
 
+  @classmethod
+  def tearDownClass(cls):
+    shutil.rmtree(cls.docker_directory_path)
+
   def testGenerateBindMountPoints(self):
     """Tests generating command to mount 'bind' MountPoints."""
     self.maxDiff = None
