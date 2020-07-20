@@ -230,10 +230,13 @@ class OverlayStorage(BaseStorage):
       lower_dir = self._BuildLowerLayers(lower_fd.read().strip())
     upper_dir = os.path.join(mount_id_path, self.UPPERDIR_NAME)
 
-    cmd = [
+    commands = [[
         '/bin/mount', '-t', 'overlay', 'overlay', '-o',
-        'ro,lowerdir={0:s}:{1:s}'.format(upper_dir, lower_dir), mount_dir]
-    return [cmd]
+        'ro,lowerdir={0:s}:{1:s}'.format(upper_dir, lower_dir), mount_dir]]
+
+    # Adding the commands to mount any extra declared Volumes and Mounts
+    commands.extend(self._MakeExtraVolumeCommands(container_object, mount_dir))
+    return commands
 
 
 class Overlay2Storage(OverlayStorage):
