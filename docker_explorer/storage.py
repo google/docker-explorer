@@ -24,6 +24,7 @@ from docker_explorer import errors
 
 logger = logging.getLogger('docker-explorer')
 
+
 class BaseStorage:
   """This class provides tools to list and access containers metadata.
 
@@ -96,15 +97,26 @@ class BaseStorage:
       # 'MountPoints'
       container_mount_points = container_object.mount_points
       if container_mount_points:
-        for _, storage_info in container_mount_points.items():
-          src_mount_ihp = storage_info['Source']
-          dst_mount_ihp = storage_info['Destination']
+        for dst_mount_ihp, storage_info in container_mount_points.items():
+          if storage_info.get('Type') == 'bind':
+            src_mount_ihp = storage_info['Source']
+
+          elif storage_info.get('Type') == 'volume':
+            volume_driver = storage_info.get('Driver')
+            if storage_info.get('Driver') != 'local':
+              logger.warning(
+                  'Unsupported driver "{0:s}" for volume "{1:s}"'.format(
+                      volume_driver, dst_mount_ihp))
+            volume_name = storage_info['Name']
+            src_mount_ihp = os.path.join('volumes', volume_name, '_data')
+
+          # Removing leading path separator, otherwise os.path.join is behaving
+          # 'smartly' (read: 'terribly').
           src_mount = src_mount_ihp.lstrip(os.path.sep)
           dst_mount = dst_mount_ihp.lstrip(os.path.sep)
-          if not src_mount:
-            volume_name = storage_info['Name']
-            src_mount = os.path.join('docker', 'volumes', volume_name, '_data')
+
           storage_path = os.path.join(self.root_directory, src_mount)
+
           volume_mountpoint = os.path.join(mount_dir, dst_mount)
           extra_commands.append(
               ['/bin/mount', '--bind', '-o', 'ro', storage_path,
@@ -159,6 +171,7 @@ class AufsStorage(BaseStorage):
              'ro,remount,append:{0:s}=ro+wh'.format(mountpoint_path), 'none',
              mount_dir])
 
+    # Adding the commands to mount any extra declared Volumes and Mounts
     commands.extend(self._MakeExtraVolumeCommands(container_object, mount_dir))
 
     return commands
