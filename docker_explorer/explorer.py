@@ -207,8 +207,8 @@ class Explorer:
         container_json['mount_points'] = []
         for source, mount_point in mount_points:
           d = collections.OrderedDict()
-          d['source'] = source
-          d['destination'] = mount_point
+          d['source'] = os.path.join(self.docker_directory, source)
+          d['destination'] = os.path.join(os.path.sep, mount_point)
           container_json['mount_points'].append(d)
 
       if container_object.upper_dir:
