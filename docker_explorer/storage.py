@@ -16,13 +16,10 @@
 
 from __future__ import unicode_literals
 
-import logging
 import os
 
 import docker_explorer
 from docker_explorer import errors
-
-logger = logging.getLogger('docker-explorer')
 
 
 class BaseStorage:
@@ -68,7 +65,7 @@ class BaseStorage:
     """
     raise NotImplementedError('Please implement MakeMountCommands()')
 
-  def _MakeExtraVolumeCommands(self, container_object, mount_dir):
+  def _MakeVolumeMountCommands(self, container_object, mount_dir):
     """Generates the shell command to mount external Volumes if present.
 
     Args:
@@ -80,62 +77,21 @@ class BaseStorage:
         be mounted.
     """
     extra_commands = []
+    mount_points = container_object.GetMountpoints()
     if self.docker_version == 1:
       # 'Volumes'
-      container_volumes = container_object.volumes
-      if container_volumes:
-        for mountpoint, storage in container_volumes.items():
-          mountpoint_ihp = mountpoint.lstrip(os.path.sep)
-          storage_ihp = storage.lstrip(os.path.sep)
-          storage_path = os.path.join(self.root_directory, storage_ihp)
-          volume_mountpoint = os.path.join(mount_dir, mountpoint_ihp)
-          extra_commands.append(
-              ['/bin/mount', '--bind', '-o', 'ro', storage_path,
-               volume_mountpoint]
-          )
+      for (source, destination) in mount_points:
+        storage_path = os.path.join(self.root_directory, source)
+        extra_commands.append(
+            ['/bin/mount', '--bind', '-o', 'ro', storage_path, destination]
+        )
     elif self.docker_version == 2:
-      # 'MountPoints'
-      container_mount_points = container_object.mount_points
-      if container_mount_points:
-        for dst_mount_ihp, storage_info in container_mount_points.items():
-          src_mount_ihp = None
-          if 'Type' not in storage_info:
-            # Let's do some guesswork
-            if 'Source' in storage_info:
-              storage_info['Type'] = 'volume'
-            else:
-              storage_info['Type'] = 'bind'
-
-          if storage_info.get('Type') == 'bind':
-            src_mount_ihp = storage_info['Source']
-
-          elif storage_info.get('Type') == 'volume':
-            volume_driver = storage_info.get('Driver')
-            if storage_info.get('Driver') != 'local':
-              logger.warning(
-                  'Unsupported driver "{0:s}" for volume "{1:s}"'.format(
-                      volume_driver, dst_mount_ihp))
-              continue
-            volume_name = storage_info['Name']
-            src_mount_ihp = os.path.join('volumes', volume_name, '_data')
-
-          else:
-            logger.warning(
-                'Unsupported storage type "{0!s}" for Volume "{1:s}"'.format(
-                    storage_info.get('Type'), dst_mount_ihp))
-            continue
-
-          # Removing leading path separator, otherwise os.path.join is behaving
-          # 'smartly' (read: 'terribly').
-          src_mount = src_mount_ihp.lstrip(os.path.sep)
-          dst_mount = dst_mount_ihp.lstrip(os.path.sep)
-
-          storage_path = os.path.join(self.root_directory, src_mount)
-
-          volume_mountpoint = os.path.join(mount_dir, dst_mount)
-          extra_commands.append(
-              ['/bin/mount', '--bind', '-o', 'ro', storage_path,
-               volume_mountpoint])
+      for (source, destination) in mount_points:
+        storage_path = os.path.join(self.root_directory, source)
+        volume_mountpoint = os.path.join(mount_dir, destination)
+        extra_commands.append(
+            ['/bin/mount', '--bind', '-o', 'ro', storage_path,
+             volume_mountpoint])
 
     return extra_commands
 
@@ -187,7 +143,7 @@ class AufsStorage(BaseStorage):
              mount_dir])
 
     # Adding the commands to mount any extra declared Volumes and Mounts
-    commands.extend(self._MakeExtraVolumeCommands(container_object, mount_dir))
+    commands.extend(self._MakeVolumeMountCommands(container_object, mount_dir))
 
     return commands
 
@@ -235,7 +191,7 @@ class OverlayStorage(BaseStorage):
         'ro,lowerdir={0:s}:{1:s}'.format(upper_dir, lower_dir), mount_dir]]
 
     # Adding the commands to mount any extra declared Volumes and Mounts
-    commands.extend(self._MakeExtraVolumeCommands(container_object, mount_dir))
+    commands.extend(self._MakeVolumeMountCommands(container_object, mount_dir))
     return commands
 
 

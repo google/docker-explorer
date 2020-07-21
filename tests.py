@@ -917,7 +917,7 @@ class TestDEVolumes(unittest.TestCase):
     container_obj = de_object._explorer.GetContainer(
         '8b6e90cc742bd63f6acb7ecd40ddadb4e5dee27d8db2b739963f7cd2c7bcff4a')
 
-    commands = container_obj.storage_object._MakeExtraVolumeCommands(
+    commands = container_obj.storage_object._MakeVolumeMountCommands(
         container_obj, '/mnt')
     commands = [' '.join(x) for x in commands]
     expected_commands = [
@@ -935,7 +935,7 @@ class TestDEVolumes(unittest.TestCase):
     container_obj = de_object._explorer.GetContainer(
         '712909b5ab80d8785841f12e361c218a2faf5365f9ed525f2a0d6b6590ba89cb')
 
-    commands = container_obj.storage_object._MakeExtraVolumeCommands(
+    commands = container_obj.storage_object._MakeVolumeMountCommands(
         container_obj, '/mnt')
     commands = [' '.join(x) for x in commands]
     expected_commands = [
