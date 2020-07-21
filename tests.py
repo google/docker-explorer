@@ -226,13 +226,12 @@ class TestAufsStorage(DockerTestCase):
 
   def testGetContainersJson(self):
     """Tests the GetContainersJson function on a AuFS storage."""
+    self.maxDiff = None
     result = self.explorer_object.GetContainersJson(only_running=True)
 
     mount_point = collections.OrderedDict()
-    mount_point['type'] = None
-    mount_point['mount_point'] = '/var/jenkins_home'
-    mount_point['source'] = ''
-    mount_point['RW'] = True
+    mount_point['source'] = 'volumes/28297de547b5473a9aff90aaab45ed108ebf019981b40c3c35c226f54c13ac0d/_data'
+    mount_point['destination'] = 'var/jenkins_home'
 
     expected = collections.OrderedDict()
     expected['image_name'] = 'busybox'
@@ -240,7 +239,7 @@ class TestAufsStorage(DockerTestCase):
     expected['image_id'] = '7968321274dc6b6171697c33df7815310468e694ac5be0ec03ff053bb135e768'
     expected['start_date'] = '2017-02-13T16:45:05.785658'
     expected['mount_id'] = 'b16a494082bba0091e572b58ff80af1b7b5d28737a3eedbe01e73cd7f4e01d23'
-    expected['mount_points'] = {'/var/jenkins_home': mount_point}
+    expected['mount_points'] = [mount_point]
     expected['log_path'] = '/tmp/docker/containers/7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966/7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966-json.log'
 
     self.assertEqual([expected], result)
