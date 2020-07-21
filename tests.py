@@ -230,8 +230,11 @@ class TestAufsStorage(DockerTestCase):
     result = self.explorer_object.GetContainersJson(only_running=True)
 
     mount_point = collections.OrderedDict()
-    mount_point['source'] = 'volumes/28297de547b5473a9aff90aaab45ed108ebf019981b40c3c35c226f54c13ac0d/_data'
-    mount_point['destination'] = 'var/jenkins_home'
+    mount_point['source'] = (
+        'test_data/docker/volumes/'
+        '28297de547b5473a9aff90aaab45ed108ebf019981b40c3c35c226f54c13ac0d/_data'
+    )
+    mount_point['destination'] = '/var/jenkins_home'
 
     expected = collections.OrderedDict()
     expected['image_name'] = 'busybox'
