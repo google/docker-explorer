@@ -204,6 +204,7 @@ class Explorer:
 
       mount_points = container_object.GetMountpoints()
       if mount_points:
+        container_json['mount_points'] = []
         for source, destination in mount_points:
           mountpoint_dict = collections.OrderedDict()
           mountpoint_dict['source'] = os.path.join(
@@ -211,7 +212,6 @@ class Explorer:
           mountpoint_dict['destination'] = os.path.join(
               os.path.sep, destination)
           container_json['mount_points'].append(mountpoint_dict)
-          container_json.setdefaults('mount_points', []).append(mountpoint_dict)
 
       if container_object.upper_dir:
         container_json['upper_dir'] = container_object.upper_dir
