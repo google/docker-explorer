@@ -923,10 +923,8 @@ class TestDEVolumes(unittest.TestCase):
         container_obj, '/mnt')
     commands = [' '.join(x) for x in commands]
     expected_commands = [
-        (
-            '/bin/mount --bind -o ro {0:s}/opt/vols/bind'
-            ' /mnt/opt').format(os.path.abspath('test_data'))
-    ]
+        ('/bin/mount --bind -o ro {0:s}/opt/vols/bind'
+         ' /mnt/opt').format(os.path.abspath('test_data'))]
     self.assertEqual(expected_commands, commands)
 
   def testGenerateVolumesMountpoints(self):
@@ -941,11 +939,9 @@ class TestDEVolumes(unittest.TestCase):
         container_obj, '/mnt')
     commands = [' '.join(x) for x in commands]
     expected_commands = [
-        (
-            '/bin/mount --bind -o ro {0:s}/volumes/'
-            'f5479c534bbc6e2b9861973c2fbb4863ff5b7b5843c098d7fb1a027fe730a4dc/'
-            '_data /mnt/opt/vols/volume').format(os.path.abspath('test_data'))
-    ]
+        ('/bin/mount --bind -o ro {0:s}/volumes/'
+         'f5479c534bbc6e2b9861973c2fbb4863ff5b7b5843c098d7fb1a027fe730a4dc/'
+         '_data /mnt/opt/vols/volume').format(os.path.abspath('test_data'))]
     self.assertEqual(expected_commands, commands)
 
 del DockerTestCase

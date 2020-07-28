@@ -73,8 +73,8 @@ class BaseStorage:
       mount_dir (str): the destination mount_point.
 
     Returns:
-      list(str): a list of extra commands, or the empty list if no volume is to
-        be mounted.
+      list(list(str)): a list of extra commands, or the empty list if no volume
+        is to be mounted. Commands are list(str).
     """
     extra_commands = []
     mount_points = container_object.GetMountpoints()
@@ -109,8 +109,8 @@ class AufsStorage(BaseStorage):
       mount_dir (str): the path to the target mount point.
 
     Returns:
-      list: a list commands that needs to be run to mount the container's view
-        of the file system.
+      list(list(str)): a list commands that needs to be run to mount the
+        container's view of the file system. Commands to run are list(str).
     """
 
     mount_id = container_object.mount_id
@@ -176,8 +176,8 @@ class OverlayStorage(BaseStorage):
       mount_dir (str): the path to the target mount point.
 
     Returns:
-      list: a list commands that needs to be run to mount the container's view
-        of the file system.
+      list(list(str)): a list commands that needs to be run to mount the
+        container's view of the file system. Commands to run are list(str).
     """
     mount_id_path = os.path.join(
         self.docker_directory, self.STORAGE_METHOD, container_object.mount_id)
