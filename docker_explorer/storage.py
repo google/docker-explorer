@@ -16,13 +16,11 @@
 
 from __future__ import unicode_literals
 
-import logging
 import os
 
 import docker_explorer
 from docker_explorer import errors
 
-logger = logging.getLogger('docker-explorer')
 
 class BaseStorage:
   """This class provides tools to list and access containers metadata.
@@ -67,7 +65,7 @@ class BaseStorage:
     """
     raise NotImplementedError('Please implement MakeMountCommands()')
 
-  def _MakeExtraVolumeCommands(self, container_object, mount_dir):
+  def _MakeVolumeMountCommands(self, container_object, mount_dir):
     """Generates the shell command to mount external Volumes if present.
 
     Args:
@@ -75,40 +73,25 @@ class BaseStorage:
       mount_dir (str): the destination mount_point.
 
     Returns:
-      list(str): a list of extra commands, or the empty list if no volume is to
-        be mounted.
+      list(list(str)): a list of extra commands, or the empty list if no volume
+        is to be mounted. Commands are list(str).
     """
     extra_commands = []
+    mount_points = container_object.GetMountpoints()
     if self.docker_version == 1:
       # 'Volumes'
-      container_volumes = container_object.volumes
-      if container_volumes:
-        for mountpoint, storage in container_volumes.items():
-          mountpoint_ihp = mountpoint.lstrip(os.path.sep)
-          storage_ihp = storage.lstrip(os.path.sep)
-          storage_path = os.path.join(self.root_directory, storage_ihp)
-          volume_mountpoint = os.path.join(mount_dir, mountpoint_ihp)
-          extra_commands.append(
-              ['/bin/mount', '--bind', '-o', 'ro', storage_path,
-               volume_mountpoint]
-          )
+      for source, destination in mount_points:
+        storage_path = os.path.join(self.root_directory, source)
+        extra_commands.append(
+            ['/bin/mount', '--bind', '-o', 'ro', storage_path, destination]
+        )
     elif self.docker_version == 2:
-      # 'MountPoints'
-      container_mount_points = container_object.mount_points
-      if container_mount_points:
-        for _, storage_info in container_mount_points.items():
-          src_mount_ihp = storage_info['Source']
-          dst_mount_ihp = storage_info['Destination']
-          src_mount = src_mount_ihp.lstrip(os.path.sep)
-          dst_mount = dst_mount_ihp.lstrip(os.path.sep)
-          if not src_mount:
-            volume_name = storage_info['Name']
-            src_mount = os.path.join('docker', 'volumes', volume_name, '_data')
-          storage_path = os.path.join(self.root_directory, src_mount)
-          volume_mountpoint = os.path.join(mount_dir, dst_mount)
-          extra_commands.append(
-              ['/bin/mount', '--bind', '-o', 'ro', storage_path,
-               volume_mountpoint])
+      for source, destination in mount_points:
+        storage_path = os.path.join(self.root_directory, source)
+        volume_mountpoint = os.path.join(mount_dir, destination)
+        extra_commands.append(
+            ['/bin/mount', '--bind', '-o', 'ro', storage_path,
+             volume_mountpoint])
 
     return extra_commands
 
@@ -126,8 +109,8 @@ class AufsStorage(BaseStorage):
       mount_dir (str): the path to the target mount point.
 
     Returns:
-      list: a list commands that needs to be run to mount the container's view
-        of the file system.
+      list(list(str)): a list commands that needs to be run to mount the
+        container's view of the file system. Commands to run are list(str).
     """
 
     mount_id = container_object.mount_id
@@ -159,7 +142,8 @@ class AufsStorage(BaseStorage):
              'ro,remount,append:{0:s}=ro+wh'.format(mountpoint_path), 'none',
              mount_dir])
 
-    commands.extend(self._MakeExtraVolumeCommands(container_object, mount_dir))
+    # Adding the commands to mount any extra declared Volumes and Mounts
+    commands.extend(self._MakeVolumeMountCommands(container_object, mount_dir))
 
     return commands
 
@@ -192,8 +176,8 @@ class OverlayStorage(BaseStorage):
       mount_dir (str): the path to the target mount point.
 
     Returns:
-      list: a list commands that needs to be run to mount the container's view
-        of the file system.
+      list(list(str)): a list commands that needs to be run to mount the
+        container's view of the file system. Commands to run are list(str).
     """
     mount_id_path = os.path.join(
         self.docker_directory, self.STORAGE_METHOD, container_object.mount_id)
@@ -202,10 +186,13 @@ class OverlayStorage(BaseStorage):
       lower_dir = self._BuildLowerLayers(lower_fd.read().strip())
     upper_dir = os.path.join(mount_id_path, self.UPPERDIR_NAME)
 
-    cmd = [
+    commands = [[
         '/bin/mount', '-t', 'overlay', 'overlay', '-o',
-        'ro,lowerdir={0:s}:{1:s}'.format(upper_dir, lower_dir), mount_dir]
-    return [cmd]
+        'ro,lowerdir={0:s}:{1:s}'.format(upper_dir, lower_dir), mount_dir]]
+
+    # Adding the commands to mount any extra declared Volumes and Mounts
+    commands.extend(self._MakeVolumeMountCommands(container_object, mount_dir))
+    return commands
 
 
 class Overlay2Storage(OverlayStorage):

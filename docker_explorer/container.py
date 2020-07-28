@@ -18,6 +18,7 @@ from __future__ import unicode_literals
 
 import collections
 import json
+import logging
 import os
 import subprocess
 
@@ -25,12 +26,7 @@ from docker_explorer import errors
 from docker_explorer import storage
 from docker_explorer import utils
 
-# Ugly Py2/Py3 compat code.
-# Undo in 2020+
-try:
-  input = raw_input  # pylint: disable=redefined-builtin
-except NameError:
-  pass
+logger = logging.getLogger('docker-explorer')
 
 
 def GetAllContainersIDs(docker_root_directory):
@@ -119,7 +115,6 @@ class Container:
     with open(container_info_json_path) as container_info_json_file:
       container_info_dict = json.load(container_info_json_file)
 
-
     if container_info_dict is None:
       raise errors.BadContainerException(
           'Could not load container configuration file {0}'.format(
@@ -145,10 +140,10 @@ class Container:
       raise errors.BadContainerException(
           '{0} container config file lacks Driver key'.format(
               container_info_json_path))
-
-    self._SetStorage(self.storage_name)
     self.upper_dir = None
     self.volumes = container_info_dict.get('Volumes', None)
+
+    self._SetStorage(self.storage_name)
 
     if self.docker_version == 2:
       c_path = os.path.join(
@@ -164,7 +159,6 @@ class Container:
                                     self.storage_object.UPPERDIR_NAME)
 
     self.log_path = container_info_dict.get('LogPath', None)
-
 
   def GetLayerSize(self, layer_id):
     """Returns the size of the layer.
@@ -266,6 +260,59 @@ class Container:
       result_dict[layer] = layer_dict
 
     return result_dict
+
+  def GetMountpoints(self):
+    """Returns the mount points & volumes for a container.
+
+    Returns:
+      list((str, str)): list of mount points (source_path, destination_path).
+    """
+    mount_points = list()
+
+    if self.docker_version == 1:
+      if self.volumes:
+        for source, destination in self.volumes.items():
+          # Stripping leading '/' for easier joining later.
+          source_path = source.lstrip(os.path.sep)
+          destination_path = destination.lstrip(os.path.sep)
+          mount_points.append((source_path, destination_path))
+
+    elif self.docker_version == 2:
+      if self.mount_points:
+        for dst_mount_ihp, storage_info in self.mount_points.items():
+          src_mount_ihp = None
+          if 'Type' not in storage_info:
+            # Let's do some guesswork
+            if 'Source' in storage_info:
+              storage_info['Type'] = 'volume'
+            else:
+              storage_info['Type'] = 'bind'
+
+          if storage_info.get('Type') == 'bind':
+            src_mount_ihp = storage_info['Source']
+
+          elif storage_info.get('Type') == 'volume':
+            volume_driver = storage_info.get('Driver')
+            if storage_info.get('Driver') != 'local':
+              logger.warning(
+                  'Unsupported driver "{0:s}" for volume "{1:s}"'.format(
+                      volume_driver, dst_mount_ihp))
+              continue
+            volume_name = storage_info['Name']
+            src_mount_ihp = os.path.join('volumes', volume_name, '_data')
+
+          else:
+            logger.warning(
+                'Unsupported storage type "{0!s}" for Volume "{1:s}"'.format(
+                    storage_info.get('Type'), dst_mount_ihp))
+            continue
+
+          # Removing leading path separator, otherwise os.path.join is behaving
+          # 'smartly' (read: 'terribly').
+          src_mount = src_mount_ihp.lstrip(os.path.sep)
+          dst_mount = dst_mount_ihp.lstrip(os.path.sep)
+          mount_points.append((src_mount, dst_mount))
+    return mount_points
 
   def _SetStorage(self, storage_name):
     """Sets the storage_object attribute.

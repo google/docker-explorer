@@ -202,15 +202,14 @@ class Explorer:
       if container_object.mount_id:
         container_json['mount_id'] = container_object.mount_id
 
-      if container_object.mount_points:
-        container_json['mount_points'] = {}
-        for mount_point, details in container_object.mount_points.items():
-          d = collections.OrderedDict()
-          d['type'] = details.get('Type')
-          d['mount_point'] = mount_point
-          d['source'] = details.get('Source')
-          d['RW'] = details.get('RW')
-          container_json['mount_points'][mount_point] = d
+      mount_points = container_object.GetMountpoints()
+      for source, destination in mount_points:
+        mountpoint_dict = collections.OrderedDict()
+        mountpoint_dict['source'] = os.path.join(
+            self.docker_directory, source)
+        mountpoint_dict['destination'] = os.path.join(
+            os.path.sep, destination)
+        container_json.setdefault('mount_points', []).append(mountpoint_dict)
 
       if container_object.upper_dir:
         container_json['upper_dir'] = container_object.upper_dir
