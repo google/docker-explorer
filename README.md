@@ -210,10 +210,12 @@ ARCHITECTURE=$5;
 dch --preserve -v ${VERSION}-1${VERSION_SUFFIX}~${DISTRIBUTION} --distribution ${DISTRIBUTION} --urgency low "Modifications for PPA release."
 ```
 
+These are also stored in `/tmp/build`
+
 Start the build:
 
 ```
-PYTHONPATH=. python tools/build.py --build-directory=/tmp/build/  --project docker-explorer dpkg-source
+PYTHONPATH=. python tools/build.py --build-directory=/tmp/build/  --project docker-explorer dpkg-source --distributions bionic
 ```
 
 Then wait for launchpad to build the package, and move it from
