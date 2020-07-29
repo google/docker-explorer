@@ -163,7 +163,7 @@ sudo apt-get install linux-image-extra-$(uname -r)
 
 ## Maintainer notes
 
-### PPA push
+### Gift PPA push
 
 Make a new version tag:
 ```
@@ -210,11 +210,25 @@ ARCHITECTURE=$5;
 dch --preserve -v ${VERSION}-1${VERSION_SUFFIX}~${DISTRIBUTION} --distribution ${DISTRIBUTION} --urgency low "Modifications for PPA release."
 ```
 
+These are also stored in `/tmp/build`
+
 Start the build:
 
 ```
-PYTHONPATH=. python tools/build.py --build-directory=/tmp/build/  --project docker-explorer dpkg-source
+PYTHONPATH=. python tools/build.py --build-directory=/tmp/build/  --project docker-explorer dpkg-source --distributions bionic
 ```
 
 Then wait for launchpad to build the package, and move it from
 ppa:docker-explorer-dev-team_staging to ppa:gift_stable
+
+
+### Upload to PyPi
+
+First make sure the proper version is set in `docker-explorer/__init__.py`.
+
+Then run
+
+```
+python3 setup.py sdist
+python3 -m twine upload  dist/*
+```
