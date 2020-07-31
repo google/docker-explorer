@@ -218,8 +218,17 @@ Start the build:
 PYTHONPATH=. python tools/build.py --build-directory=/tmp/build/  --project docker-explorer dpkg-source --distributions bionic
 ```
 
+Then upload the packages to the PPA:
+
+```
+dput ppa:docker-explorer-devs_staging docker-explorer_<VERSION>_source.changes
+```
+
 Then wait for launchpad to build the package, and move it from
-ppa:docker-explorer-dev-team_staging to ppa:gift_stable
+ppa:docker-explorer-dev-team_staging to ppa:gift_stable, by going to
+[https://launchpad.net/~docker-explorer-devs/+archive/ubuntu/staging/+copy-packages](https://launchpad.net/~docker-explorer-devs/+archive/ubuntu/staging/+copy-packages)
+
+
 
 
 ### Upload to PyPi
