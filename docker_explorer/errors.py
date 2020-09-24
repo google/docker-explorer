@@ -26,7 +26,7 @@ class DockerExplorerError(Exception):
     Args:
       message (str): the error message.
     """
-    super(DockerExplorerError, self).__init__(message)
+    super().__init__(message)
     self.message = message
 
 
@@ -47,7 +47,7 @@ class DownloaderException(DockerExplorerError):
     Args:
       message (str): the error message.
     """
-    super(DownloaderException, self).__init__(message)
+    super().__init__(message)
     self.message = message
     self.http_code = None
     self.http_message = None
