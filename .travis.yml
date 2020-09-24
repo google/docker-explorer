@@ -1,7 +1,8 @@
 dist: xenial
 language: python
 python:
-    - '3.8.5'
+    - '3.7'
+    - '3.8'
 
 install:
     - python setup.py install
