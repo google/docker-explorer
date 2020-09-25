@@ -247,7 +247,7 @@ class DockerExplorerTool:
       elif options.what == 'running_containers':
         self.ShowContainers(only_running=True)
       elif options.what == 'repositories':
-        print(self.GetRepositoriesString())
+        print(self._explorer.GetRepositoriesString())
     else:
       raise ValueError('Unhandled command %s' % options.command)
 
