@@ -81,7 +81,8 @@ class Container:
   STORAGES_MAP = {
       'aufs': storage.AufsStorage,
       'overlay': storage.OverlayStorage,
-      'overlay2': storage.Overlay2Storage
+      'overlay2': storage.Overlay2Storage,
+      'windowsfilter': storage.WindowsFilterStorage
   }
 
   def __init__(self, docker_directory, container_id, docker_version=2):
