@@ -29,10 +29,13 @@ def FormatDatetime(timestamp):
   Returns:
     str: Human readable timestamp.
   """
-  timestamp = timestamp[:26]
-  if timestamp[-1].isalpha():
-    timestamp = timestamp[:-1]
-  time = datetime.fromisoformat(timestamp)
+  try:
+    time = datetime.fromisoformat(timestamp)
+  except ValueError:
+    timestamp = timestamp[:26]
+    if timestamp[-1].isalpha():
+      timestamp = timestamp[:-1]
+    time = datetime.fromisoformat(timestamp)
   return time.isoformat()
 
 def PrettyPrintJSON(dict_object, sort_keys=True):
