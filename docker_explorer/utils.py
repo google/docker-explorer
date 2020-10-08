@@ -33,7 +33,6 @@ def FormatDatetime(timestamp):
   if timestamp[-1].isalpha():
     timestamp = timestamp[:-1]
   time = datetime.fromisoformat(timestamp)
-
   return time.isoformat()
 
 def PrettyPrintJSON(dict_object, sort_keys=True):
