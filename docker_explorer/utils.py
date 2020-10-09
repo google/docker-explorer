@@ -32,6 +32,7 @@ def FormatDatetime(timestamp):
   try:
     time = datetime.fromisoformat(timestamp)
   except ValueError:
+    # Strip non-ISO compliant precision and time zone designator.
     timestamp = timestamp[:26]
     if timestamp[-1].isalpha():
       timestamp = timestamp[:-1]
