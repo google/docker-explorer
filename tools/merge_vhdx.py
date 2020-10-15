@@ -142,9 +142,9 @@ class VHDXDisk:
     self.virtual_disk_size = self._ParseDiskSize()
     self.chunk_ratio = (2**23 * self.logical_sector_size) // self.block_size
     self.data_block_count = math.ceil(
-        self.virtual_disk_size // self.block_size)
+        self.virtual_disk_size / self.block_size)
     self.sector_bitmap_block_count = math.ceil(
-        self.data_block_count // self.chunk_ratio)
+        self.data_block_count / self.chunk_ratio)
     if self.has_parent:
       self.total_bat_entries = self.sector_bitmap_block_count * (
           self.chunk_ratio + 1)
@@ -237,20 +237,16 @@ class VHDXDisk:
     """
     data_blocks = []
     sector_bitmap_blocks = []
-    last_block_idx = self.total_bat_entries
     self.vhdx_fd.seek(self.bat_offset)
-    for idx in range(0, self.total_bat_entries+1):
+    progress_in_chunk = 0
+    for _ in range(0, self.total_bat_entries):
       parsed_entry = BlockAllocationTableEntry(self.vhdx_fd.read(8))
-      if idx == last_block_idx:
-        if self.has_parent:
-          sector_bitmap_blocks.append(parsed_entry)
-        else:
-          data_blocks.append(parsed_entry)
-      elif idx != 0 and idx % self.chunk_ratio == 0:
+      if progress_in_chunk == self.chunk_ratio:
         sector_bitmap_blocks.append(parsed_entry)
+        progress_in_chunk = 0
       else:
         data_blocks.append(parsed_entry)
-
+        progress_in_chunk += 1
     bat_table = BlockAllocationTable(data_blocks, sector_bitmap_blocks)
     return bat_table
 
@@ -292,7 +288,7 @@ class VHDXDisk:
     """
     bitmap = []
     for sb_byte in sb_bytes:
-      for i in range(7, -1, -1):
+      for i in range(0, 8):
         if sb_byte & (1<<i):
           bitmap.append(True)
         else:
@@ -445,6 +441,5 @@ if __name__ == '__main__':
   parent = VHDXDisk(sys.argv[1])
   child = VHDXDisk(sys.argv[2], parent)
   out = open('converted.raw', 'wb')
-  for block in range(0, 20480):
+  for block in range(0, child.data_block_count):
     out.write(child.GetDataBlock(block))
-    child.GetDataBlock(block)
