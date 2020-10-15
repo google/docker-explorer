@@ -225,3 +225,22 @@ class Overlay2Storage(OverlayStorage):
         for lower_ in lower_content.split(':')
     ])
     return lower_dir
+
+
+class WindowsFilterStorage(BaseStorage):
+  """This class implements windowsfilter storage specific methods."""
+
+  STORAGE_METHOD = 'windowsfilter'
+
+  def MakeMountCommands(self, container_object, mount_dir):
+    """Generates the required shell commands to mount a container given its ID.
+
+    Args:
+      container_object (Container): the container object to mount.
+      mount_dir (str): the path to the target mount point.
+
+    Raises:
+      NotImplementedError: if this method is not implemented.
+    """
+    raise NotImplementedError(
+      'MakeMountCommands() not supported for windowsfilter.')

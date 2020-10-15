@@ -81,7 +81,8 @@ class Container:
   STORAGES_MAP = {
       'aufs': storage.AufsStorage,
       'overlay': storage.OverlayStorage,
-      'overlay2': storage.Overlay2Storage
+      'overlay2': storage.Overlay2Storage,
+      'windowsfilter': storage.WindowsFilterStorage
   }
 
   def __init__(self, docker_directory, container_id, docker_version=2):
@@ -249,9 +250,10 @@ class Container:
       layer_size = self.GetLayerSize(layer)
       if layer_size > 0 or show_empty_layers or self.docker_version == 2:
         layer_dict['created_at'] = utils.FormatDatetime(layer_info['created'])
-        container_cmd = layer_info['container_config'].get('Cmd', None)
-        if container_cmd:
-          layer_dict['container_cmd'] = ' '.join(container_cmd)
+        if 'container_config' in layer_info:
+          container_cmd = layer_info['container_config'].get('Cmd', None)
+          if container_cmd:
+            layer_dict['container_cmd'] = ' '.join(container_cmd)
         comment = layer_info.get('comment', None)
         if comment:
           layer_dict['comment'] = comment
