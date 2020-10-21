@@ -47,7 +47,7 @@ class BlockAllocationTable:
   """Represents a VHDX block allocation table.
 
   Attributes:
-    data_blocks (list(BlockAllocationTableEntry): a list of BAT data blocks
+    data_blocks (list(BlockAllocationTableEntry)): a list of BAT data blocks
     sector_bitmap_blocks (list(BlockAllocationTableEntry)): a list of sector
       bitmap blocks
   """
@@ -56,7 +56,7 @@ class BlockAllocationTable:
 
     Args:
       data_blocks (list): a list of BAT data blocks
-      sector_bitmap_blocks: a list of sector bitmap blocks
+      sector_bitmap_blocks (list): a list of sector bitmap blocks
     """
     self.data_blocks = data_blocks
     self.sector_bitmap_blocks = sector_bitmap_blocks
@@ -86,11 +86,11 @@ class VHDXDisk:
     vhdx_name (str): the on-disk name of the VHDX file
     vhdx_fd (file): the open VHDX file
     parent_disk (VHDXDisk): The parent disk if this is a differencing disk
-    region_table (list((UUID, int))): A list of VHDX regions represented as
+    region_table (list(tuple)): A list of VHDX regions represented as
       UUID/offset tuples
     bat_offset (int): the offset of the BAT table
     metadata_table_offset (int): the offset of the metadata table
-    metadata_table (list((UUID, int))): A list of metadata entries represented
+    metadata_table (list(tuple)): A list of metadata entries represented
       UUID/offset tuples
     block_size (int): the parsed VHDX block size
     has_parent (bool): the parsed parent indicator
@@ -158,7 +158,7 @@ class VHDXDisk:
     """Parses a region table from a VHDX disk
 
     Returns:
-      list((UUID, int)): A list of VHDX regions represented as UUID/offset
+      list(tuple): A list of VHDX regions represented as UUID/offset
         tuples
     """
     self.vhdx_fd.seek(self.REGION_HEADER_OFFSET)
@@ -177,7 +177,7 @@ class VHDXDisk:
     """Parses a metadata table from a VHDX disk
 
     Returns:
-      list((UUID, int)): A list of metadata items represented as UUID/offset
+      list(tuple): A list of metadata items represented as UUID/offset
         tuples
     """
     self.vhdx_fd.seek(self.metadata_table_offset)
@@ -196,7 +196,7 @@ class VHDXDisk:
     """Parses the file parameters metadata entry
 
     Returns:
-      (int, int): a tuple containing the block_size and has_parent items
+      tuple: a tuple containing the block_size and has_parent items
     """
     file_param_offset = self.metadata_table[self.GUID_FILE_PARAM]
     self.vhdx_fd.seek(self.metadata_table_offset + file_param_offset)
@@ -284,7 +284,7 @@ class VHDXDisk:
       sb_bytes (bytes): the bytes representing a bitmap
 
     Returns:
-      list(bool): a list of bools representing the bitmap
+      list: a list of bools representing the bitmap
     """
     bitmap = []
     for sb_byte in sb_bytes:
