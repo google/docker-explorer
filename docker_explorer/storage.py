@@ -17,6 +17,7 @@
 from __future__ import unicode_literals
 
 import os
+import json
 
 import docker_explorer
 from docker_explorer import errors
@@ -242,5 +243,24 @@ class WindowsFilterStorage(BaseStorage):
     Raises:
       NotImplementedError: if this method is not implemented.
     """
-    raise NotImplementedError(
-      'MakeMountCommands() not supported for windowsfilter.')
+    windowsfilter_path = os.path.join(
+      self.docker_directory, self.STORAGE_METHOD)
+    layerchain_path = os.path.join(
+      windowsfilter_path, container_object.mount_id, 'layerchain.json')
+
+    with open(layerchain_path) as layerchain_fd:
+      layerchain_json = json.loads(layerchain_fd.read())
+    # The top layer always contains the parent blank-base.vhdx disk
+    parent_mount_id = layerchain_json[-1].split('\\')[-1]
+
+    blank_base_path = os.path.join(
+      windowsfilter_path, parent_mount_id, 'blank-base.vhdx')
+    sandbox_path = os.path.join(
+      windowsfilter_path, container_object.mount_id, 'sandbox.vhdx')
+
+    commands = []
+    commands.append(
+      ['merge_vhdx.py', '--parent_disk', blank_base_path, '--child_disk',
+      sandbox_path, '--out_image', '{0:s}.raw'.format(
+        container_object.mount_id)])
+    return commands
