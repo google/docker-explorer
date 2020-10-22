@@ -344,12 +344,5 @@ class Container:
     """
     commands = self.storage_object.MakeMountCommands(self, mount_dir)
 
-    if self.storage_name == 'windowsfilter':
-      print('Warning: Due to differences in the Windows container'
-          ' implementation this\ncommand will not actually mount the given'
-          ' container FS but will create a\nmountable raw image:\n\n{0:s}\n\n'
-          'Which can then be mounted using standard tools.'.format(
-            commands[0][-1]))
-
     for c in commands:
       subprocess.call(c, shell=False)

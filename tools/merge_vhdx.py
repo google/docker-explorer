@@ -72,8 +72,8 @@ class MergeVHDXTool:
     child_disk = vhdx.VHDXDisk(options.child_disk_name, parent_disk)
     out_image_fd = open(options.out_image_name, 'wb')
 
-    print('This command will create a new disk image in the current'
-        ' directory of size {0:d}GiB\nPlease confirm (y/n): '.format(
+    print('This command will create a new disk image of size'
+        ' {0:d}GiB.\nPlease confirm (y/n): '.format(
             child_disk.virtual_disk_size//1024**3), end='')
     confirm = input()
     if confirm.lower() != 'y':

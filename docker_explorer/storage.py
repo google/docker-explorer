@@ -234,14 +234,21 @@ class WindowsFilterStorage(BaseStorage):
   STORAGE_METHOD = 'windowsfilter'
 
   def MakeMountCommands(self, container_object, mount_dir):
-    """Generates the required shell commands to mount a container given its ID.
+    """Generates the required shell commands to merges a container's writeable
+    sandbox.vhdx layer with its parent image's blank-base.vhdx layer,
+    producing a mountable raw disk image.
+
+    Note this differs from the other storage types which generate commands to
+    directly mount the container FS.
 
     Args:
       container_object (Container): the container object to mount.
-      mount_dir (str): the path to the target mount point.
+      mount_dir (str): Unused.
 
-    Raises:
-      NotImplementedError: if this method is not implemented.
+    Returns:
+      list(list(str)): a list of commands to merge the target container's
+        writable layer with it's parent images base. Commands to run are
+        list(str).
     """
     windowsfilter_path = os.path.join(
       self.docker_directory, self.STORAGE_METHOD)
