@@ -6,6 +6,7 @@ TMP_MOUNTPOINT="$(mktemp -d)"
 
 # Installs necessary packages, as well as the code to test
 function install_packages {
+  sudo apt -y update
   sudo apt -y install docker.io jq python3-setuptools
   git clone https://github.com/google/docker-explorer || echo 'Already cloned'
   cd docker-explorer
