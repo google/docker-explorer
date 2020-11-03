@@ -30,6 +30,8 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python',
     ],
-    scripts=['tools/de.py'],
+    scripts=[
+        'tools/de.py',
+        'tools/merge_vhdx.py'],
     test_suite='tests'
 )

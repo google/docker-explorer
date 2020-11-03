@@ -342,7 +342,6 @@ class Container:
     Args:
       mount_dir (str): the path to the destination mount point
     """
-
     commands = self.storage_object.MakeMountCommands(self, mount_dir)
     for c in commands:
       subprocess.call(c, shell=False)
