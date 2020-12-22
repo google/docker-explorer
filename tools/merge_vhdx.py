@@ -25,11 +25,45 @@ import struct
 import math
 
 
+REGION_HEADER_OFFSET = 192*1024
+LEN_BAT_ENTRY = 8
+
+GUID_BAT = '2dc27766-f623-4200-9d64-115e9bfd4a08'
+GUID_METADATA = '8b7ca206-4790-4b9a-b8fe-575f050f886e'
+GUID_FILE_PARAM = 'caa16737-fa36-4d43-b3b6-33f0aa44e76b'
+GUID_DISK_SIZE = '2fa54224-cd1b-4876-b211-5dbed83bf4b8'
+GUID_DISK_ID = 'beca12ab-b2e6-4523-93ef-c309e000c746'
+GUID_LOGICAL_SECTOR_SIZE = '8141bf1d-a96f-4709-ba47-f233a8faab5f'
+GUID_PHYSICAL_SECTOR_SIZE = 'cda348c7-445d-4471-9cc9-e9885251c556'
+GUID_PARENT_LOCATOR = 'a8d35f2d-b30b-454d-abf7-d3d84834ab0c'
+
+SB_BLOCK_STATES = [
+  'SB_BLOCK_NOT_PRESENT',
+  'INVALID',
+  'INVALID',
+  'INVALID',
+  'INVALID',
+  'INVALID',
+  'SB_BLOCK_PRESENT'
+]
+
+PAYLOAD_BLOCK_STATES = [
+  'PAYLOAD_BLOCK_NOT_PRESENT',
+  'PAYLOAD_BLOCK_UNDEFINED',
+  'PAYLOAD_BLOCK_ZERO',
+  'PAYLOAD_BLOCK_UNMAPPED',
+  'INVALID',
+  'INVALID',
+  'PAYLOAD_BLOCK_FULLY_PRESENT',
+  'PAYLOAD_BLOCK_PARTIALLY_PRESENT'
+]
+
+
 class BlockAllocationTableEntry:
   """Represents a VHDX block allocation table entry.
 
   Attributes:
-    state (int): the state of BAT entry
+    state (str): the state of BAT entry
     offset (int): the offset of the block the BAT entry points to
   """
 
@@ -39,12 +73,73 @@ class BlockAllocationTableEntry:
     Args:
       bat_bytes (bytes): a bytes object representing the BAT entry
     """
-    state_bitmask = 0b00000111
+    self.state = self._parseState(bat_bytes)
+    self.offset = self._parseOffset(bat_bytes)
+
+  def _parseState(self, bat_bytes):
+    """Parses BAT state
+
+    Args:
+      bat_bytes (bytes): a bytes object representing the BAT entry
+    """
+    raise NotImplementedError
+
+  def _parseOffset(self, bat_bytes):
+    """Parses BAT offset
+
+    Args:
+      bat_bytes (bytes): a bytes object representing the BAT entry
+    """
     offset_lead_byte_bitmask = 0b11110000
-    self.state = bat_bytes[0] & state_bitmask
     offset_lead_byte = bat_bytes[2] & offset_lead_byte_bitmask
     offset_bytes = b'\x00'*2 + bytes([offset_lead_byte]) + bat_bytes[3:]
-    self.offset = struct.unpack("<Q", offset_bytes)[0]
+    return struct.unpack("<Q", offset_bytes)[0]
+
+
+class SectorBitmapBATEntry(BlockAllocationTableEntry):
+  """Represents a sector bitmap block entry.
+
+  Attributes:
+    state (str): the state of BAT entry
+    offset (int): the offset of the block the BAT entry points to
+  """
+
+  def _parseState(self, bat_bytes):
+    """Parses BAT state
+
+    Args:
+      bat_bytes (bytes): a bytes object representing the BAT entry
+    """
+    state_bitmask = 0b00000111
+    state_int = bat_bytes[0] & state_bitmask
+    state = SB_BLOCK_STATES[state_int]
+    if state == 'INVALID':
+      raise ValueError(
+          'Invalid state {} for sector bitmap entry'.format(state_int))
+    return state
+
+
+class PayloadBlockBATEntry(BlockAllocationTableEntry):
+  """Represents a payload block BAT entry.
+
+  Attributes:
+    state (str): the state of BAT entry
+    offset (int): the offset of the block the BAT entry points to
+  """
+
+  def _parseState(self, bat_bytes):
+    """Parses BAT state
+
+    Args:
+      bat_bytes (bytes): a bytes object representing the BAT entry
+    """
+    state_bitmask = 0b00000111
+    state_int = bat_bytes[0] & state_bitmask
+    state = PAYLOAD_BLOCK_STATES[state_int]
+    if state == 'INVALID':
+      raise ValueError(
+          'Invalid state {} for payload block entry'.format(state_int))
+    return state
 
 
 class BlockAllocationTable:
@@ -55,15 +150,36 @@ class BlockAllocationTable:
     sector_bitmap_blocks (list(BlockAllocationTableEntry)): a list of sector
       bitmap blocks
   """
-  def __init__(self, data_blocks, sector_bitmap_blocks):
+  def __init__(self, bat_blocks, chunk_ratio):
     """Initialises a BlockAllocationTable.
 
     Args:
       data_blocks (list): a list of BAT data blocks
       sector_bitmap_blocks (list): a list of sector bitmap blocks
     """
-    self.data_blocks = data_blocks
-    self.sector_bitmap_blocks = sector_bitmap_blocks
+    parsed_blocks = self._ParseBATBlocks(bat_blocks, chunk_ratio)
+    self.data_blocks = parsed_blocks[0]
+    self.sector_bitmap_blocks = parsed_blocks[1]
+
+  def _ParseBATBlocks(self, bat_blocks, chunk_ratio):
+    """Parses the block allocation table
+
+    Returns:
+      BlockAllocationTable: the parsed block allocation table
+    """
+    data_blocks = []
+    sector_bitmap_blocks = []
+    progress_in_chunk = 0
+    for idx in range(0, len(bat_blocks), 8):
+      if progress_in_chunk == chunk_ratio:
+        parsed_entry = SectorBitmapBATEntry(bat_blocks[idx:idx+8])
+        sector_bitmap_blocks.append(parsed_entry)
+        progress_in_chunk = 0
+      else:
+        parsed_entry = PayloadBlockBATEntry(bat_blocks[idx:idx+8])
+        data_blocks.append(parsed_entry)
+        progress_in_chunk += 1
+    return (data_blocks, sector_bitmap_blocks)
 
   def GetDBEntryForBlock(self, block_number):
     """Returns a data block entry for for a given block number
@@ -109,24 +225,6 @@ class VHDXDisk:
     bat_table (BlockAllocationTable): the parsed block allocation table
   """
 
-  REGION_HEADER_OFFSET = 192*1024
-  GUID_BAT = '2dc27766-f623-4200-9d64-115e9bfd4a08'
-  GUID_METADATA = '8b7ca206-4790-4b9a-b8fe-575f050f886e'
-  GUID_FILE_PARAM = 'caa16737-fa36-4d43-b3b6-33f0aa44e76b'
-  GUID_DISK_SIZE = '2fa54224-cd1b-4876-b211-5dbed83bf4b8'
-  GUID_DISK_ID = 'beca12ab-b2e6-4523-93ef-c309e000c746'
-  GUID_LOGICAL_SECTOR_SIZE = '8141bf1d-a96f-4709-ba47-f233a8faab5f'
-  GUID_PHYSICAL_SECTOR_SIZE = 'cda348c7-445d-4471-9cc9-e9885251c556'
-  GUID_PARENT_LOCATOR = 'a8d35f2d-b30b-454d-abf7-d3d84834ab0c'
-  PAYLOAD_BLOCK_NOT_PRESENT = 0
-  PAYLOAD_BLOCK_UNDEFINED = 1
-  PAYLOAD_BLOCK_ZERO = 2
-  PAYLOAD_BLOCK_UNMAPPED = 3
-  PAYLOAD_BLOCK_FULLY_PRESENT = 6
-  PAYLOAD_BLOCK_PARTIALLY_PRESENT = 7
-  SB_BLOCK_NOT_PRESENT = 0
-  SB_BLOCK_PRESENT = 6
-
   def __init__(self, vhdx_name, parent_disk=None):
     """Initialises a VHDXDisk
 
@@ -138,8 +236,8 @@ class VHDXDisk:
     self.vhdx_fd = open(vhdx_name, 'rb')
     self.parent_disk = parent_disk
     self.region_table = self._ParseRegionTable()
-    self.bat_offset = self.region_table[self.GUID_BAT]
-    self.metadata_table_offset = self.region_table[self.GUID_METADATA]
+    self.bat_offset = self.region_table[GUID_BAT]
+    self.metadata_table_offset = self.region_table[GUID_METADATA]
     self.metadata_table = self._ParseMetadataTable()
     file_params = self._ParseFileParam()
     self.block_size = file_params[0]
@@ -166,7 +264,7 @@ class VHDXDisk:
       list(tuple): A list of VHDX regions represented as UUID/offset
         tuples
     """
-    self.vhdx_fd.seek(self.REGION_HEADER_OFFSET)
+    self.vhdx_fd.seek(REGION_HEADER_OFFSET)
     self.vhdx_fd.seek(8, 1) # Region table signature + checksum
     entry_count = struct.unpack('<I', self.vhdx_fd.read(4))[0]
     self.vhdx_fd.seek(4, 1) # Res bytes
@@ -203,7 +301,7 @@ class VHDXDisk:
     Returns:
       tuple: a tuple containing the block_size and has_parent items
     """
-    file_param_offset = self.metadata_table[self.GUID_FILE_PARAM]
+    file_param_offset = self.metadata_table[GUID_FILE_PARAM]
     self.vhdx_fd.seek(self.metadata_table_offset + file_param_offset)
     block_size = struct.unpack('<I', self.vhdx_fd.read(4))[0]
     bitfield = self.vhdx_fd.read(1)[0]
@@ -218,7 +316,7 @@ class VHDXDisk:
     Returns:
       int: the parsed logical sector size
     """
-    logical_sector_offset = self.metadata_table[self.GUID_LOGICAL_SECTOR_SIZE]
+    logical_sector_offset = self.metadata_table[GUID_LOGICAL_SECTOR_SIZE]
     self.vhdx_fd.seek(self.metadata_table_offset + logical_sector_offset)
     logical_sector_size = struct.unpack('<I', self.vhdx_fd.read(4))[0]
     return logical_sector_size
@@ -229,7 +327,7 @@ class VHDXDisk:
     Returns:
       int: the parsed virtual disk size
     """
-    disk_size_offset = self.metadata_table[self.GUID_DISK_SIZE]
+    disk_size_offset = self.metadata_table[GUID_DISK_SIZE]
     self.vhdx_fd.seek(self.metadata_table_offset + disk_size_offset)
     disk_size = struct.unpack('<Q', self.vhdx_fd.read(8))[0]
     return disk_size
@@ -240,20 +338,9 @@ class VHDXDisk:
     Returns:
       BlockAllocationTable: the parsed block allocation table
     """
-    data_blocks = []
-    sector_bitmap_blocks = []
     self.vhdx_fd.seek(self.bat_offset)
-    progress_in_chunk = 0
-    for _ in range(0, self.total_bat_entries):
-      parsed_entry = BlockAllocationTableEntry(self.vhdx_fd.read(8))
-      if progress_in_chunk == self.chunk_ratio:
-        sector_bitmap_blocks.append(parsed_entry)
-        progress_in_chunk = 0
-      else:
-        data_blocks.append(parsed_entry)
-        progress_in_chunk += 1
-    bat_table = BlockAllocationTable(data_blocks, sector_bitmap_blocks)
-    return bat_table
+    bat_blocks = self.vhdx_fd.read(self.total_bat_entries*LEN_BAT_ENTRY)
+    return BlockAllocationTable(bat_blocks, self.chunk_ratio)
 
   def _GetSectorBitmapForBlock(self, block_number):
     """Returns the raw bytes of sector bitmap representing a single data block
@@ -271,7 +358,7 @@ class VHDXDisk:
     """
     chunk_number = block_number // self.chunk_ratio
     sb_entry = self.bat_table.GetSBForChunk(chunk_number)
-    if sb_entry.state == self.SB_BLOCK_NOT_PRESENT:
+    if sb_entry.state == 'SB_BLOCK_NOT_PRESENT':
       raise ValueError('Sector bitmap block not present')
     sb_entry_offset = sb_entry.offset
     sectors_per_block = self.block_size // self.logical_sector_size
@@ -368,23 +455,23 @@ class VHDXDisk:
     bat_entry = self.bat_table.GetDBEntryForBlock(block_number)
     state = bat_entry.state
 
-    if state == self.PAYLOAD_BLOCK_NOT_PRESENT:
+    if state == 'PAYLOAD_BLOCK_NOT_PRESENT':
       if self.has_parent:
         sector = self.parent_disk.GetLogicalSector(
           block_number, sector_in_block)
       else:
         sector = self._GetLogicalSectorIfPresent(bat_entry, sector_in_block)
-    elif state == self.PAYLOAD_BLOCK_UNDEFINED:
+    elif state == 'PAYLOAD_BLOCK_UNDEFINED':
       sector = self._GetLogicalSectorIfPresent(bat_entry, sector_in_block)
-    elif state == self.PAYLOAD_BLOCK_ZERO:
+    elif state == 'PAYLOAD_BLOCK_ZERO':
       sector = b'\x00'*self.logical_sector_size
-    elif state == self.PAYLOAD_BLOCK_UNMAPPED:
+    elif state == 'PAYLOAD_BLOCK_UNMAPPED':
       sector = self._GetLogicalSectorIfPresent(bat_entry, sector_in_block)
-    elif state == self.PAYLOAD_BLOCK_FULLY_PRESENT:
+    elif state == 'PAYLOAD_BLOCK_FULLY_PRESENT':
       self.vhdx_fd.seek(
         bat_entry.offset + sector_in_block*self.logical_sector_size)
       sector = self.vhdx_fd.read(self.logical_sector_size)
-    elif state == self.PAYLOAD_BLOCK_PARTIALLY_PRESENT:
+    elif state == 'PAYLOAD_BLOCK_PARTIALLY_PRESENT':
       sector = self.parent_disk.GetLogicalSector(
         block_number, sector_in_block)
 
@@ -430,21 +517,21 @@ class VHDXDisk:
     bat_entry = self.bat_table.GetDBEntryForBlock(block_number)
     state = bat_entry.state
 
-    if state == self.PAYLOAD_BLOCK_NOT_PRESENT:
+    if state == 'PAYLOAD_BLOCK_NOT_PRESENT':
       if self.has_parent:
         parsed_block = self.parent_disk.GetDataBlock(block_number)
       else:
         parsed_block = self._GetDataBlockIfPresent(bat_entry)
-    elif state == self.PAYLOAD_BLOCK_UNDEFINED:
+    elif state == 'PAYLOAD_BLOCK_UNDEFINED':
       parsed_block = self._GetDataBlockIfPresent(bat_entry)
-    elif state == self.PAYLOAD_BLOCK_ZERO:
+    elif state == 'PAYLOAD_BLOCK_ZERO':
       parsed_block = b'\x00'*self.block_size
-    elif state == self.PAYLOAD_BLOCK_UNMAPPED:
+    elif state == 'PAYLOAD_BLOCK_UNMAPPED':
       parsed_block = self._GetDataBlockIfPresent(bat_entry)
-    elif state == self.PAYLOAD_BLOCK_FULLY_PRESENT:
+    elif state == 'PAYLOAD_BLOCK_FULLY_PRESENT':
       self.vhdx_fd.seek(bat_entry.offset)
       parsed_block = self.vhdx_fd.read(self.block_size)
-    elif state == self.PAYLOAD_BLOCK_PARTIALLY_PRESENT:
+    elif state == 'PAYLOAD_BLOCK_PARTIALLY_PRESENT':
       parsed_block = self._GetPartialDataBlock(block_number)
 
     return parsed_block
