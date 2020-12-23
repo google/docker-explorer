@@ -23,10 +23,13 @@ import sys
 import uuid
 import struct
 import math
+from collections import namedtuple
 
 
 REGION_HEADER_OFFSET = 192*1024
 LEN_BAT_ENTRY = 8
+BAT_ENTRY_STATE_BITMASK = 0b00000111
+BAT_ENTRY_OFFSET_LEAD_BYTE_BITMASK = 0b11110000
 
 GUID_BAT = '2dc27766-f623-4200-9d64-115e9bfd4a08'
 GUID_METADATA = '8b7ca206-4790-4b9a-b8fe-575f050f886e'
@@ -59,12 +62,20 @@ PAYLOAD_BLOCK_STATES = [
 ]
 
 
+BATParams = namedtuple('BATParams', ['chunk_ratio', 'total_entries',
+    'payload_entries', 'sector_bitmap_entries'])
+
+
+DiskParams = namedtuple('DiskParams', ['block_size', 'logical_sector_size',
+    'virtual_disk_size', 'has_parent'])
+
+
 class BlockAllocationTableEntry:
   """Represents a VHDX block allocation table entry.
 
   Attributes:
     state (str): the state of BAT entry
-    offset (int): the offset of the block the BAT entry points to
+    offset (int): the offset of the block the BAT entry references
   """
 
   def __init__(self, bat_bytes):
@@ -81,6 +92,9 @@ class BlockAllocationTableEntry:
 
     Args:
       bat_bytes (bytes): a bytes object representing the BAT entry
+
+    Raises:
+      NotImplementedError: if called on the base class
     """
     raise NotImplementedError
 
@@ -90,8 +104,7 @@ class BlockAllocationTableEntry:
     Args:
       bat_bytes (bytes): a bytes object representing the BAT entry
     """
-    offset_lead_byte_bitmask = 0b11110000
-    offset_lead_byte = bat_bytes[2] & offset_lead_byte_bitmask
+    offset_lead_byte = bat_bytes[2] & BAT_ENTRY_OFFSET_LEAD_BYTE_BITMASK
     offset_bytes = b'\x00'*2 + bytes([offset_lead_byte]) + bat_bytes[3:]
     return struct.unpack("<Q", offset_bytes)[0]
 
@@ -101,7 +114,7 @@ class SectorBitmapBATEntry(BlockAllocationTableEntry):
 
   Attributes:
     state (str): the state of BAT entry
-    offset (int): the offset of the block the BAT entry points to
+    offset (int): the offset of the block the BAT entry references
   """
 
   def _parseState(self, bat_bytes):
@@ -109,9 +122,11 @@ class SectorBitmapBATEntry(BlockAllocationTableEntry):
 
     Args:
       bat_bytes (bytes): a bytes object representing the BAT entry
+
+    Raises:
+      ValueError: if the state field is invalid
     """
-    state_bitmask = 0b00000111
-    state_int = bat_bytes[0] & state_bitmask
+    state_int = bat_bytes[0] & BAT_ENTRY_STATE_BITMASK
     state = SB_BLOCK_STATES[state_int]
     if state == 'INVALID':
       raise ValueError(
@@ -124,7 +139,7 @@ class PayloadBlockBATEntry(BlockAllocationTableEntry):
 
   Attributes:
     state (str): the state of BAT entry
-    offset (int): the offset of the block the BAT entry points to
+    offset (int): the offset of the block the BAT entry references
   """
 
   def _parseState(self, bat_bytes):
@@ -132,9 +147,11 @@ class PayloadBlockBATEntry(BlockAllocationTableEntry):
 
     Args:
       bat_bytes (bytes): a bytes object representing the BAT entry
+
+    Raises:
+      ValueError: if the state field is invalid
     """
-    state_bitmask = 0b00000111
-    state_int = bat_bytes[0] & state_bitmask
+    state_int = bat_bytes[0] & BAT_ENTRY_STATE_BITMASK
     state = PAYLOAD_BLOCK_STATES[state_int]
     if state == 'INVALID':
       raise ValueError(
@@ -145,57 +162,78 @@ class PayloadBlockBATEntry(BlockAllocationTableEntry):
 class BlockAllocationTable:
   """Represents a VHDX block allocation table.
 
+  Parses the payload and sector bitmap entries into two separate lists.
+  Indexes into the payload entries list represent block numbers while
+  indexes into the sector bitmap entries list represent chunks numbers.
+
   Attributes:
-    data_blocks (list(BlockAllocationTableEntry)): a list of BAT data blocks
-    sector_bitmap_blocks (list(BlockAllocationTableEntry)): a list of sector
-      bitmap blocks
+    payload_blocks (list(PayloadBlockBitmapBATEntry)): a list of BAT payload
+      entries
+    sector_bitmap_blocks (list(SectorBitmapBATEntry)): a list of sector
+      bitmap entries
   """
-  def __init__(self, bat_blocks, chunk_ratio):
+  def __init__(self, bat_bytes, bat_params):
     """Initialises a BlockAllocationTable.
 
     Args:
-      data_blocks (list): a list of BAT data blocks
-      sector_bitmap_blocks (list): a list of sector bitmap blocks
+      bat_bytes (bytes): raw bytes representing the bat table
+      bat_params (BATParams): BAT details for error checking
     """
-    parsed_blocks = self._ParseBATBlocks(bat_blocks, chunk_ratio)
-    self.data_blocks = parsed_blocks[0]
-    self.sector_bitmap_blocks = parsed_blocks[1]
+    parsed_bat = self._ParseBATBytes(bat_bytes, bat_params)
+    self.payload_entries = parsed_bat[0]
+    self.sector_bitmap_entries = parsed_bat[1]
 
-  def _ParseBATBlocks(self, bat_blocks, chunk_ratio):
+  def _ParseBATBytes(self, bat_bytes, bat_params):
     """Parses the block allocation table
 
-    Returns:
-      BlockAllocationTable: the parsed block allocation table
-    """
-    data_blocks = []
-    sector_bitmap_blocks = []
-    progress_in_chunk = 0
-    for idx in range(0, len(bat_blocks), 8):
-      if progress_in_chunk == chunk_ratio:
-        parsed_entry = SectorBitmapBATEntry(bat_blocks[idx:idx+8])
-        sector_bitmap_blocks.append(parsed_entry)
-        progress_in_chunk = 0
-      else:
-        parsed_entry = PayloadBlockBATEntry(bat_blocks[idx:idx+8])
-        data_blocks.append(parsed_entry)
-        progress_in_chunk += 1
-    return (data_blocks, sector_bitmap_blocks)
+    Args:
+      bat_bytes (bytes): the raw bytes representing a BAT table
+      bat_params (BatParams): the parsed BAT params
 
-  def GetDBEntryForBlock(self, block_number):
+    Returns:
+      tuple(list, list): the parsed block allocation table
+
+    Raises:
+      ValueError: if the expected number of entries aren't parsed
+    """
+    payload_entries = []
+    sector_bitmap_entries = []
+    progress_in_chunk = 0
+
+    for idx in range(0, len(bat_bytes), LEN_BAT_ENTRY):
+      if progress_in_chunk == bat_params.chunk_ratio:
+        # Means this entry is for a sector bitmap block
+        parsed_entry = SectorBitmapBATEntry(bat_bytes[idx:idx+8])
+        sector_bitmap_entries.append(parsed_entry)
+        progress_in_chunk = 0 # Sector bitmap entry means end of this chunk
+      else:
+        parsed_entry = PayloadBlockBATEntry(bat_bytes[idx:idx+8])
+        payload_entries.append(parsed_entry)
+        progress_in_chunk += 1
+
+    total_entries = len(payload_entries) + len(sector_bitmap_entries)
+    if total_entries != bat_params.total_entries:
+      raise ValueError(
+          'Incorrect number of entries parsed expected {} parsed {}'.format(
+              bat_params.total_entries, total_entries))
+
+    return (payload_entries, sector_bitmap_entries)
+
+  def GetPayloadBATEntry(self, block_number):
     """Returns a data block entry for for a given block number
 
     Args:
       block_number (int): the block number to retrieve an entry for
     """
-    return self.data_blocks[block_number]
+    return self.payload_entries[block_number]
 
-  def GetSBForChunk(self, chunk_number):
+  def GetSectorBitmapBATEntry(self, chunk_number):
     """Returns a sector bitmap block for for a given chunk number
 
     Args:
       chunk_number (int): the chunk number to retrieve an entry for
     """
-    return self.sector_bitmap_blocks[chunk_number]
+    return self.sector_bitmap_entries[chunk_number]
 
 
 class VHDXDisk:
@@ -207,21 +245,11 @@ class VHDXDisk:
   Attributes:
     vhdx_name (str): the on-disk name of the VHDX file
     vhdx_fd (file): the open VHDX file
-    parent_disk (VHDXDisk): The parent disk if this is a differencing disk
-    region_table (list(tuple)): A list of VHDX regions represented as
-      UUID/offset tuples
-    bat_offset (int): the offset of the BAT table
-    metadata_table_offset (int): the offset of the metadata table
-    metadata_table (list(tuple)): A list of metadata entries represented
-      UUID/offset tuples
-    block_size (int): the parsed VHDX block size
-    has_parent (bool): the parsed parent indicator
-    logical_sector_size (int): the parsed logical sector size
-    virtual_disk_size (int): the parsed virtual disk size
-    chunk_ratio (int): the calculated chunk size
-    data_block_count (int): the calculated data block count
-    sector_bitmap_block_count (int): the calculated bitmap block count
-    total_bat_entries (int): the calculated total BAT entries
+    parent_disk (VHDXDisk): the parent disk if this is a differencing disk
+    region_table (dict): a parsed region table with GUIDs as keys
+    metadata_table (dict): a parsed metadata table with GUIDs as keys
+    disk_params (DiskParams): the parsed disk params
+    bat_params (BATParams): the parsed BAT params
     bat_table (BlockAllocationTable): the parsed block allocation table
   """
 
@@ -236,26 +264,44 @@ class VHDXDisk:
     self.vhdx_fd = open(vhdx_name, 'rb')
     self.parent_disk = parent_disk
     self.region_table = self._ParseRegionTable()
-    self.bat_offset = self.region_table[GUID_BAT]
-    self.metadata_table_offset = self.region_table[GUID_METADATA]
     self.metadata_table = self._ParseMetadataTable()
-    file_params = self._ParseFileParam()
-    self.block_size = file_params[0]
-    self.has_parent = file_params[1]
-    self.logical_sector_size = self._ParseLogicalSectorSize()
-    self.virtual_disk_size = self._ParseDiskSize()
-    self.chunk_ratio = (2**23 * self.logical_sector_size) // self.block_size
-    self.data_block_count = math.ceil(
-        self.virtual_disk_size / self.block_size)
-    self.sector_bitmap_block_count = math.ceil(
-        self.data_block_count / self.chunk_ratio)
-    if self.has_parent:
-      self.total_bat_entries = self.sector_bitmap_block_count * (
-          self.chunk_ratio + 1)
-    else:
-      self.total_bat_entries = self.data_block_count + math.floor(
-          (self.data_block_count-1)/self.chunk_ratio)
+    self.disk_params = self._ParseDiskParams()
+    self.bat_params = self._CalculateBATParams()
     self.bat_table = self._ParseBat()
+
+  def _ParseDiskParams(self):
+    """Calculates the disk params for a VHDX disk
+
+    Returns:
+      DiskParams: the parsed disk params
+    """
+    file_params = self._ParseFileParam()
+    block_size = file_params[0]
+    has_parent = file_params[1]
+    logical_sector_size = self._ParseLogicalSectorSize()
+    virtual_disk_size = self._ParseDiskSize()
+    return DiskParams(block_size, logical_sector_size, virtual_disk_size,
+        has_parent)
+
+  def _CalculateBATParams(self):
+    """Calculates the BAT params for a VHDX disk
+
+    Returns:
+      BATParams: the parsed BAT params
+    """
+    chunk_ratio = ((2**23*self.disk_params.logical_sector_size) //
+        self.disk_params.block_size)
+    payload_entries = math.ceil(self.disk_params.virtual_disk_size /
+        self.disk_params.block_size)
+    sector_bitmap_entries = math.ceil(payload_entries / chunk_ratio)
+    if self.disk_params.has_parent:
+      total_entries = sector_bitmap_entries * (chunk_ratio+1)
+    else:
+      total_entries = payload_entries + math.floor(
+          (payload_entries-1)/chunk_ratio)
+
+    return BATParams(chunk_ratio, total_entries, payload_entries, 
+        sector_bitmap_entries)
 
   def _ParseRegionTable(self):
     """Parses a region table from a VHDX disk
@@ -283,7 +329,7 @@ class VHDXDisk:
       list(tuple): A list of metadata items represented as UUID/offset
         tuples
     """
-    self.vhdx_fd.seek(self.metadata_table_offset)
+    self.vhdx_fd.seek(self.region_table[GUID_METADATA])
     self.vhdx_fd.seek(10, 1) # Metadata table signature + res bytes
     entry_count = struct.unpack('<H', self.vhdx_fd.read(2))[0]
     self.vhdx_fd.seek(20, 1) # Res bytes
@@ -302,7 +348,7 @@ class VHDXDisk:
       tuple: a tuple containing the block_size and has_parent items
     """
     file_param_offset = self.metadata_table[GUID_FILE_PARAM]
-    self.vhdx_fd.seek(self.metadata_table_offset + file_param_offset)
+    self.vhdx_fd.seek(self.region_table[GUID_METADATA] + file_param_offset)
     block_size = struct.unpack('<I', self.vhdx_fd.read(4))[0]
     bitfield = self.vhdx_fd.read(1)[0]
     has_parent = False
@@ -317,7 +363,8 @@ class VHDXDisk:
       int: the parsed logical sector size
     """
     logical_sector_offset = self.metadata_table[GUID_LOGICAL_SECTOR_SIZE]
-    self.vhdx_fd.seek(self.metadata_table_offset + logical_sector_offset)
+    self.vhdx_fd.seek(
+        self.region_table[GUID_METADATA] + logical_sector_offset)
     logical_sector_size = struct.unpack('<I', self.vhdx_fd.read(4))[0]
     return logical_sector_size
 
@@ -328,7 +375,7 @@ class VHDXDisk:
       int: the parsed virtual disk size
     """
     disk_size_offset = self.metadata_table[GUID_DISK_SIZE]
-    self.vhdx_fd.seek(self.metadata_table_offset + disk_size_offset)
+    self.vhdx_fd.seek(self.region_table[GUID_METADATA] + disk_size_offset)
     disk_size = struct.unpack('<Q', self.vhdx_fd.read(8))[0]
     return disk_size
 
@@ -338,9 +385,10 @@ class VHDXDisk:
     Returns:
       BlockAllocationTable: the parsed block allocation table
     """
-    self.vhdx_fd.seek(self.bat_offset)
-    bat_blocks = self.vhdx_fd.read(self.total_bat_entries*LEN_BAT_ENTRY)
-    return BlockAllocationTable(bat_blocks, self.chunk_ratio)
+    self.vhdx_fd.seek(self.region_table[GUID_BAT])
+    bat_blocks = self.vhdx_fd.read(
+        self.bat_params.total_entries*LEN_BAT_ENTRY)
+    return BlockAllocationTable(bat_blocks, self.bat_params)
 
   def _GetSectorBitmapForBlock(self, block_number):
     """Returns the raw bytes of sector bitmap representing a single data block
@@ -356,15 +404,16 @@ class VHDXDisk:
       ValueError: if the sector bitmap block BAT entry state is
         SB_BLOCK_NOT_PRESENT.
     """
-    chunk_number = block_number // self.chunk_ratio
-    sb_entry = self.bat_table.GetSBForChunk(chunk_number)
+    chunk_number = block_number // self.bat_params.chunk_ratio
+    sb_entry = self.bat_table.GetSectorBitmapBATEntry(chunk_number)
     if sb_entry.state == 'SB_BLOCK_NOT_PRESENT':
       raise ValueError('Sector bitmap block not present')
     sb_entry_offset = sb_entry.offset
-    sectors_per_block = self.block_size // self.logical_sector_size
+    sectors_per_block = (self.disk_params.block_size //
+        self.disk_params.logical_sector_size)
     # Number of bitmap block bytes required to represent one data block
     bitmap_bytes_per_block = sectors_per_block // 8
-    block_within_chunk = block_number % self.chunk_ratio
+    block_within_chunk = block_number % self.bat_params.chunk_ratio
     # Absolute offset within the sector bitmap of bytes representing the
     # target block's bitmap
     block_bitmap_offset = (
@@ -406,17 +455,19 @@ class VHDXDisk:
     """
     sector_bitmap_bytes = self._GetSectorBitmapForBlock(block_number)
     sector_bitmap = self._ConvertBytesToBitmap(sector_bitmap_bytes)
-    sectors_per_block = self.block_size // self.logical_sector_size
-    block_offset = self.bat_table.GetDBEntryForBlock(block_number).offset
+    sectors_per_block = (self.disk_params.block_size //
+        self.disk_params.logical_sector_size)
+    block_offset = self.bat_table.GetPayloadBATEntry(block_number).offset
     parsed_block = bytearray()
     self.vhdx_fd.seek(block_offset)
     for sector in range(0, sectors_per_block):
       if sector_bitmap[sector]:
-        parsed_block += bytearray(self.vhdx_fd.read(self.logical_sector_size))
+        parsed_block += bytearray(
+            self.vhdx_fd.read(self.disk_params.logical_sector_size))
       else:
         parsed_block += bytearray(
           self.parent_disk.GetLogicalSector(block_number, sector))
-        self.vhdx_fd.seek(self.logical_sector_size, 1)
+        self.vhdx_fd.seek(self.disk_params.logical_sector_size, 1)
     return parsed_block
 
   def _GetLogicalSectorIfPresent(self, bat_entry, sector_in_block):
@@ -435,11 +486,11 @@ class VHDXDisk:
         given in the BAT entry
     """
     if bat_entry.offset:
-      self.vhdx_fd.seek(
-        bat_entry.offset + sector_in_block*self.logical_sector_size)
-      sector = self.vhdx_fd.read(self.logical_sector_size)
+      self.vhdx_fd.seek(bat_entry.offset +
+        sector_in_block*self.disk_params.logical_sector_size)
+      sector = self.vhdx_fd.read(self.disk_params.logical_sector_size)
     else:
-      sector = b'\x00'*self.logical_sector_size
+      sector = b'\x00'*self.disk_params.logical_sector_size
     return sector
 
   def GetLogicalSector(self, block_number, sector_in_block):
@@ -452,11 +503,11 @@ class VHDXDisk:
     Returns:
       bytes: the sector contents
     """
-    bat_entry = self.bat_table.GetDBEntryForBlock(block_number)
+    bat_entry = self.bat_table.GetPayloadBATEntry(block_number)
     state = bat_entry.state
 
     if state == 'PAYLOAD_BLOCK_NOT_PRESENT':
-      if self.has_parent:
+      if self.disk_params.has_parent:
         sector = self.parent_disk.GetLogicalSector(
           block_number, sector_in_block)
       else:
@@ -464,13 +515,13 @@ class VHDXDisk:
     elif state == 'PAYLOAD_BLOCK_UNDEFINED':
       sector = self._GetLogicalSectorIfPresent(bat_entry, sector_in_block)
     elif state == 'PAYLOAD_BLOCK_ZERO':
-      sector = b'\x00'*self.logical_sector_size
+      sector = b'\x00'*self.disk_params.logical_sector_size
     elif state == 'PAYLOAD_BLOCK_UNMAPPED':
       sector = self._GetLogicalSectorIfPresent(bat_entry, sector_in_block)
     elif state == 'PAYLOAD_BLOCK_FULLY_PRESENT':
-      self.vhdx_fd.seek(
-        bat_entry.offset + sector_in_block*self.logical_sector_size)
-      sector = self.vhdx_fd.read(self.logical_sector_size)
+      self.vhdx_fd.seek(bat_entry.offset +
+        sector_in_block*self.disk_params.logical_sector_size)
+      sector = self.vhdx_fd.read(self.disk_params.logical_sector_size)
     elif state == 'PAYLOAD_BLOCK_PARTIALLY_PRESENT':
       sector = self.parent_disk.GetLogicalSector(
         block_number, sector_in_block)
@@ -494,9 +545,9 @@ class VHDXDisk:
     """
     if bat_entry.offset:
       self.vhdx_fd.seek(bat_entry.offset)
-      parsed_block = self.vhdx_fd.read(self.block_size)
+      parsed_block = self.vhdx_fd.read(self.disk_params.block_size)
     else:
-      parsed_block = b'\x00'*self.block_size
+      parsed_block = b'\x00'*self.disk_params.block_size
     return parsed_block
 
   def GetDataBlock(self, block_number):
@@ -512,25 +563,25 @@ class VHDXDisk:
       ValueError: If the requested block number is greater than the number of
         data blocks.
     """
-    if block_number >= len(self.bat_table.data_blocks):
+    if block_number >= len(self.bat_table.payload_entries):
       raise ValueError('Requested block out of range')
-    bat_entry = self.bat_table.GetDBEntryForBlock(block_number)
+    bat_entry = self.bat_table.GetPayloadBATEntry(block_number)
     state = bat_entry.state
 
     if state == 'PAYLOAD_BLOCK_NOT_PRESENT':
-      if self.has_parent:
+      if self.disk_params.has_parent:
         parsed_block = self.parent_disk.GetDataBlock(block_number)
       else:
         parsed_block = self._GetDataBlockIfPresent(bat_entry)
     elif state == 'PAYLOAD_BLOCK_UNDEFINED':
       parsed_block = self._GetDataBlockIfPresent(bat_entry)
     elif state == 'PAYLOAD_BLOCK_ZERO':
-      parsed_block = b'\x00'*self.block_size
+      parsed_block = b'\x00'*self.disk_params.block_size
     elif state == 'PAYLOAD_BLOCK_UNMAPPED':
       parsed_block = self._GetDataBlockIfPresent(bat_entry)
     elif state == 'PAYLOAD_BLOCK_FULLY_PRESENT':
       self.vhdx_fd.seek(bat_entry.offset)
-      parsed_block = self.vhdx_fd.read(self.block_size)
+      parsed_block = self.vhdx_fd.read(self.disk_params.block_size)
     elif state == 'PAYLOAD_BLOCK_PARTIALLY_PRESENT':
       parsed_block = self._GetPartialDataBlock(block_number)
 
@@ -588,12 +639,12 @@ class MergeVHDXTool:
 
     print('This command will create a new disk image of size'
         ' {0:d}GiB.\nPlease confirm (y/n): '.format(
-            child_disk.virtual_disk_size//1024**3), end='')
+            child_disk.disk_params.virtual_disk_size//1024**3), end='')
     confirm = input()
     if confirm.lower() != 'y':
       sys.exit()
 
-    for block in range(0, child_disk.data_block_count):
+    for block in range(0, child_disk.bat_params.payload_entries):
       out_image_fd.write(child_disk.GetDataBlock(block))
     out_image_fd.close()
 
