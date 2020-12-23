@@ -17,13 +17,42 @@
 import unittest
 import unittest.mock
 
+from tools.merge_vhdx import SectorBitmapBATEntry
+from tools.merge_vhdx import PayloadBlockBATEntry
+from tools.merge_vhdx import BlockAllocationTable
+from tools.merge_vhdx import VHDXDisk
+from tools.merge_vhdx import MergeVHDXTool
 
-class VHDXTests(unittest.TestCase):
-  """Tests VHDX"""
 
-  def testtest(self):
-    """Tests the utils.FormatDatetime function."""
-    self.assertEqual(1, 1)
+class BlockAllocationTableEntryTests(unittest.TestCase):
+  """Tests for the SectorBitmapBATEntry class"""
+
+  def testSectorBitmapParse(self):
+    """Tests SectorBitmapBATEntry parsing"""
+    bat_entry = SectorBitmapBATEntry(b'\x06\x00\x10\x01\x00\x00\x00\x00')
+    expected_state = 'SB_BLOCK_PRESENT'
+    expected_offset = 0x1100000
+    self.assertEqual(expected_state, bat_entry.state)
+    self.assertEqual(expected_offset, bat_entry.offset)
+
+  def testSectorBitmapParseStateInvalid(self):
+    """Tests the appropriate error is raised for an invalid state"""
+    with self.assertRaises(ValueError):
+      _ = SectorBitmapBATEntry(b'\x05\x00\x10\x01\x00\x00\x00\x00')
+
+  def testPayloadBlockParse(self):
+    """Tests PayloadBlockBATEntry parsing"""
+    bat_entry = PayloadBlockBATEntry(b'\x07\x00\x10\x01\x00\x00\x00\x00')
+    expected_state = 'PAYLOAD_BLOCK_PARTIALLY_PRESENT'
+    expected_offset = 0x1100000
+    self.assertEqual(expected_state, bat_entry.state)
+    self.assertEqual(expected_offset, bat_entry.offset)
+
+  def testPayloadBlockParseStateInvalid(self):
+    """Tests the appropriate error is raised for an invalid state"""
+    with self.assertRaises(ValueError):
+      _ = PayloadBlockBATEntry(b'\x05\x00\x10\x01\x00\x00\x00\x00')
+
 
 if __name__ == '__main__':
   unittest.main()
