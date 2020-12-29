@@ -17,6 +17,8 @@
 import unittest
 import unittest.mock
 
+from tools.merge_vhdx import BATParams
+from tools.merge_vhdx import DiskParams
 from tools.merge_vhdx import SectorBitmapBATEntry
 from tools.merge_vhdx import PayloadBlockBATEntry
 from tools.merge_vhdx import BlockAllocationTable
@@ -25,7 +27,7 @@ from tools.merge_vhdx import MergeVHDXTool
 
 
 class BlockAllocationTableEntryTests(unittest.TestCase):
-  """Tests for the SectorBitmapBATEntry class"""
+  """Tests for the BlockAllocationTableEntry subclasses"""
 
   def testSectorBitmapParse(self):
     """Tests SectorBitmapBATEntry parsing"""
@@ -52,6 +54,39 @@ class BlockAllocationTableEntryTests(unittest.TestCase):
     """Tests the appropriate error is raised for an invalid state"""
     with self.assertRaises(ValueError):
       _ = PayloadBlockBATEntry(b'\x05\x00\x10\x01\x00\x00\x00\x00')
+
+
+class BlockAllocationTableTests(unittest.TestCase):
+  """Tests for the BlockAllocationTable class"""
+
+  def setUp(self):
+    bat_bytes = b'\x07\x00\x10\x01\x00\x00\x00\x00'*10 +\
+        b'\x06\x00\x10\x01\x00\x00\x00\x00'
+    bat_params = BATParams(10, 11, 10, 1)
+    self.bat_table = BlockAllocationTable(bat_bytes, bat_params)
+
+  def testParseBATBytes(self):
+    """Test that the correct number of BAT entries are parsed"""
+    self.assertEqual(len(self.bat_table.payload_entries), 10)
+    self.assertEqual(len(self.bat_table.sector_bitmap_entries), 1)
+
+  def testParseBATBytesError(self):
+    "Tests that a ValueError is raised on unexpected results"
+    bat_bytes = b'\x07\x00\x10\x01\x00\x00\x00\x00'*10 +\
+        b'\x06\x00\x10\x01\x00\x00\x00\x00'*2
+    bat_params = BATParams(10, 11, 10, 1)
+    with self.assertRaises(ValueError):
+      self.bat_table = BlockAllocationTable(bat_bytes, bat_params)
+
+  def testGetPayloadBatEntry(self):
+    """Test GetPayloadBatEntry"""
+    self.assertEqual('PAYLOAD_BLOCK_PARTIALLY_PRESENT',
+        self.bat_table.GetPayloadBATEntry(0).state)
+
+  def testGetSectorBitmapBATEntry(self):
+    """Test GetSectorBitmapBATEntry"""
+    self.assertEqual('SB_BLOCK_PRESENT',
+        self.bat_table.GetSectorBitmapBATEntry(0).state)
 
 
 if __name__ == '__main__':
