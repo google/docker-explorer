@@ -23,8 +23,10 @@ import sys
 import uuid
 import struct
 import math
+import logging
 from collections import namedtuple
 
+logger = logging.getLogger('merge_vhdx')
 
 REGION_HEADER_OFFSET = 192*1024
 LEN_BAT_ENTRY = 8
@@ -67,7 +69,7 @@ BATParams = namedtuple('BATParams', ['chunk_ratio', 'total_entries',
 
 
 DiskParams = namedtuple('DiskParams', ['block_size', 'logical_sector_size',
-    'virtual_disk_size', 'has_parent'])
+    'virtual_disk_size', 'has_parent', 'sector_count'])
 
 
 class BlockAllocationTableEntry:
@@ -217,6 +219,9 @@ class BlockAllocationTable:
           'Incorrect number of entries parsed expected {} parsed {}'.format(
               bat_params.total_entries, total_entries))
 
+    logger.debug(
+        'Parsed {} payload entries and {} sector bitmap entries'.format(
+            len(payload_entries), len(sector_bitmap_entries)))
     return (payload_entries, sector_bitmap_entries)
 
   def GetPayloadBATEntry(self, block_number):
@@ -267,41 +272,7 @@ class VHDXDisk:
     self.metadata_table = self._ParseMetadataTable()
     self.disk_params = self._ParseDiskParams()
     self.bat_params = self._CalculateBATParams()
-    self.bat_table = self._ParseBat()
-
-  def _ParseDiskParams(self):
-    """Calculates the disk params for a VHDX disk
-
-    Returns:
-      DiskParams: the parsed disk params
-    """
-    file_params = self._ParseFileParam()
-    block_size = file_params[0]
-    has_parent = file_params[1]
-    logical_sector_size = self._ParseLogicalSectorSize()
-    virtual_disk_size = self._ParseDiskSize()
-    return DiskParams(block_size, logical_sector_size, virtual_disk_size,
-        has_parent)
-
-  def _CalculateBATParams(self):
-    """Calculates the BAT params for a VHDX disk
-
-    Returns:
-      BATParams: the parsed BAT params
-    """
-    chunk_ratio = ((2**23*self.disk_params.logical_sector_size) //
-        self.disk_params.block_size)
-    payload_entries = math.ceil(self.disk_params.virtual_disk_size /
-        self.disk_params.block_size)
-    sector_bitmap_entries = math.ceil(payload_entries / chunk_ratio)
-    if self.disk_params.has_parent:
-      total_entries = sector_bitmap_entries * (chunk_ratio+1)
-    else:
-      total_entries = payload_entries + math.floor(
-          (payload_entries-1)/chunk_ratio)
-
-    return BATParams(chunk_ratio, total_entries, payload_entries, 
-        sector_bitmap_entries)
+    self.bat_table = self._ParseBAT()
 
   def _ParseRegionTable(self):
     """Parses a region table from a VHDX disk
@@ -379,7 +350,48 @@ class VHDXDisk:
     disk_size = struct.unpack('<Q', self.vhdx_fd.read(8))[0]
     return disk_size
 
-  def _ParseBat(self):
+  def _ParseDiskParams(self):
+    """Calculates the disk params for a VHDX disk
+
+    Returns:
+      DiskParams: the parsed disk params
+    """
+    file_params = self._ParseFileParam()
+    block_size = file_params[0]
+    has_parent = file_params[1]
+    logical_sector_size = self._ParseLogicalSectorSize()
+    virtual_disk_size = self._ParseDiskSize()
+    sector_count = virtual_disk_size // logical_sector_size
+
+    disk_params = DiskParams(block_size, logical_sector_size,
+        virtual_disk_size, has_parent, sector_count)
+    logger.debug('Parsed disk params: {}'.format(disk_params))
+    return disk_params
+
+  def _CalculateBATParams(self):
+    """Calculates the BAT params for a VHDX disk
+
+    Returns:
+      BATParams: the parsed BAT params
+    """
+    chunk_ratio = ((2**23*self.disk_params.logical_sector_size) //
+        self.disk_params.block_size)
+    payload_entries = math.ceil(self.disk_params.virtual_disk_size /
+        self.disk_params.block_size)
+    sector_bitmap_entries = math.ceil(payload_entries / chunk_ratio)
+    if self.disk_params.has_parent:
+      total_entries = sector_bitmap_entries * (chunk_ratio+1)
+    else:
+      total_entries = payload_entries + math.floor(
+          (payload_entries-1)/chunk_ratio)
+
+    bat_params = BATParams(chunk_ratio, total_entries, payload_entries,
+        sector_bitmap_entries)
+
+    logger.debug('Parsed BAT params: {}'.format(bat_params))
+    return bat_params
+
+  def _ParseBAT(self):
     """Parses the block allocation table
 
     Returns:
@@ -397,8 +409,7 @@ class VHDXDisk:
       block_number (int): the target block number
 
     Returns:
-      bytes: the raw bytes object representing a sector bitmap for the target
-        block
+      list(bool): a list of boolean values representing a sector bitmap
 
     Raises:
       ValueError: if the sector bitmap block BAT entry state is
@@ -408,7 +419,7 @@ class VHDXDisk:
     sb_entry = self.bat_table.GetSectorBitmapBATEntry(chunk_number)
     if sb_entry.state == 'SB_BLOCK_NOT_PRESENT':
       raise ValueError('Sector bitmap block not present')
-    sb_entry_offset = sb_entry.offset
+
     sectors_per_block = (self.disk_params.block_size //
         self.disk_params.logical_sector_size)
     # Number of bitmap block bytes required to represent one data block
@@ -416,11 +427,13 @@ class VHDXDisk:
     block_within_chunk = block_number % self.bat_params.chunk_ratio
     # Absolute offset within the sector bitmap of bytes representing the
     # target block's bitmap
-    block_bitmap_offset = (
-      block_within_chunk*bitmap_bytes_per_block + sb_entry_offset)
+    block_bitmap_offset = (block_within_chunk*bitmap_bytes_per_block +
+        sb_entry.offset)
+
     self.vhdx_fd.seek(block_bitmap_offset)
     sector_bitmap_bytes = self.vhdx_fd.read(bitmap_bytes_per_block)
-    return sector_bitmap_bytes
+    sector_bitmap = self._ConvertBytesToBitmap(sector_bitmap_bytes)
+    return sector_bitmap
 
   def _ConvertBytesToBitmap(self, sb_bytes):
     """Converts bytes representing a bitmap into a bitmap representation
@@ -440,45 +453,51 @@ class VHDXDisk:
           bitmap.append(False)
     return bitmap
 
-  def _GetPartialDataBlock(self, block_number):
-    """Parses a partially present block in a child disk
-
-    Represents state PAYLOAD_BLOCK_PARTIALLY_PRESENT where a block is only
-    partially present within the child disk with some sectors present in the
-    parent.
+  def ReadSector(self, sector):
+    """Returns a logical sector's contents
 
     Args:
-      block_number (int): the target block number
+      sector (int): the sector number
 
     Returns:
-      bytes: representing the given block
+      bytes: the sector contents
     """
-    sector_bitmap_bytes = self._GetSectorBitmapForBlock(block_number)
-    sector_bitmap = self._ConvertBytesToBitmap(sector_bitmap_bytes)
     sectors_per_block = (self.disk_params.block_size //
         self.disk_params.logical_sector_size)
-    block_offset = self.bat_table.GetPayloadBATEntry(block_number).offset
-    parsed_block = bytearray()
-    self.vhdx_fd.seek(block_offset)
-    for sector in range(0, sectors_per_block):
-      if sector_bitmap[sector]:
-        parsed_block += bytearray(
-            self.vhdx_fd.read(self.disk_params.logical_sector_size))
+    block_number = sector // sectors_per_block
+    sector_in_block = sector % sectors_per_block
+    bat_entry = self.bat_table.GetPayloadBATEntry(block_number)
+    state = bat_entry.state
+
+    if state == 'PAYLOAD_BLOCK_NOT_PRESENT':
+      if self.disk_params.has_parent:
+        sector = self.parent_disk.ReadSector(sector)
       else:
-        parsed_block += bytearray(
-          self.parent_disk.GetLogicalSector(block_number, sector))
-        self.vhdx_fd.seek(self.disk_params.logical_sector_size, 1)
-    return parsed_block
+        sector = self._ReadSectorIfBATOffset(bat_entry, sector_in_block)
+    elif state == 'PAYLOAD_BLOCK_UNDEFINED':
+      sector = self._ReadSectorIfBATOffset(bat_entry, sector_in_block)
+    elif state == 'PAYLOAD_BLOCK_ZERO':
+      sector = b'\x00'*self.disk_params.logical_sector_size
+    elif state == 'PAYLOAD_BLOCK_UNMAPPED':
+      sector = self._ReadSectorIfBATOffset(bat_entry, sector_in_block)
+    elif state == 'PAYLOAD_BLOCK_FULLY_PRESENT':
+      sector = self._ReadSectorIfBATOffset(bat_entry, sector_in_block)
+    elif state == 'PAYLOAD_BLOCK_PARTIALLY_PRESENT':
+      sector_bitmap = self._GetSectorBitmapForBlock(block_number)
+      if sector_bitmap[sector_in_block]:
+        sector = self._ReadSectorIfBATOffset(bat_entry, sector_in_block)
+      else:
+        sector = self.parent_disk.ReadSector(sector)
 
-  def _GetLogicalSectorIfPresent(self, bat_entry, sector_in_block):
+    return sector
+
+  def _ReadSectorIfBATOffset(self, bat_entry, sector_in_block):
     """Returns sector contents if an offset is present in the BAT entry
-
-    For certain block states the specification states that read behaviour can
-    either return the contents previously in the block or zeros.
+    otherwise return a sector's worth of zero bytes.
 
     Args:
-      bat_entry (BlockAllocationTableEntry): the BAT entry for the block
-        containing the target sector
+      bat_entry (PayloadBlockBATEntry): the BAT entry for the block containing
+        the target sector
       sector_in_block (int): the target sector within the block
 
     Returns:
@@ -492,100 +511,6 @@ class VHDXDisk:
     else:
       sector = b'\x00'*self.disk_params.logical_sector_size
     return sector
-
-  def GetLogicalSector(self, block_number, sector_in_block):
-    """Returns a logical sector's contents
-
-    Args:
-      block_number (int): the block containing the sector
-      sector_in_block (int): the sector number within the target block
-
-    Returns:
-      bytes: the sector contents
-    """
-    bat_entry = self.bat_table.GetPayloadBATEntry(block_number)
-    state = bat_entry.state
-
-    if state == 'PAYLOAD_BLOCK_NOT_PRESENT':
-      if self.disk_params.has_parent:
-        sector = self.parent_disk.GetLogicalSector(
-          block_number, sector_in_block)
-      else:
-        sector = self._GetLogicalSectorIfPresent(bat_entry, sector_in_block)
-    elif state == 'PAYLOAD_BLOCK_UNDEFINED':
-      sector = self._GetLogicalSectorIfPresent(bat_entry, sector_in_block)
-    elif state == 'PAYLOAD_BLOCK_ZERO':
-      sector = b'\x00'*self.disk_params.logical_sector_size
-    elif state == 'PAYLOAD_BLOCK_UNMAPPED':
-      sector = self._GetLogicalSectorIfPresent(bat_entry, sector_in_block)
-    elif state == 'PAYLOAD_BLOCK_FULLY_PRESENT':
-      self.vhdx_fd.seek(bat_entry.offset +
-        sector_in_block*self.disk_params.logical_sector_size)
-      sector = self.vhdx_fd.read(self.disk_params.logical_sector_size)
-    elif state == 'PAYLOAD_BLOCK_PARTIALLY_PRESENT':
-      sector = self.parent_disk.GetLogicalSector(
-        block_number, sector_in_block)
-
-    return sector
-
-  def _GetDataBlockIfPresent(self, bat_entry):
-    """Returns block contents if an offset is present in the BAT entry
-
-    For certain block states the specification states that read behaviour can
-    either return the contents previously in the block or zeros.
-
-    Args:
-      bat_entry (BlockAllocationTableEntry): the BAT entry for the block
-        containing the target sector
-      sector_in_block (int): the target sector within the block
-
-    Returns:
-      bytes: either the block contents or block_size*b'\x00 if no offset was
-        given in the BAT entry
-    """
-    if bat_entry.offset:
-      self.vhdx_fd.seek(bat_entry.offset)
-      parsed_block = self.vhdx_fd.read(self.disk_params.block_size)
-    else:
-      parsed_block = b'\x00'*self.disk_params.block_size
-    return parsed_block
-
-  def GetDataBlock(self, block_number):
-    """Returns a data block's contents
-
-    Args:
-      block_number (int): the target block number
-
-    Returns:
-      bytes: the block contents
-
-    Raises:
-      ValueError: If the requested block number is greater than the number of
-        data blocks.
-    """
-    if block_number >= len(self.bat_table.payload_entries):
-      raise ValueError('Requested block out of range')
-    bat_entry = self.bat_table.GetPayloadBATEntry(block_number)
-    state = bat_entry.state
-
-    if state == 'PAYLOAD_BLOCK_NOT_PRESENT':
-      if self.disk_params.has_parent:
-        parsed_block = self.parent_disk.GetDataBlock(block_number)
-      else:
-        parsed_block = self._GetDataBlockIfPresent(bat_entry)
-    elif state == 'PAYLOAD_BLOCK_UNDEFINED':
-      parsed_block = self._GetDataBlockIfPresent(bat_entry)
-    elif state == 'PAYLOAD_BLOCK_ZERO':
-      parsed_block = b'\x00'*self.disk_params.block_size
-    elif state == 'PAYLOAD_BLOCK_UNMAPPED':
-      parsed_block = self._GetDataBlockIfPresent(bat_entry)
-    elif state == 'PAYLOAD_BLOCK_FULLY_PRESENT':
-      self.vhdx_fd.seek(bat_entry.offset)
-      parsed_block = self.vhdx_fd.read(self.disk_params.block_size)
-    elif state == 'PAYLOAD_BLOCK_PARTIALLY_PRESENT':
-      parsed_block = self._GetPartialDataBlock(block_number)
-
-    return parsed_block
 
 
 class MergeVHDXTool:
@@ -611,6 +536,9 @@ class MergeVHDXTool:
     argument_parser.add_argument(
       '-o', '--out_image', dest='out_image_name', action='store',
       required=True, help='The output image name.')
+    argument_parser.add_argument(
+        '-d', '--debug', dest='debug', action='store_true', default=False,
+        help='Enable debug messages.')
 
   def ParseArguments(self):
     """Parses the command line arguments.
@@ -625,12 +553,33 @@ class MergeVHDXTool:
 
     return opts
 
+  def _SetLogging(self, debug):
+    """Configures the logging module.
+
+    Args:
+      debug(bool): whether to show debug messages.
+    """
+    handler = logging.StreamHandler()
+    logger.setLevel(logging.INFO)
+
+    if debug:
+      level = logging.DEBUG
+      logger.setLevel(level)
+      handler.setLevel(level)
+
+    formatter = logging.Formatter(
+        '%(asctime)s [%(levelname)s] (%(processName)-10s) PID:%(process)d '
+        '<%(module)s> %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
   def Main(self):
     """The main method for the MergeVHDXTool class.
 
     It handles arguments parsing and initiates the disk merge.
     """
     options = self.ParseArguments()
+    self._SetLogging(debug=options.debug)
 
     parent_disk = VHDXDisk(options.parent_disk_name)
     child_disk = VHDXDisk(
@@ -638,14 +587,14 @@ class MergeVHDXTool:
     out_image_fd = open(options.out_image_name, 'wb')
 
     print('This command will create a new disk image of size'
-        ' {0:d}GiB.\nPlease confirm (y/n): '.format(
-            child_disk.disk_params.virtual_disk_size//1024**3), end='')
+        ' {0:d}MiB.\nPlease confirm (y/n): '.format(
+            child_disk.disk_params.virtual_disk_size//1024**2), end='')
     confirm = input()
     if confirm.lower() != 'y':
       sys.exit()
 
-    for block in range(0, child_disk.bat_params.payload_entries):
-      out_image_fd.write(child_disk.GetDataBlock(block))
+    for sector in range(0, child_disk.disk_params.sector_count):
+      out_image_fd.write(child_disk.ReadSector(sector))
     out_image_fd.close()
 
 
