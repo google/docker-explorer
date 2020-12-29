@@ -104,10 +104,13 @@ class BlockAllocationTableEntry:
     """Parses BAT offset
 
     Args:
-      bat_bytes (bytes): a bytes object representing the BAT entry
+      bat_bytes (bytes): a bytes object with length of 8 representing the entry
     """
+    # Offset is a 44 bit wide field, so use a bitmask for lead 4 bits.
     offset_lead_byte = bat_bytes[2] & BAT_ENTRY_OFFSET_LEAD_BYTE_BITMASK
-    offset_bytes = b'\x00'*2 + bytes([offset_lead_byte]) + bat_bytes[3:]
+    offset_other_bytes = bat_bytes[3:]
+    # Pad with zeroes for ease of parsing
+    offset_bytes = b'\x00'*2 + bytes([offset_lead_byte]) + offset_other_bytes
     return struct.unpack("<Q", offset_bytes)[0]
 
 
@@ -351,7 +354,7 @@ class VHDXDisk:
     return disk_size
 
   def _ParseDiskParams(self):
-    """Calculates the disk params for a VHDX disk
+    """Parses the disk params for a VHDX disk
 
     Returns:
       DiskParams: the parsed disk params
@@ -387,7 +390,6 @@ class VHDXDisk:
 
     bat_params = BATParams(chunk_ratio, total_entries, payload_entries,
         sector_bitmap_entries)
-
     logger.debug('Parsed BAT params: {}'.format(bat_params))
     return bat_params
 
@@ -473,25 +475,25 @@ class VHDXDisk:
       if self.disk_params.has_parent:
         sector = self.parent_disk.ReadSector(sector)
       else:
-        sector = self._ReadSectorIfBATOffset(bat_entry, sector_in_block)
+        sector = self._ReadSectorBytes(bat_entry, sector_in_block)
     elif state == 'PAYLOAD_BLOCK_UNDEFINED':
-      sector = self._ReadSectorIfBATOffset(bat_entry, sector_in_block)
+      sector = self._ReadSectorBytes(bat_entry, sector_in_block)
     elif state == 'PAYLOAD_BLOCK_ZERO':
       sector = b'\x00'*self.disk_params.logical_sector_size
     elif state == 'PAYLOAD_BLOCK_UNMAPPED':
-      sector = self._ReadSectorIfBATOffset(bat_entry, sector_in_block)
+      sector = self._ReadSectorBytes(bat_entry, sector_in_block)
     elif state == 'PAYLOAD_BLOCK_FULLY_PRESENT':
-      sector = self._ReadSectorIfBATOffset(bat_entry, sector_in_block)
+      sector = self._ReadSectorBytes(bat_entry, sector_in_block)
     elif state == 'PAYLOAD_BLOCK_PARTIALLY_PRESENT':
       sector_bitmap = self._GetSectorBitmapForBlock(block_number)
       if sector_bitmap[sector_in_block]:
-        sector = self._ReadSectorIfBATOffset(bat_entry, sector_in_block)
+        sector = self._ReadSectorBytes(bat_entry, sector_in_block)
       else:
         sector = self.parent_disk.ReadSector(sector)
 
     return sector
 
-  def _ReadSectorIfBATOffset(self, bat_entry, sector_in_block):
+  def _ReadSectorBytes(self, bat_entry, sector_in_block):
     """Returns sector contents if an offset is present in the BAT entry
     otherwise return a sector's worth of zero bytes.
 
