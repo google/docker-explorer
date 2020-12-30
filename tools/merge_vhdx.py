@@ -277,6 +277,10 @@ class VHDXDisk:
     self.bat_params = self._CalculateBATParams()
     self.bat_table = self._ParseBAT()
 
+  def __del__(self):
+    """Explicitly lose the vhdx fd on deletion"""
+    self.vhdx_fd.close()
+
   def _ParseRegionTable(self):
     """Parses a region table from a VHDX disk
 
