@@ -14,6 +14,9 @@
 # limitations under the License.
 """Tests for the vhdx.py tool."""
 
+import os
+import shutil
+import tarfile
 import unittest
 import unittest.mock
 
@@ -25,6 +28,7 @@ from tools.merge_vhdx import BlockAllocationTable
 from tools.merge_vhdx import VHDXDisk
 from tools.merge_vhdx import MergeVHDXTool
 
+# pylint: disable=protected-access
 
 class BlockAllocationTableEntryTests(unittest.TestCase):
   """Tests for the BlockAllocationTableEntry subclasses"""
@@ -87,6 +91,57 @@ class BlockAllocationTableTests(unittest.TestCase):
     """Test GetSectorBitmapBATEntry"""
     self.assertEqual('SB_BLOCK_PRESENT',
         self.bat_table.GetSectorBitmapBATEntry(0).state)
+
+class VHDXDiskTests(unittest.TestCase):
+  """Tests for the VHDXDisk class"""
+
+  @classmethod
+  def tearDownClass(cls):
+    shutil.rmtree(cls.vhdx_files_path)
+
+  @classmethod
+  def setUpClass(cls):
+    cls.vhdx_files_path = os.path.join('test_data', 'vhdx_files')
+    if not os.path.isdir(cls.vhdx_files_path):
+      vhdx_tar = os.path.join('test_data', 'vhdx_files.tgz')
+      tar = tarfile.open(vhdx_tar, 'r:gz')
+      tar.extractall('test_data')
+      tar.close()
+    base_path = os.path.join(cls.vhdx_files_path, 'base.vhdx')
+    diff_path = os.path.join(cls.vhdx_files_path, 'diff.vhdx')
+    cls.base_disk = VHDXDisk(base_path)
+    cls.diff_disk = VHDXDisk(diff_path, parent_disk=cls.base_disk)
+
+  def testParseDiskParams(self):
+    """Tests _ParseDiskParams and associated functions"""
+    self.assertEqual(1024**2, self.base_disk.disk_params.block_size)
+    self.assertEqual(512, self.base_disk.disk_params.logical_sector_size)
+    self.assertEqual(False, self.base_disk.disk_params.has_parent)
+    self.assertEqual(4*1024**2, self.base_disk.disk_params.virtual_disk_size)
+    self.assertEqual(8192, self.base_disk.disk_params.sector_count)
+
+  def testCalculateBATParams(self):
+    """Tests for the _CalculateBATParams method"""
+    self.assertEqual(4096, self.base_disk.bat_params.chunk_ratio)
+    self.assertEqual(4, self.base_disk.bat_params.total_entries)
+    self.assertEqual(4, self.base_disk.bat_params.payload_entries)
+    self.assertEqual(1, self.base_disk.bat_params.sector_bitmap_entries)
+
+  def testConvertBytesToBitmap(self):
+    """Tests for the _ConvertBytesToBitmap method"""
+    sb_bytes = b'\xf0\x0f'
+    expected = [False]*4 + [True]*8 + [False]*4
+    self.assertEqual(expected, self.diff_disk._ConvertBytesToBitmap(sb_bytes))
+
+  def testGetSectorBitmapForBlock(self):
+    """Tests for the _GetSectorBitmapForBlock method"""
+    expected = [False]*72 + [True]*8 + [False]*8
+    result = self.diff_disk._GetSectorBitmapForBlock(1)[:88]
+    self.assertEqual(expected, result)
+
+  def testReadSector(self):
+    """Tests for the _GetSectorBitmapForBlock method"""
+    pass
 
 
 if __name__ == '__main__':
