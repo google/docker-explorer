@@ -541,6 +541,9 @@ class MergeVHDXTool:
     argument_parser.add_argument(
         '-d', '--debug', dest='debug', action='store_true', default=False,
         help='Enable debug messages.')
+    argument_parser.add_argument(
+        '-y', '--yes', dest='yes', action='store_true', default=False,
+        help='Skip confirmations.')
 
   def ParseArguments(self):
     """Parses the command line arguments.
@@ -588,12 +591,13 @@ class MergeVHDXTool:
         options.child_disk_name, parent_disk=parent_disk)
     out_image_fd = open(options.out_image_name, 'wb')
 
-    print('This command will create a new disk image of size'
-        ' {0:d}MiB.\nPlease confirm (y/n): '.format(
-            child_disk.disk_params.virtual_disk_size//1024**2), end='')
-    confirm = input()
-    if confirm.lower() != 'y':
-      sys.exit()
+    if not options.yes:
+      print('This command will create a new disk image of size'
+          ' {0:d}MiB.\nPlease confirm (y/n): '.format(
+              child_disk.disk_params.virtual_disk_size//1024**2), end='')
+      confirm = input()
+      if confirm.lower() != 'y':
+        sys.exit()
 
     for sector in range(0, child_disk.disk_params.sector_count):
       out_image_fd.write(child_disk.ReadSector(sector))
