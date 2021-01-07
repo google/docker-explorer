@@ -15,13 +15,15 @@
 """Tests for the vhdx.py tool."""
 
 import os
+import sys
 import shutil
 import tarfile
 import unittest
 import unittest.mock
+import tempfile
+import hashlib
 
 from tools.merge_vhdx import BATParams
-from tools.merge_vhdx import DiskParams
 from tools.merge_vhdx import SectorBitmapBATEntry
 from tools.merge_vhdx import PayloadBlockBATEntry
 from tools.merge_vhdx import BlockAllocationTable
@@ -139,9 +141,62 @@ class VHDXDiskTests(unittest.TestCase):
     result = self.diff_disk._GetSectorBitmapForBlock(1)[:88]
     self.assertEqual(expected, result)
 
-  def testReadSector(self):
-    """Tests for the _GetSectorBitmapForBlock method"""
-    pass
+  def testReadSectorBaseDisk(self):
+    """Test for the _GetSectorBitmapForBlock method for a base disk"""
+    expected = b'\x33\xc0\x8e\xd0\xbc\x00\x7c\x8e'
+    result = self.base_disk.ReadSector(0)[:8]
+    self.assertEqual(expected, result)
+
+  def testReadSectorDiffDisk(self):
+    """Tests for the _GetSectorBitmapForBlock method for a diff disk"""
+    expected = b'\x33\xc0\x8e\xd0\xbc\x00\x7c\x8e'
+    result = self.diff_disk.ReadSector(0)[:8]
+    self.assertEqual(expected, result)
+
+  def testReadSectorBytes(self):
+    """Tests for the _ReadSectorBytes method"""
+    expected = b'\x33\xc0\x8e\xd0\xbc\x00\x7c\x8e'
+    bat_entry = PayloadBlockBATEntry(b'\x06\x00\x40\x00\x00\x00\x00\x00')
+    sector_in_block = 0
+    result = self.base_disk._ReadSectorBytes(bat_entry, sector_in_block)[:8]
+    self.assertEqual(expected, result)
+
+
+class MergeVHDXToolTests(unittest.TestCase):
+  """Tests for the MergeVHDXTool class"""
+
+  @classmethod
+  def tearDownClass(cls):
+    shutil.rmtree(cls.vhdx_files_path)
+
+  @classmethod
+  def setUpClass(cls):
+    cls.vhdx_files_path = os.path.join('test_data', 'vhdx_files')
+    if not os.path.isdir(cls.vhdx_files_path):
+      vhdx_tar = os.path.join('test_data', 'vhdx_files.tgz')
+      tar = tarfile.open(vhdx_tar, 'r:gz')
+      tar.extractall('test_data')
+      tar.close()
+    cls.base_path = os.path.join(cls.vhdx_files_path, 'base.vhdx')
+    cls.diff_path = os.path.join(cls.vhdx_files_path, 'diff.vhdx')
+
+  def testMain(self):
+    """Tests the main method of MergeVHDXTool"""
+    expected_hash = (
+        'a9717baccc52410c8c1ecb3ad096ccdfb842b4a48068b0d86f4191efa3985693')
+    tool_object = MergeVHDXTool()
+    out_file = tempfile.mktemp()
+    prog = sys.argv[0]
+    sys.argv = [prog, '-p', self.base_path, '-c', self.diff_path, '-o',
+        out_file, '-y']
+
+    tool_object.Main()
+    result_hash = hashlib.sha256()
+    with open(out_file, "rb") as fd:
+      result_hash.update(fd.read())
+    os.remove(out_file)
+
+    self.assertEqual(expected_hash, result_hash.hexdigest())
 
 
 if __name__ == '__main__':
