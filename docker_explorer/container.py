@@ -76,6 +76,7 @@ class Container:
     upper_dir (str): path to upper_dir folder.
     volumes (list(tuple)): list of mount points to bind from host to the
       container. (Docker storage backend v1).
+    exposed_ports (dict): list of exposed ports from the container
   """
 
   STORAGES_MAP = {
@@ -123,10 +124,10 @@ class Container:
       )
 
     self.container_id = container_info_dict.get('ID', None)
-    json_config = container_info_dict.get('Config', None)
-    if json_config:
-      self.config_image_name = json_config.get('Image', None)
-      self.config_labels = json_config.get('Labels', None)
+
+    # Parse the 'Config' key, which relates to the Image configuration
+    self.config_image_name = self._GetConfigValue(container_info_dict, 'Image')
+    self.config_labels = self._GetConfigValue(container_info_dict, 'Labels')
     self.creation_timestamp = container_info_dict.get('Created', None)
     self.image_id = container_info_dict.get('Image', None)
     self.mount_id = None
@@ -144,6 +145,9 @@ class Container:
     self.upper_dir = None
     self.volumes = container_info_dict.get('Volumes', None)
 
+    self.exposed_ports = self._GetConfigValue(
+        container_info_dict, 'ExposedPorts')
+
     self._SetStorage(self.storage_name)
 
     if self.docker_version == 2:
@@ -160,6 +164,33 @@ class Container:
                                     self.storage_object.UPPERDIR_NAME)
 
     self.log_path = container_info_dict.get('LogPath', None)
+
+  def _GetConfigValue(self, configuration, key, default_value=None, ignore_container_config=False):
+    """Returns the value of a configuration key in the parsed container file.
+
+    Args:
+      configuration(dict): the parsed state from the config.json file.
+      key(str): the key we need the value from.
+      default_value(object): what to return if the key can't be found.
+      ignore_container_config(bool): whether or not to ignore the container's
+        specific configuration (from the ContainerConfig) key.
+
+    Returns:
+      object: the extracted value.
+    """
+    image_config = configuration.get('Config', None)
+    if not image_config:
+      return default_value
+    config_value = image_config.get(key, default_value)
+
+    if not ignore_container_config:
+      # If ContainerConfig has a different value for that key, return this one.
+      container_config = configuration.get('ContainerConfig', None)
+      if container_config:
+        if key in container_config:
+          return container_config.get(key, default_value)
+
+    return config_value
 
   def GetLayerSize(self, layer_id):
     """Returns the size of the layer.

@@ -217,6 +217,9 @@ class Explorer:
       if container_object.log_path:
         container_json['log_path'] = container_object.log_path
 
+      if container_object.exposed_ports:
+        container_json['exposed_ports'] = container_object.exposed_ports
+
       result.append(container_json)
 
     return result
