@@ -166,7 +166,8 @@ class Container:
     self.log_path = container_info_dict.get('LogPath', None)
 
   def _GetConfigValue(
-      self, configuration, key, default_value=None, ignore_container_config=False):
+      self, configuration, key, default_value=None,
+      ignore_container_config=False):
     """Returns the value of a configuration key in the parsed container file.
 
     Args:
