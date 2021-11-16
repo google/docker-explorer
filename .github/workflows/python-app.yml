@@ -30,6 +30,3 @@ jobs:
         pylint --rcfile=.pylintrc docker_explorer tests.py setup.py tools
         coverage run tests.py
         coverage run -a vhdx_tests.py
-    - name: Coverage
-      run: |
-        curl -o codecov.sh -s https://codecov.io/bash && /bin/bash ./codecov.sh
