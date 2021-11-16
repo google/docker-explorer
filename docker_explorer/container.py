@@ -45,12 +45,12 @@ def GetAllContainersIDs(docker_root_directory):
   """
   if not os.path.isdir(docker_root_directory):
     raise errors.BadStorageException(
-        'Provided path is not a directory "{0}"'.format(docker_root_directory))
+        f'Provided path is not a directory "{docker_root_directory}"')
   containers_directory = os.path.join(docker_root_directory, 'containers')
 
   if not os.path.isdir(containers_directory):
     raise errors.BadStorageException(
-        'Containers directory {0} does not exist'.format(containers_directory))
+        f'Containers directory {containers_directory} does not exist')
   container_ids_list = os.listdir(containers_directory)
 
   return container_ids_list
@@ -111,8 +111,8 @@ class Container:
 
     if not os.path.isfile(container_info_json_path):
       raise errors.BadContainerException(
-          'Unable to find container configuration file {0:s}'.format(
-              container_info_json_path)
+          'Unable to find container configuration file: '
+          f'{container_info_json_path}'
       )
     with open(
         container_info_json_path, encoding='utf-8') as container_info_json_file:
@@ -120,9 +120,8 @@ class Container:
 
     if container_info_dict is None:
       raise errors.BadContainerException(
-          'Could not load container configuration file {0}'.format(
-              container_info_json_path)
-      )
+          'Could not load container configuration file: '
+          f'{container_info_json_path}')
 
     self.container_id = container_info_dict.get('ID', None)
 
@@ -141,8 +140,7 @@ class Container:
     self.storage_name = container_info_dict.get('Driver', None)
     if self.storage_name is None:
       raise errors.BadContainerException(
-          '{0} container config file lacks Driver key'.format(
-              container_info_json_path))
+          f'{container_info_json_path} container config file lacks Driver key')
     self.upper_dir = None
     self.volumes = container_info_dict.get('Volumes', None)
 
@@ -280,7 +278,7 @@ class Container:
       layer_dict = collections.OrderedDict()
 
       if layer is None:
-        raise ValueError('Layer {0:s} does not exist'.format(layer))
+        raise ValueError(f'Layer {layer} does not exist')
 
       layer_size = self.GetLayerSize(layer)
       if layer_size > 0 or show_empty_layers or self.docker_version == 2:
@@ -332,16 +330,17 @@ class Container:
             volume_driver = storage_info.get('Driver')
             if storage_info.get('Driver') != 'local':
               logger.warning(
-                  'Unsupported driver "{0:s}" for volume "{1:s}"'.format(
-                      volume_driver, dst_mount_ihp))
+                  f'Unsupported driver "{volume_driver}" '
+                  f'for volume "{dst_mount_ihp}"')
               continue
             volume_name = storage_info['Name']
             src_mount_ihp = os.path.join('volumes', volume_name, '_data')
 
           else:
+            storage_type = storage_info.get('Type')
             logger.warning(
-                'Unsupported storage type "{0!s}" for Volume "{1:s}"'.format(
-                    storage_info.get('Type'), dst_mount_ihp))
+                f'Unsupported storage type "{storage_type}" '
+                f'for Volume "{dst_mount_ihp}"')
             continue
 
           # Removing leading path separator, otherwise os.path.join is behaving
@@ -366,7 +365,7 @@ class Container:
 
     if storage_class is None:
       raise errors.BadContainerException(
-          'Storage driver {0} is not implemented'.format(storage_name))
+          f'Storage driver {storage_name} is not implemented')
 
     self.storage_object = storage_class(
         self.docker_directory, self.docker_version)
