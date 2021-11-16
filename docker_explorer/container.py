@@ -302,7 +302,7 @@ class Container:
     Returns:
       list((str, str)): list of mount points (source_path, destination_path).
     """
-    mount_points = list()
+    mount_points = []
 
     if self.docker_version == 1:
       if self.volumes:
