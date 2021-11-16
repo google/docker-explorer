@@ -16,8 +16,8 @@
 
 from __future__ import unicode_literals
 
-import os
 import json
+import os
 
 import docker_explorer
 from docker_explorer import errors
@@ -38,6 +38,9 @@ class BaseStorage:
     Args:
       docker_directory (str): Path to the Docker root directory.
       docker_version (int): Docker storage version.
+
+    Raises:
+      BadStorageException: when the underlying storage engine is unsupported.
     """
     if docker_version not in [1, 2]:
       error_message = f'Unsupported Docker version number {docker_version}'

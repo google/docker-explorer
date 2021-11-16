@@ -105,6 +105,8 @@ class BlockAllocationTableEntry:
 
     Args:
       bat_bytes (bytes): a bytes object with length of 8 representing the entry
+    Returns:
+      int: the offset.
     """
     # Offset is a 44 bit wide field, so use a bitmask for lead 4 bits.
     offset_lead_byte = bat_bytes[2] & BAT_ENTRY_OFFSET_LEAD_BYTE_BITMASK
@@ -127,6 +129,9 @@ class SectorBitmapBATEntry(BlockAllocationTableEntry):
 
     Args:
       bat_bytes (bytes): a bytes object representing the BAT entry
+
+    Returns:
+      str: the parsed state.
 
     Raises:
       ValueError: if the state field is invalid
@@ -152,6 +157,9 @@ class PayloadBlockBATEntry(BlockAllocationTableEntry):
     Args:
       bat_bytes (bytes): a bytes object representing the BAT entry
 
+    Returns:
+      str: the parsed state.
+
     Raises:
       ValueError: if the state field is invalid
     """
@@ -170,9 +178,9 @@ class BlockAllocationTable:
   indexes into the sector bitmap entries list represent chunks numbers.
 
   Attributes:
-    payload_blocks (list(PayloadBlockBitmapBATEntry)): a list of BAT payload
+    payload_entries (list(PayloadBlockBitmapBATEntry)): a list of BAT payload
       entries
-    sector_bitmap_blocks (list(SectorBitmapBATEntry)): a list of sector
+    sector_bitmap_entries (list(SectorBitmapBATEntry)): a list of sector
       bitmap entries
   """
   def __init__(self, bat_bytes, bat_params):
@@ -230,6 +238,9 @@ class BlockAllocationTable:
 
     Args:
       block_number (int): the block number to retrieve an entry for
+
+    Returns:
+      PayloadBlockBitmapBATEntry: the PayloadBlockBitmapBATEntry object.
     """
     return self.payload_entries[block_number]
 
@@ -238,6 +249,9 @@ class BlockAllocationTable:
 
     Args:
       chunk_number (int): the chunk number to retrieve an entry for
+
+    Returns:
+      SectorBitmapBATEntry: the SectorBitmapBATEntry object.
     """
     return self.sector_bitmap_entries[chunk_number]
 
@@ -551,7 +565,7 @@ class MergeVHDXTool:
     """Parses the command line arguments.
 
     Returns:
-      argparse.ArgumentParser : the argument parser object.
+      argparse.ArgumentParser: the argument parser object.
     """
     self._argument_parser = argparse.ArgumentParser()
     self.AddBasicOptions(self._argument_parser)

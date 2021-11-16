@@ -129,7 +129,7 @@ class DockerExplorerTool:
     """Parses the command line arguments.
 
     Returns:
-      argparse.ArgumentParser : the argument parser object.
+      argparse.ArgumentParser: the argument parser object.
     """
     self._argument_parser = argparse.ArgumentParser()
     self.AddBasicOptions(self._argument_parser)

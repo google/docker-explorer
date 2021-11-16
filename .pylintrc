@@ -111,11 +111,7 @@ disable=assignment-from-none,
         too-many-statements,
         unsubscriptable-object,
         useless-object-inheritance,
-        useless-suppression,
-# From here, consider removing
-        missing-raises-doc,
-        missing-return-doc,
-        missing-return-type-doc
+        useless-suppression
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
