@@ -250,7 +250,7 @@ class Explorer:
 
     result = []
     for repositories_file_path in sorted(repositories):
-      with open(repositories_file_path) as rf:
+      with open(repositories_file_path, encoding='utf-8') as rf:
         repo_obj = json.loads(rf.read())
         repo_obj['path'] = repositories_file_path
         result.append(repo_obj)
