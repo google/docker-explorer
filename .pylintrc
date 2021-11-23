@@ -129,6 +129,7 @@ disable=assignment-from-none,
 enable=c-extension-no-member
 
 
+
 [REPORTS]
 
 # Python expression which should return a score less than or equal to 10. You
