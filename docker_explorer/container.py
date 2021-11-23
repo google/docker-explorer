@@ -183,7 +183,6 @@ class Container:
     image_config = configuration.get('Config', None)
     if not image_config:
       return default_value
-    config_value = image_config.get(key, default_value)
 
     if not ignore_container_config:
       # If ContainerConfig has a different value for that key, return this one.
@@ -192,7 +191,7 @@ class Container:
         if key in container_config:
           return container_config.get(key, default_value)
 
-    return config_value
+    return image_config.get(key, default_value)
 
   def GetLayerSize(self, layer_id):
     """Returns the size of the layer.
