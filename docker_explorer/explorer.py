@@ -165,8 +165,8 @@ class Explorer:
 
     Args:
       only_running (bool): Whether we return only running Containers.
-      filter_repositories (list(str)): Containers running images from
-      repositories matching any of these URL will be filtered out.
+      filter_repositories (list(str)): Filter out containers where the
+        repository domain is included in the list.
         Example: ['k8s.gcr.io', 'gke.gcr.io']
 
     Returns:
@@ -177,21 +177,26 @@ class Explorer:
     if only_running:
       containers_list = [x for x in containers_list if x.running]
     if filter_repositories:
-      containers_list = [x for x in containers_list
-                         if x.image.split('/')[0] not in filter_repositories]
+      containers_list = [
+          c for c in containers_list
+          if c.config_image_name.split('/')[0] not in filter_repositories]
     return containers_list
 
-  def GetContainersJson(self, only_running=False):
+  def GetContainersJson(self, only_running=False, filter_repositories=None):
     """Returns a dict describing the running containers.
 
     Args:
       only_running (bool): Whether we display only running Containers.
+      filter_repositories (list(str)): Filter out containers running an image
+        from a repository which domain is included in the list.
+        Example: ['k8s.gcr.io', 'gke.gcr.io']
 
     Returns:
       dict: A dict object representing the containers.
     """
     result = []
-    for container_object in self.GetContainersList(only_running=only_running):
+    for container_object in self.GetContainersList(
+        only_running=only_running, filter_repositories=filter_repositories):
       image_id = container_object.image_id
       if self.docker_version == 2:
         image_id = image_id.split(':')[1]

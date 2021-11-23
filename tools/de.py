@@ -109,7 +109,7 @@ class DockerExplorerTool:
         help='Stuff to list', choices=[
             'repositories', 'running_containers', 'all_containers'])
     list_parser.add_argument(
-        '--filter_repositories', '-F', help=(
+        '-F', '--filter_repositories', type=str, help=(
             'Filter out containers running images from certain repositories. '
             'Ex: -F k8s.gcr.io,gke.gcr.io'))
 
@@ -146,6 +146,10 @@ class DockerExplorerTool:
 
     opts = self._argument_parser.parse_args()
 
+    if opts.filter_repositories:
+      opts.filter_repositories = [
+          repo for repo in opts.filter_repositories.split(',') if repo]
+
     return opts
 
   def Mount(self, container_id, mountpoint):
@@ -169,8 +173,8 @@ class DockerExplorerTool:
 
     Args:
       only_running (bool): Whether we display only running Containers.
-      filter_repositories (list(str)): Containers running images from
-      repositories matching any of these URL will be filtered out.
+      filter_repositories (list(str)): Filter out containers running an image
+        from a repository which domain is included in the list.
         Example: ['k8s.gcr.io', 'gke.gcr.io']
     """
     print(utils.PrettyPrintJSON(
