@@ -105,9 +105,13 @@ class DockerExplorerTool:
     """
     list_parser = args.add_parser('list', help='List stuff')
     list_parser.add_argument(
-        'what', default='repos',
+        'what', default='all_containers',
         help='Stuff to list', choices=[
             'repositories', 'running_containers', 'all_containers'])
+    list_parser.add_argument(
+        '--filter_repositories', '-F', help=(
+            'Filter out containers running images from certain repositories. '
+            'Ex: -F k8s.gcr.io,gke.gcr.io'))
 
   def AddHistoryCommand(self, args):
     """Adds the history command to the argument_parser.
@@ -154,20 +158,25 @@ class DockerExplorerTool:
     container_object = self._explorer.GetContainer(container_id)
     if container_object.storage_name == 'windowsfilter':
       print('Warning: Due to differences in the Windows container'
-          ' implementation this\ncommand will not actually mount the given'
-          ' container FS but will create a\nmountable raw image:\n\n{0:s}.raw'
-          '\n\nWhich can then be mounted using standard tools.'.format(
-            container_object.mount_id))
+            ' implementation this\ncommand will not actually mount the given'
+            ' container FS but will create a\nmountable raw image:\n\n{0:s}.raw'
+            '\n\nWhich can then be mounted using standard tools.'.format(
+                container_object.mount_id))
     container_object.Mount(mountpoint)
 
-  def ShowContainers(self, only_running=False):
+  def ShowContainers(self, only_running=False, filter_repositories=None):
     """Displays the running containers.
 
     Args:
       only_running (bool): Whether we display only running Containers.
+      filter_repositories (list(str)): Containers running images from
+      repositories matching any of these URL will be filtered out.
+        Example: ['k8s.gcr.io', 'gke.gcr.io']
     """
     print(utils.PrettyPrintJSON(
-        self._explorer.GetContainersJson(only_running=only_running),
+        self._explorer.GetContainersJson(
+            only_running=only_running,
+            filter_repositories=filter_repositories),
         sort_keys=False))
 
   def ShowHistory(self, container_id, show_empty_layers=False):
@@ -238,7 +247,7 @@ class DockerExplorerTool:
     self._explorer.DetectDockerStorageVersion()
 
     if not options.command:
-      self.ShowContainers()
+      self.ShowContainers(filter_repositories=options.filter_repositories)
 
     elif options.command == 'mount':
       self.Mount(options.container_id, options.mountpoint)
@@ -249,9 +258,10 @@ class DockerExplorerTool:
 
     elif options.command == 'list':
       if options.what == 'all_containers':
-        self.ShowContainers()
+        self.ShowContainers(filter_repositories=options.filter_repositories)
       elif options.what == 'running_containers':
-        self.ShowContainers(only_running=True)
+        self.ShowContainers(
+            only_running=True, filter_repositories=options.filter_repositories)
       elif options.what == 'repositories':
         print(self._explorer.GetRepositoriesString())
     else:

@@ -16,8 +16,8 @@
 
 from __future__ import unicode_literals
 
-import os
 import json
+import os
 
 import docker_explorer
 from docker_explorer import errors

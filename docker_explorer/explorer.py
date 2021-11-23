@@ -160,11 +160,14 @@ class Explorer:
         print('WARNING: Error loading container {0:s}: {1!s}'.format(cid, e))
     return containers_list
 
-  def GetContainersList(self, only_running=False):
+  def GetContainersList(self, only_running=False, filter_repositories=None):
     """Returns a list of Container objects, sorted by start time.
 
     Args:
       only_running (bool): Whether we return only running Containers.
+      filter_repositories (list(str)): Containers running images from
+      repositories matching any of these URL will be filtered out.
+        Example: ['k8s.gcr.io', 'gke.gcr.io']
 
     Returns:
       list(Container): list of Containers information objects.
@@ -173,6 +176,9 @@ class Explorer:
         self.GetAllContainers(), key=lambda x: x.start_timestamp)
     if only_running:
       containers_list = [x for x in containers_list if x.running]
+    if filter_repositories:
+      containers_list = [x for x in containers_list
+                         if x.image.split('/')[0] not in filter_repositories]
     return containers_list
 
   def GetContainersJson(self, only_running=False):
