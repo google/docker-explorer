@@ -884,6 +884,7 @@ class TestDownloader(unittest.TestCase):
         'COPY file:50563a97010fd7ce1ceebd1fa4f4891ac3decdf428333fb2683696f4358a'
         'f6c2 in / \n'
         'CMD ["/hello"]')
+
     with tempfile.TemporaryDirectory() as tmp_dir:
       self.dl_object._output_directory = tmp_dir
       self.dl_object.DownloadPseudoDockerfile()
