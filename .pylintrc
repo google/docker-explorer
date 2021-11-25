@@ -479,12 +479,10 @@ ignore-signatures=no
 # Minimum lines number of a similarity.
 min-similarity-lines=4
 
+
 [DESIGN]
 # Maximum number of arguments for function / method.
 max-args=10
-
-# Maximum number of parents for a class (see R0901).
-max-parents=7
 
 # Maximum number of attributes for a class (see R0902).
 max-attributes=7
@@ -497,6 +495,9 @@ max-branches=12
 
 # Maximum number of locals for function / method body.
 max-locals=15
+
+# Maximum number of parents for a class (see R0901).
+max-parents=7
 
 # Maximum number of public methods for a class (see R0904).
 max-public-methods=20
