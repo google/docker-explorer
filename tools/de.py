@@ -261,7 +261,7 @@ class DockerExplorerTool:
 if __name__ == '__main__':
   try:
     DockerExplorerTool().Main()
-  except errors.BadStorageException as exc:
-    logger.debug(exc.message)
+  except errors.BadStorageException as main_exc:
+    logger.debug(main_exc.message)
     logger.error('Please specify a proper Docker directory path.\n'
                  '	hint: de.py -r /var/lib/docker')

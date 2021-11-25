@@ -267,7 +267,7 @@ class VHDXDisk:
       parent_disk (VHDXDisk) Optional: the parent disk if this is a child disk
     """
     self.vhdx_name = vhdx_name
-    self.vhdx_fd = open(vhdx_name, 'rb')
+    self.vhdx_fd = open(vhdx_name, 'rb')  #pylint: disable=consider-using-with
     self.parent_disk = parent_disk
     self.region_table = self._ParseRegionTable()
     self.metadata_table = self._ParseMetadataTable()
@@ -591,19 +591,18 @@ class MergeVHDXTool:
     parent_disk = VHDXDisk(options.parent_disk_name)
     child_disk = VHDXDisk(
         options.child_disk_name, parent_disk=parent_disk)
-    out_image_fd = open(options.out_image_name, 'wb')
 
-    if not options.yes:
-      image_size = child_disk.disk_params.virtual_disk_size//1024**2
-      print('This command will create a new disk image of size'
-            f' {image_size}MiB.\nPlease confirm (y/n): ', end='')
-      confirm = input()
-      if confirm.lower() != 'y':
-        sys.exit()
+    with open(options.out_image_name, 'wb') as out_image_fd:
+      if not options.yes:
+        image_size = child_disk.disk_params.virtual_disk_size//1024**2
+        print('This command will create a new disk image of size '
+              f'{image_size}MiB.\nPlease confirm (y/n): ', end='')
+        confirm = input()
+        if confirm.lower() != 'y':
+          sys.exit()
 
-    for sector in range(0, child_disk.disk_params.sector_count):
-      out_image_fd.write(child_disk.ReadSector(sector))
-    out_image_fd.close()
+      for sector in range(0, child_disk.disk_params.sector_count):
+        out_image_fd.write(child_disk.ReadSector(sector))
 
 
 if __name__ == '__main__':

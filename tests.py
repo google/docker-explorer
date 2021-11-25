@@ -36,8 +36,9 @@ from docker_explorer import storage
 from docker_explorer import utils
 from tools import de
 
-# pylint: disable=protected-access
+# pylint: disable=invalid-name
 # pylint: disable=line-too-long
+# pylint: disable=protected-access
 
 
 class UtilsTests(unittest.TestCase):
@@ -73,9 +74,8 @@ class TestDEMain(unittest.TestCase):
     cls.docker_directory_path = os.path.join('test_data', 'docker')
     if not os.path.isdir(cls.docker_directory_path):
       docker_tar = os.path.join('test_data', 'overlay2.v2.tgz')
-      tar = tarfile.open(docker_tar, 'r:gz')
-      tar.extractall('test_data')
-      tar.close()
+      with tarfile.open(docker_tar, 'r:gz') as tar:
+        tar.extractall('test_data')
     cls.explorer_object = explorer.Explorer()
     cls.explorer_object.SetDockerDirectory(cls.docker_directory_path)
     cls.explorer_object.DetectDockerStorageVersion()
@@ -148,9 +148,10 @@ class DockerTestCase(unittest.TestCase):
     docker_directory_path = os.path.join('test_data', 'docker')
     if not os.path.isdir(docker_directory_path):
       docker_tar = os.path.join('test_data', f'{driver}.v{storage_version}.tgz')
-      tar = tarfile.open(docker_tar, 'r:gz')
-      tar.extractall('test_data')
-      tar.close()
+      with tarfile.open(docker_tar, 'r:gz') as tar:
+        tar.extractall('test_data')
+        tar.close()
+
     cls.explorer_object = explorer.Explorer()
     cls.explorer_object.SetDockerDirectory(docker_directory_path)
     cls.explorer_object.DetectDockerStorageVersion()
@@ -902,9 +903,9 @@ class TestDEVolumes(unittest.TestCase):
     cls.docker_directory_path = os.path.join('test_data', 'docker')
     if not os.path.isdir(cls.docker_directory_path):
       docker_tar = os.path.join('test_data', 'vols.v2.tgz')
-      tar = tarfile.open(docker_tar, 'r:gz')
-      tar.extractall('test_data')
-      tar.close()
+      with tarfile.open(docker_tar, 'r:gz') as tar:
+        tar.extractall('test_data')
+        tar.close()
     cls.explorer_object = explorer.Explorer()
     cls.explorer_object.SetDockerDirectory(cls.docker_directory_path)
 
