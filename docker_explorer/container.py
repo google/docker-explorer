@@ -184,6 +184,7 @@ class Container:
     if not image_config:
       return default_value
 
+
     if not ignore_container_config:
       # If ContainerConfig has a different value for that key, return this one.
       container_config = configuration.get('ContainerConfig', None)
