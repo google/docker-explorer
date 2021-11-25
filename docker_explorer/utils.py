@@ -16,7 +16,7 @@
 
 from __future__ import unicode_literals
 
-from datetime import datetime
+import datetime
 import json
 
 
@@ -30,14 +30,19 @@ def FormatDatetime(timestamp):
     str: Human readable timestamp.
   """
   try:
-    time = datetime.fromisoformat(timestamp)
+    time = datetime.datetime.fromisoformat(timestamp)
+  except AttributeError:
+    # datetime.fromisoformat() is only present in python >= 3.6
+    timestamp = timestamp[:26]
+    time = datetime.datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S.%f')
   except ValueError:
     # Strip non-ISO compliant precision and time zone designator.
     timestamp = timestamp[:26]
     if timestamp[-1].isalpha():
       timestamp = timestamp[:-1]
-    time = datetime.fromisoformat(timestamp)
+    time = datetime.datetime.fromisoformat(timestamp)
   return time.isoformat()
+
 
 def PrettyPrintJSON(dict_object, sort_keys=True):
   """Generates a easy to read representation of a dict object.
