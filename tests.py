@@ -151,6 +151,7 @@ class DockerTestCase(unittest.TestCase):
       with tarfile.open(docker_tar, 'r:gz') as tar:
         tar.extractall('test_data')
         tar.close()
+
     cls.explorer_object = explorer.Explorer()
     cls.explorer_object.SetDockerDirectory(docker_directory_path)
     cls.explorer_object.DetectDockerStorageVersion()

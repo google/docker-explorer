@@ -71,8 +71,8 @@ class Explorer:
       raise errors.DockerExplorerError(
           f'Could not find any container in {self.containers_directory}.\n'
           f'Make sure the docker directory ({self.docker_directory}) is '
-          'correct.\nIf it is correct, you might want to run this script'
-          ' with higher privileges.')
+          'correct.\nIf it is correct, you might want to run this script '
+          'with higher privileges.')
     path_to_a_container = os.path.join(
         self.containers_directory, container_ids_list[0])
     if os.path.isfile(os.path.join(path_to_a_container, 'config.v2.json')):
@@ -146,8 +146,8 @@ class Explorer:
       raise errors.DockerExplorerError(
           f'Could not find container directory in {self.containers_directory}.'
           f'\nMake sure the docker directory ({self.docker_directory}) is '
-          'correct.\nIf it is correct, you might want to run this script'
-          ' with higher privileges.'
+          'correct.\nIf it is correct, you might want to run this script '
+          'with higher privileges.'
       )
     containers_list = []
     for cid in container_ids_list:

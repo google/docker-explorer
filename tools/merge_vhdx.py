@@ -595,8 +595,8 @@ class MergeVHDXTool:
     with open(options.out_image_name, 'wb') as out_image_fd:
       if not options.yes:
         image_size = child_disk.disk_params.virtual_disk_size//1024**2
-        print('This command will create a new disk image of size'
-              f' {image_size}MiB.\nPlease confirm (y/n): ', end='')
+        print('This command will create a new disk image of size '
+              f'{image_size}MiB.\nPlease confirm (y/n): ', end='')
         confirm = input()
         if confirm.lower() != 'y':
           sys.exit()

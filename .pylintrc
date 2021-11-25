@@ -117,7 +117,6 @@ disable=assignment-from-none,
         missing-return-doc,
         missing-return-type-doc
 
-
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
 # multiple time (only on the command line, not in the configuration file where
@@ -150,7 +149,6 @@ score=no
 
 
 [REFACTORING]
-
 # Maximum number of nested blocks for function / method body
 max-nested-blocks=5
 
@@ -159,7 +157,6 @@ max-nested-blocks=5
 # it will be considered as an explicit return statement and no message will be
 # printed.
 never-returning-functions=sys.exit,argparse.parse_error
-
 
 [VARIABLES]
 
@@ -442,7 +439,6 @@ spelling-dict=
 # List of comma separated words that should be considered directives if they
 # appear and the beginning of a comment and should not be checked.
 spelling-ignore-comment-directives=fmt: on,fmt: off,noqa:,noqa,nosec,isort:skip,mypy:
-
 # List of comma separated words that should not be checked.
 spelling-ignore-words=
 
@@ -452,7 +448,6 @@ spelling-private-dict-file=
 # Tells whether to store unknown words to the private dictionary (see the
 # --spelling-private-dict-file option) instead of raising a message.
 spelling-store-unknown-words=no
-
 
 [SIMILARITIES]
 
