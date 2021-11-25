@@ -133,7 +133,8 @@ class AufsStorage(BaseStorage):
     commands.append(
         ['/bin/mount', '-t', 'aufs', '-o',
          'ro,br={0:s}=ro+wh'.format(mountpoint_path), 'none', mount_dir])
-    with open(container_layers_filepath) as container_layers_file:
+    with open(
+        container_layers_filepath, encoding='utf-8') as container_layers_file:
       layers = container_layers_file.read().split()
       for layer in layers:
         mountpoint_path = os.path.join(
@@ -183,7 +184,8 @@ class OverlayStorage(BaseStorage):
     mount_id_path = os.path.join(
         self.docker_directory, self.STORAGE_METHOD, container_object.mount_id)
 
-    with open(os.path.join(mount_id_path, self.LOWERDIR_NAME)) as lower_fd:
+    lowerdir_path = os.path.join(mount_id_path, self.LOWERDIR_NAME)
+    with open(lowerdir_path, encoding='utf-8') as lower_fd:
       lower_dir = self._BuildLowerLayers(lower_fd.read().strip())
     upper_dir = os.path.join(mount_id_path, self.UPPERDIR_NAME)
 
@@ -255,7 +257,7 @@ class WindowsFilterStorage(BaseStorage):
     layerchain_path = os.path.join(
       windowsfilter_path, container_object.mount_id, 'layerchain.json')
 
-    with open(layerchain_path) as layerchain_fd:
+    with open(layerchain_path, encoding='utf-8') as layerchain_fd:
       layerchain_json = json.loads(layerchain_fd.read())
     # The top layer always contains the parent blank-base.vhdx disk
     parent_mount_id = layerchain_json[-1].split('\\')[-1]

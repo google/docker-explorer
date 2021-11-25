@@ -887,7 +887,7 @@ class TestDownloader(unittest.TestCase):
     with tempfile.TemporaryDirectory() as tmp_dir:
       self.dl_object._output_directory = tmp_dir
       self.dl_object.DownloadPseudoDockerfile()
-      with open(os.path.join(tmp_dir, 'Dockerfile')) as f:
+      with open(os.path.join(tmp_dir, 'Dockerfile'), encoding='utf-8') as f:
         self.assertEqual(expected_dockerfile, f.read())
 
 

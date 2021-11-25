@@ -123,7 +123,7 @@ class DockerImageDownloader:
       digest = self._manifest.get('config').get('digest')
       docker_configuration = self._RegistryAPIGet('/blobs/' + digest).json()
       docker_filepath = os.path.join(self._output_directory, 'Dockerfile')
-      with open(docker_filepath, 'w') as dockerfile:
+      with open(docker_filepath, 'w', encoding='utf-8') as dockerfile:
         dockerfile.write(self.BuildDockerfileFromManifest(docker_configuration))
       logger.info(
           'Downloaded Dockerfile to {0:s}'.format(self._output_directory))

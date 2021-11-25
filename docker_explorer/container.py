@@ -114,7 +114,8 @@ class Container:
           'Unable to find container configuration file {0:s}'.format(
               container_info_json_path)
       )
-    with open(container_info_json_path) as container_info_json_file:
+    with open(
+        container_info_json_path, encoding='utf-8') as container_info_json_file:
       container_info_dict = json.load(container_info_json_file)
 
     if container_info_dict is None:
@@ -154,7 +155,8 @@ class Container:
       c_path = os.path.join(
           self.docker_directory, 'image', self.storage_name, 'layerdb',
           'mounts', container_id)
-      with open(os.path.join(c_path, 'mount-id')) as mount_id_file:
+      mount_id_path = os.path.join(c_path, 'mount-id')
+      with open(mount_id_path, encoding='utf-8') as mount_id_file:
         self.mount_id = mount_id_file.read()
 
     if self.storage_name in ['overlay', 'overlay2']:
@@ -184,6 +186,7 @@ class Container:
     if not image_config:
       return default_value
 
+
     if not ignore_container_config:
       # If ContainerConfig has a different value for that key, return this one.
       container_config = configuration.get('ContainerConfig', None)
@@ -206,7 +209,7 @@ class Container:
     if self.docker_version == 1:
       path = os.path.join(self.docker_directory, 'graph',
                           layer_id, 'layersize')
-      with open(path) as layer_file:
+      with open(path, encoding='utf-8') as layer_file:
         size = int(layer_file.read())
     # TODO: Add docker storage v2 support
     return size
@@ -226,7 +229,7 @@ class Container:
           self.docker_directory, 'image', self.storage_name, 'imagedb',
           'content', hash_method, layer_id)
     if os.path.isfile(layer_info_path):
-      with open(layer_info_path) as layer_info_file:
+      with open(layer_info_path, encoding='utf-8') as layer_info_file:
         return json.load(layer_info_file)
 
     return None
@@ -248,7 +251,7 @@ class Container:
       if self.docker_version == 1:
         layer_info_path = os.path.join(
             self.docker_directory, 'graph', current_layer, 'json')
-        with open(layer_info_path) as layer_info_file:
+        with open(layer_info_path, encoding='utf-8') as layer_info_file:
           layer_info = json.load(layer_info_file)
           current_layer = layer_info.get('parent', None)
       elif self.docker_version == 2:
@@ -258,7 +261,7 @@ class Container:
             'metadata', hash_method, layer_id, 'parent')
         if not os.path.isfile(parent_layer_path):
           break
-        with open(parent_layer_path) as parent_layer_file:
+        with open(parent_layer_path, encoding='utf-8') as parent_layer_file:
           current_layer = parent_layer_file.read().strip()
 
     return layer_list
