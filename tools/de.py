@@ -45,8 +45,8 @@ class DockerExplorerTool:
     """Adds the global options to the argument_parser.
 
     Args:
-      argument_parser (argparse.ArgumentParser):
-        the argument parser to add the command to.
+      argument_parser(argparse.ArgumentParser): the argument parser to add the
+        command to.
     """
     version_string = f'docker-explorer - version {docker_explorer.__version__}'
 
@@ -129,7 +129,7 @@ class DockerExplorerTool:
     """Parses the command line arguments.
 
     Returns:
-      argparse.ArgumentParser : the argument parser object.
+      argparse.ArgumentParser: the argument parser object.
     """
     self._argument_parser = argparse.ArgumentParser()
     self.AddBasicOptions(self._argument_parser)

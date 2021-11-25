@@ -62,6 +62,7 @@ class Explorer:
     Raises:
       errors.BadStorageException: when we couldn't detect the Docker storage
         version.
+      errors.DockerExplorerError: when no container is detected in the storage.
     """
     if not os.path.isdir(self.containers_directory):
       raise errors.BadStorageException(
@@ -140,6 +141,7 @@ class Explorer:
     Raises:
       errors.BadStorageException: If required files or directories are not found
         in the provided Docker directory.
+      errors.DockerExplorerError: when no container is detected in the storage.
     """
     container_ids_list = container.GetAllContainersIDs(self.docker_directory)
     if not container_ids_list:

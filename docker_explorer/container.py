@@ -236,7 +236,7 @@ class Container:
     """Returns an array of the sorted layer IDs for a container.
 
     Returns:
-      list (str): a list of layer IDs.
+      list(str): a list of layer IDs.
     """
     layer_list = []
     current_layer = self.container_id
@@ -271,6 +271,8 @@ class Container:
       show_empty_layers (bool): whether to display empty layers.
     Returns:
       dict: object describing history of the container.
+    Raises:
+      ValueError: when expected layer can't be found.
     """
     result_dict = {}
     for layer in self.GetOrderedLayers():

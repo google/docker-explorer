@@ -80,6 +80,8 @@ class DockerImageDownloader:
       url(str): the API method to call (ie: '/manifest/tag').
     Returns:
       requests.Response: the HTTP response, or None if the request failed.
+    Raises:
+      errors.DownloaderException: when querying the DockerHub API errors out.
     """
     if not self.repository_url:
       self._SetupRepository(self.image_name)
@@ -101,7 +103,8 @@ class DockerImageDownloader:
     """Downloads a Manifest from Docker Hub API.
 
     Returns:
-      (dict) the manifest for the image.
+      dict: the manifest for the image.
+
     Raises:
       errors.DownloaderException: if there was an error fetching the manifest.
     """

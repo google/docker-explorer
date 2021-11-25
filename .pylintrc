@@ -111,11 +111,7 @@ disable=assignment-from-none,
         too-many-statements,
         unsubscriptable-object,
         useless-object-inheritance,
-        useless-suppression,
-# From here, consider removing
-        missing-raises-doc,
-        missing-return-doc,
-        missing-return-type-doc
+        useless-suppression
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -476,6 +472,12 @@ check-quote-consistency=no
 # This flag controls whether the implicit-str-concat should generate a warning
 # on implicit string concatenation in sequences defined over several lines.
 check-str-concat-over-line-jumps=no
+
+# Ignore function signatures when computing similarities.
+ignore-signatures=no
+
+# Minimum lines number of a similarity.
+min-similarity-lines=4
 
 
 [DESIGN]
