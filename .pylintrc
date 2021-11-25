@@ -481,6 +481,7 @@ min-similarity-lines=4
 
 
 [DESIGN]
+
 # Maximum number of arguments for function / method.
 max-args=10
 
