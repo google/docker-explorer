@@ -40,8 +40,7 @@ class BaseStorage:
       docker_version (int): Docker storage version.
     """
     if docker_version not in [1, 2]:
-      error_message = 'Unsupported Docker version number {0:d}'.format(
-          docker_version)
+      error_message = f'Unsupported Docker version number {docker_version}'
       raise errors.BadStorageException(error_message)
 
     self.docker_version = docker_version
@@ -132,7 +131,7 @@ class AufsStorage(BaseStorage):
         self.docker_directory, self.STORAGE_METHOD, 'diff', layer_id)
     commands.append(
         ['/bin/mount', '-t', 'aufs', '-o',
-         'ro,br={0:s}=ro+wh'.format(mountpoint_path), 'none', mount_dir])
+         f'ro,br={mountpoint_path}=ro+wh', 'none', mount_dir])
     with open(
         container_layers_filepath, encoding='utf-8') as container_layers_file:
       layers = container_layers_file.read().split()
@@ -141,8 +140,7 @@ class AufsStorage(BaseStorage):
             self.docker_directory, self.STORAGE_METHOD, 'diff', layer)
         commands.append(
             ['/bin/mount', '-t', 'aufs', '-o',
-             'ro,remount,append:{0:s}=ro+wh'.format(mountpoint_path), 'none',
-             mount_dir])
+             f'ro,remount,append:{mountpoint_path}=ro+wh', 'none', mount_dir])
 
     # Adding the commands to mount any extra declared Volumes and Mounts
     commands.extend(self._MakeVolumeMountCommands(container_object, mount_dir))
@@ -191,7 +189,7 @@ class OverlayStorage(BaseStorage):
 
     commands = [[
         '/bin/mount', '-t', 'overlay', 'overlay', '-o',
-        'ro,lowerdir={0:s}:{1:s}'.format(upper_dir, lower_dir), mount_dir]]
+        f'ro,lowerdir={upper_dir}:{lower_dir}', mount_dir]]
 
     # Adding the commands to mount any extra declared Volumes and Mounts
     commands.extend(self._MakeVolumeMountCommands(container_object, mount_dir))
@@ -270,6 +268,5 @@ class WindowsFilterStorage(BaseStorage):
     commands = []
     commands.append(
       ['merge_vhdx.py', '--parent_disk', blank_base_path, '--child_disk',
-      sandbox_path, '--out_image', '{0:s}.raw'.format(
-        container_object.mount_id)])
+      sandbox_path, '--out_image', f'{container_object.mount_id}.raw'])
     return commands
