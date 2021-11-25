@@ -132,7 +132,6 @@ evaluation=10.0 - ((float(5 * error + warning + refactor + convention) / stateme
 # used to format the message information. See doc for all details.
 #msg-template=
 
-
 # Set the output format. Available formats are text, parseable, colorized, json
 # and msvs (visual studio). You can also give a reporter class, e.g.
 # mypackage.mymodule.MyReporterClass.
@@ -146,7 +145,6 @@ score=no
 
 
 [REFACTORING]
-
 # Maximum number of nested blocks for function / method body
 max-nested-blocks=5
 
@@ -155,7 +153,6 @@ max-nested-blocks=5
 # it will be considered as an explicit return statement and no message will be
 # printed.
 never-returning-functions=sys.exit,argparse.parse_error
-
 
 [VARIABLES]
 
@@ -416,7 +413,6 @@ max-module-lines=1000
 # contains single statement.
 single-line-class-stmt=no
 
-
 # Allow the body of an if to be on the same line as the test if there is no
 # else.
 single-line-if-stmt=no
@@ -483,9 +479,9 @@ ignore-signatures=no
 # Minimum lines number of a similarity.
 min-similarity-lines=4
 
-
-# Maximum number of arguments for function / method.
-max-args=10
+[DESIGN]
+# Maximum number of parents for a class (see R0901).
+max-parents=7
 
 # Maximum number of attributes for a class (see R0902).
 max-attributes=7
@@ -511,17 +507,8 @@ max-returns=6
 # Maximum number of statements in function / method body.
 max-statements=50
 
-# Maximum number of boolean expressions in an if statement (see R0916).
-max-bool-expr=5
-
-# Maximum number of branch for function / method body.
-max-branches=12
-
-# Maximum number of locals for function / method body.
-max-locals=15
-
-# Maximum number of parents for a class (see R0901).
-max-parents=7
+# Minimum number of public methods for a class (see R0903).
+min-public-methods=2
 
 
 [CLASSES]
