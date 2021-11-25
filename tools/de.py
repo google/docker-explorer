@@ -153,11 +153,11 @@ class DockerExplorerTool:
     """
     container_object = self._explorer.GetContainer(container_id)
     if container_object.storage_name == 'windowsfilter':
-      print('Warning: Due to differences in the Windows container'
-          ' implementation this\ncommand will not actually mount the given'
-          ' container FS but will create a\nmountable raw image:\n\n'
-          f' {container_object.mount_id}.raw'
-          '\n\nWhich can then be mounted using standard tools.')
+      print('Warning: Due to differences in the Windows container '
+          'implementation this\ncommand will not actually mount the given '
+          'container FS but will create a\nmountable raw image:\n\n '
+          f'{container_object.mount_id}.raw\n\n'
+          'Which can then be mounted using standard tools.')
     container_object.Mount(mountpoint)
 
   def ShowContainers(self, only_running=False):
