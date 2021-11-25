@@ -542,7 +542,7 @@ class MergeVHDXTool:
     """Adds the global options to the argument_parser.
 
     Args:
-      argument_parser (argparse.ArgumentParser):
+      argument_parser(argparse.ArgumentParser):
         the argument parser to add the command to.
     """
     argument_parser.add_argument(
