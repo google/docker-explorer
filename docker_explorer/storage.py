@@ -132,7 +132,7 @@ class AufsStorage(BaseStorage):
     commands.append(
         ['/bin/mount', '-t', 'aufs', '-o',
          f'ro,br={mountpoint_path}=ro+wh', 'none', mount_dir])
- 
+
     with open(
         container_layers_filepath, encoding='utf-8') as container_layers_file:
       layers = container_layers_file.read().split()
