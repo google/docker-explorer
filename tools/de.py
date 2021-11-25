@@ -45,11 +45,10 @@ class DockerExplorerTool:
     """Adds the global options to the argument_parser.
 
     Args:
-      argument_parser (argparse.ArgumentParser):
-        the argument parser to add the command to.
+      argument_parser(argparse.ArgumentParser): the argument parser to add the
+        command to.
     """
-    version_string = 'docker-explorer - version {0:s}'.format(
-        docker_explorer.__version__)
+    version_string = f'docker-explorer - version {docker_explorer.__version__}'
 
     argument_parser.add_argument(
         '-d', '--debug', dest='debug', action='store_true', default=False,
@@ -57,8 +56,9 @@ class DockerExplorerTool:
 
     argument_parser.add_argument(
         '-r', '--docker-directory',
-        help='Set the root docker directory. Default is {0:s}'.format(
-            docker_explorer.DEFAULT_DOCKER_DIRECTORY),
+        help=(
+            'Set the root docker directory. '
+            f'Default is {docker_explorer.DEFAULT_DOCKER_DIRECTORY}'),
         action='store', default=docker_explorer.DEFAULT_DOCKER_DIRECTORY)
 
     argument_parser.add_argument(
@@ -129,7 +129,7 @@ class DockerExplorerTool:
     """Parses the command line arguments.
 
     Returns:
-      argparse.ArgumentParser : the argument parser object.
+      argparse.ArgumentParser: the argument parser object.
     """
     self._argument_parser = argparse.ArgumentParser()
     self.AddBasicOptions(self._argument_parser)
@@ -153,11 +153,11 @@ class DockerExplorerTool:
     """
     container_object = self._explorer.GetContainer(container_id)
     if container_object.storage_name == 'windowsfilter':
-      print('Warning: Due to differences in the Windows container'
-          ' implementation this\ncommand will not actually mount the given'
-          ' container FS but will create a\nmountable raw image:\n\n{0:s}.raw'
-          '\n\nWhich can then be mounted using standard tools.'.format(
-            container_object.mount_id))
+      print('Warning: Due to differences in the Windows container '
+          'implementation this\ncommand will not actually mount the given '
+          'container FS but will create a\nmountable raw image:\n\n '
+          f'{container_object.mount_id}.raw\n\n'
+          'Which can then be mounted using standard tools.')
     container_object.Mount(mountpoint)
 
   def ShowContainers(self, only_running=False):
@@ -229,9 +229,9 @@ class DockerExplorerTool:
         logger.debug(exc.message)
         logger.debug(exc.http_message)
         logger.error(
-            'Make sure the image \'{0:s}:{1:s}\' exists in the public Docker '
-            'Hub registry: https://hub.docker.com/r/{2:s}/tags'.format(
-                dl.repository, dl.tag, dl.repository))
+            f'Make sure the image \'{dl.repository}:{dl.tag}\' exists in the '
+            'public Docker Hub registry: '
+            f'https://hub.docker.com/r/{dl.repository}/tags')
       return
 
     self._explorer.SetDockerDirectory(options.docker_directory)
@@ -255,13 +255,13 @@ class DockerExplorerTool:
       elif options.what == 'repositories':
         print(self._explorer.GetRepositoriesString())
     else:
-      raise ValueError('Unhandled command %s' % options.command)
+      raise ValueError(f'Unhandled command {options.command}')
 
 
 if __name__ == '__main__':
   try:
     DockerExplorerTool().Main()
-  except errors.BadStorageException as exc:
-    logger.debug(exc.message)
+  except errors.BadStorageException as main_exc:
+    logger.debug(main_exc.message)
     logger.error('Please specify a proper Docker directory path.\n'
                  '	hint: de.py -r /var/lib/docker')

@@ -45,12 +45,12 @@ def GetAllContainersIDs(docker_root_directory):
   """
   if not os.path.isdir(docker_root_directory):
     raise errors.BadStorageException(
-        'Provided path is not a directory "{0}"'.format(docker_root_directory))
+        f'Provided path is not a directory "{docker_root_directory}"')
   containers_directory = os.path.join(docker_root_directory, 'containers')
 
   if not os.path.isdir(containers_directory):
     raise errors.BadStorageException(
-        'Containers directory {0} does not exist'.format(containers_directory))
+        f'Containers directory {containers_directory} does not exist')
   container_ids_list = os.listdir(containers_directory)
 
   return container_ids_list
@@ -76,6 +76,7 @@ class Container:
     upper_dir (str): path to upper_dir folder.
     volumes (list(tuple)): list of mount points to bind from host to the
       container. (Docker storage backend v1).
+    exposed_ports (dict): list of exposed ports from the container
   """
 
   STORAGES_MAP = {
@@ -110,23 +111,23 @@ class Container:
 
     if not os.path.isfile(container_info_json_path):
       raise errors.BadContainerException(
-          'Unable to find container configuration file {0:s}'.format(
-              container_info_json_path)
+          'Unable to find container configuration file: '
+          f'{container_info_json_path}'
       )
-    with open(container_info_json_path) as container_info_json_file:
+    with open(
+        container_info_json_path, encoding='utf-8') as container_info_json_file:
       container_info_dict = json.load(container_info_json_file)
 
     if container_info_dict is None:
       raise errors.BadContainerException(
-          'Could not load container configuration file {0}'.format(
-              container_info_json_path)
-      )
+          'Could not load container configuration file: '
+          f'{container_info_json_path}')
 
     self.container_id = container_info_dict.get('ID', None)
-    json_config = container_info_dict.get('Config', None)
-    if json_config:
-      self.config_image_name = json_config.get('Image', None)
-      self.config_labels = json_config.get('Labels', None)
+
+    # Parse the 'Config' key, which relates to the Image configuration
+    self.config_image_name = self._GetConfigValue(container_info_dict, 'Image')
+    self.config_labels = self._GetConfigValue(container_info_dict, 'Labels')
     self.creation_timestamp = container_info_dict.get('Created', None)
     self.image_id = container_info_dict.get('Image', None)
     self.mount_id = None
@@ -139,10 +140,12 @@ class Container:
     self.storage_name = container_info_dict.get('Driver', None)
     if self.storage_name is None:
       raise errors.BadContainerException(
-          '{0} container config file lacks Driver key'.format(
-              container_info_json_path))
+          f'{container_info_json_path} container config file lacks Driver key')
     self.upper_dir = None
     self.volumes = container_info_dict.get('Volumes', None)
+
+    self.exposed_ports = self._GetConfigValue(
+        container_info_dict, 'ExposedPorts')
 
     self._SetStorage(self.storage_name)
 
@@ -150,7 +153,8 @@ class Container:
       c_path = os.path.join(
           self.docker_directory, 'image', self.storage_name, 'layerdb',
           'mounts', container_id)
-      with open(os.path.join(c_path, 'mount-id')) as mount_id_file:
+      mount_id_path = os.path.join(c_path, 'mount-id')
+      with open(mount_id_path, encoding='utf-8') as mount_id_file:
         self.mount_id = mount_id_file.read()
 
     if self.storage_name in ['overlay', 'overlay2']:
@@ -160,6 +164,35 @@ class Container:
                                     self.storage_object.UPPERDIR_NAME)
 
     self.log_path = container_info_dict.get('LogPath', None)
+
+  def _GetConfigValue(
+      self, configuration, key, default_value=None,
+      ignore_container_config=False):
+    """Returns the value of a configuration key in the parsed container file.
+
+    Args:
+      configuration(dict): the parsed state from the config.json file.
+      key(str): the key we need the value from.
+      default_value(object): what to return if the key can't be found.
+      ignore_container_config(bool): whether or not to ignore the container's
+        specific configuration (from the ContainerConfig) key.
+
+    Returns:
+      object: the extracted value.
+    """
+    image_config = configuration.get('Config', None)
+    if not image_config:
+      return default_value
+
+
+    if not ignore_container_config:
+      # If ContainerConfig has a different value for that key, return this one.
+      container_config = configuration.get('ContainerConfig', None)
+      if container_config:
+        if key in container_config:
+          return container_config.get(key, default_value)
+
+    return image_config.get(key, default_value)
 
   def GetLayerSize(self, layer_id):
     """Returns the size of the layer.
@@ -174,7 +207,7 @@ class Container:
     if self.docker_version == 1:
       path = os.path.join(self.docker_directory, 'graph',
                           layer_id, 'layersize')
-      with open(path) as layer_file:
+      with open(path, encoding='utf-8') as layer_file:
         size = int(layer_file.read())
     # TODO: Add docker storage v2 support
     return size
@@ -194,7 +227,7 @@ class Container:
           self.docker_directory, 'image', self.storage_name, 'imagedb',
           'content', hash_method, layer_id)
     if os.path.isfile(layer_info_path):
-      with open(layer_info_path) as layer_info_file:
+      with open(layer_info_path, encoding='utf-8') as layer_info_file:
         return json.load(layer_info_file)
 
     return None
@@ -203,7 +236,7 @@ class Container:
     """Returns an array of the sorted layer IDs for a container.
 
     Returns:
-      list (str): a list of layer IDs.
+      list(str): a list of layer IDs.
     """
     layer_list = []
     current_layer = self.container_id
@@ -216,7 +249,7 @@ class Container:
       if self.docker_version == 1:
         layer_info_path = os.path.join(
             self.docker_directory, 'graph', current_layer, 'json')
-        with open(layer_info_path) as layer_info_file:
+        with open(layer_info_path, encoding='utf-8') as layer_info_file:
           layer_info = json.load(layer_info_file)
           current_layer = layer_info.get('parent', None)
       elif self.docker_version == 2:
@@ -226,7 +259,7 @@ class Container:
             'metadata', hash_method, layer_id, 'parent')
         if not os.path.isfile(parent_layer_path):
           break
-        with open(parent_layer_path) as parent_layer_file:
+        with open(parent_layer_path, encoding='utf-8') as parent_layer_file:
           current_layer = parent_layer_file.read().strip()
 
     return layer_list
@@ -238,6 +271,8 @@ class Container:
       show_empty_layers (bool): whether to display empty layers.
     Returns:
       dict: object describing history of the container.
+    Raises:
+      ValueError: when expected layer can't be found.
     """
     result_dict = {}
     for layer in self.GetOrderedLayers():
@@ -245,7 +280,7 @@ class Container:
       layer_dict = collections.OrderedDict()
 
       if layer is None:
-        raise ValueError('Layer {0:s} does not exist'.format(layer))
+        raise ValueError(f'Layer {layer} does not exist')
 
       layer_size = self.GetLayerSize(layer)
       if layer_size > 0 or show_empty_layers or self.docker_version == 2:
@@ -269,7 +304,7 @@ class Container:
     Returns:
       list((str, str)): list of mount points (source_path, destination_path).
     """
-    mount_points = list()
+    mount_points = []
 
     if self.docker_version == 1:
       if self.volumes:
@@ -297,16 +332,17 @@ class Container:
             volume_driver = storage_info.get('Driver')
             if storage_info.get('Driver') != 'local':
               logger.warning(
-                  'Unsupported driver "{0:s}" for volume "{1:s}"'.format(
-                      volume_driver, dst_mount_ihp))
+                  f'Unsupported driver "{volume_driver}" '
+                  f'for volume "{dst_mount_ihp}"')
               continue
             volume_name = storage_info['Name']
             src_mount_ihp = os.path.join('volumes', volume_name, '_data')
 
           else:
+            storage_type = storage_info.get('Type')
             logger.warning(
-                'Unsupported storage type "{0!s}" for Volume "{1:s}"'.format(
-                    storage_info.get('Type'), dst_mount_ihp))
+                f'Unsupported storage type "{storage_type}" '
+                f'for Volume "{dst_mount_ihp}"')
             continue
 
           # Removing leading path separator, otherwise os.path.join is behaving
@@ -331,7 +367,7 @@ class Container:
 
     if storage_class is None:
       raise errors.BadContainerException(
-          'Storage driver {0} is not implemented'.format(storage_name))
+          f'Storage driver {storage_name} is not implemented')
 
     self.storage_object = storage_class(
         self.docker_directory, self.docker_version)

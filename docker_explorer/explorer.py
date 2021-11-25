@@ -50,7 +50,7 @@ class Explorer:
     """
     self.docker_directory = docker_path
     if not os.path.isdir(self.docker_directory):
-      msg = '{0:s} is not a Docker directory'.format(self.docker_directory)
+      msg = f'{self.docker_directory} is not a Docker directory'
       raise errors.BadStorageException(msg)
 
     self.containers_directory = os.path.join(
@@ -62,19 +62,18 @@ class Explorer:
     Raises:
       errors.BadStorageException: when we couldn't detect the Docker storage
         version.
+      errors.DockerExplorerError: when no container is detected in the storage.
     """
     if not os.path.isdir(self.containers_directory):
       raise errors.BadStorageException(
-          'Containers directory {0} does not exist.'.format(
-              self.containers_directory))
+          f'Containers directory {self.containers_directory} does not exist.')
     container_ids_list = os.listdir(self.containers_directory)
     if not container_ids_list:
       raise errors.DockerExplorerError(
-          'Could not find any container in {0:s}.\n'
-          'Make sure the docker directory ({1:s}) is correct.\n'
-          'If it is correct, you might want to run this script'
-          ' with higher privileges.'.format(
-              self.containers_directory, self.docker_directory))
+          f'Could not find any container in {self.containers_directory}.\n'
+          f'Make sure the docker directory ({self.docker_directory}) is '
+          'correct.\nIf it is correct, you might want to run this script '
+          'with higher privileges.')
     path_to_a_container = os.path.join(
         self.containers_directory, container_ids_list[0])
     if os.path.isfile(os.path.join(path_to_a_container, 'config.v2.json')):
@@ -84,8 +83,8 @@ class Explorer:
     else:
       raise errors.BadStorageException(
           'Could not find any container configuration file:\n'
-          'Neither config.json nor config.v2.json found in {0:s}'.format(
-              path_to_a_container)
+          'Neither config.json nor config.v2.json found in '
+          f'{path_to_a_container}'
       )
 
   def _GetFullContainerID(self, short_id):
@@ -112,12 +111,11 @@ class Explorer:
     possible_cids_len = len(possible_cids)
     if possible_cids_len == 0:
       raise errors.DockerExplorerError(
-          'Could not find any container ID starting with "{0}"'.format(
-              short_id))
+          f'Could not find any container ID starting with "{short_id}"')
     if possible_cids_len > 1:
+      container_ids = ', '.join(possible_cids)
       raise errors.DockerExplorerError(
-          'Too many container IDs starting with "{0}": {1}'.format(
-              short_id, ', '.join(possible_cids)))
+          f'Too many container IDs starting with "{short_id}": {container_ids}')
 
     return possible_cids[0]
 
@@ -143,21 +141,22 @@ class Explorer:
     Raises:
       errors.BadStorageException: If required files or directories are not found
         in the provided Docker directory.
+      errors.DockerExplorerError: when no container is detected in the storage.
     """
     container_ids_list = container.GetAllContainersIDs(self.docker_directory)
     if not container_ids_list:
       raise errors.DockerExplorerError(
-          'Could not find container directory in {0:s}.\n'
-          'Make sure the docker directory ({1:s}) is correct.\n'
-          'If it is correct, you might want to run this script'
-          ' with higher privileges.'.format(
-              self.containers_directory, self.docker_directory))
+          f'Could not find container directory in {self.containers_directory}.'
+          f'\nMake sure the docker directory ({self.docker_directory}) is '
+          'correct.\nIf it is correct, you might want to run this script '
+          'with higher privileges.'
+      )
     containers_list = []
     for cid in container_ids_list:
       try:
         containers_list.append(self.GetContainer(cid))
       except errors.BadContainerException as e:
-        print('WARNING: Error loading container {0:s}: {1!s}'.format(cid, e))
+        print(f'WARNING: Error loading container {cid}: {e}')
     return containers_list
 
   def GetContainersList(self, only_running=False):
@@ -217,6 +216,9 @@ class Explorer:
       if container_object.log_path:
         container_json['log_path'] = container_object.log_path
 
+      if container_object.exposed_ports:
+        container_json['exposed_ports'] = container_object.exposed_ports
+
       result.append(container_json)
 
     return result
@@ -238,7 +240,7 @@ class Explorer:
       image_path = os.path.join(self.docker_directory, 'image')
       if not os.path.isdir(image_path):
         raise errors.BadStorageException(
-            'Expected image directory {0} does not exist.'.format(image_path))
+            f'Expected image directory {image_path} does not exist.')
       for storage_method in os.listdir(image_path):
         repositories_file_path = os.path.join(
             image_path, storage_method, 'repositories.json')
@@ -247,7 +249,7 @@ class Explorer:
 
     result = []
     for repositories_file_path in sorted(repositories):
-      with open(repositories_file_path) as rf:
+      with open(repositories_file_path, encoding='utf-8') as rf:
         repo_obj = json.loads(rf.read())
         repo_obj['path'] = repositories_file_path
         result.append(repo_obj)

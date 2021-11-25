@@ -16,8 +16,8 @@
 
 from __future__ import unicode_literals
 
-import os
 import json
+import os
 
 import docker_explorer
 from docker_explorer import errors
@@ -38,10 +38,12 @@ class BaseStorage:
     Args:
       docker_directory (str): Path to the Docker root directory.
       docker_version (int): Docker storage version.
+
+    Raises:
+      BadStorageException: when the underlying storage engine is unsupported.
     """
     if docker_version not in [1, 2]:
-      error_message = 'Unsupported Docker version number {0:d}'.format(
-          docker_version)
+      error_message = f'Unsupported Docker version number {docker_version}'
       raise errors.BadStorageException(error_message)
 
     self.docker_version = docker_version
@@ -132,16 +134,17 @@ class AufsStorage(BaseStorage):
         self.docker_directory, self.STORAGE_METHOD, 'diff', layer_id)
     commands.append(
         ['/bin/mount', '-t', 'aufs', '-o',
-         'ro,br={0:s}=ro+wh'.format(mountpoint_path), 'none', mount_dir])
-    with open(container_layers_filepath) as container_layers_file:
+         f'ro,br={mountpoint_path}=ro+wh', 'none', mount_dir])
+
+    with open(
+        container_layers_filepath, encoding='utf-8') as container_layers_file:
       layers = container_layers_file.read().split()
       for layer in layers:
         mountpoint_path = os.path.join(
             self.docker_directory, self.STORAGE_METHOD, 'diff', layer)
         commands.append(
             ['/bin/mount', '-t', 'aufs', '-o',
-             'ro,remount,append:{0:s}=ro+wh'.format(mountpoint_path), 'none',
-             mount_dir])
+             f'ro,remount,append:{mountpoint_path}=ro+wh', 'none', mount_dir])
 
     # Adding the commands to mount any extra declared Volumes and Mounts
     commands.extend(self._MakeVolumeMountCommands(container_object, mount_dir))
@@ -183,13 +186,14 @@ class OverlayStorage(BaseStorage):
     mount_id_path = os.path.join(
         self.docker_directory, self.STORAGE_METHOD, container_object.mount_id)
 
-    with open(os.path.join(mount_id_path, self.LOWERDIR_NAME)) as lower_fd:
+    lowerdir_path = os.path.join(mount_id_path, self.LOWERDIR_NAME)
+    with open(lowerdir_path, encoding='utf-8') as lower_fd:
       lower_dir = self._BuildLowerLayers(lower_fd.read().strip())
     upper_dir = os.path.join(mount_id_path, self.UPPERDIR_NAME)
 
     commands = [[
         '/bin/mount', '-t', 'overlay', 'overlay', '-o',
-        'ro,lowerdir={0:s}:{1:s}'.format(upper_dir, lower_dir), mount_dir]]
+        f'ro,lowerdir={upper_dir}:{lower_dir}', mount_dir]]
 
     # Adding the commands to mount any extra declared Volumes and Mounts
     commands.extend(self._MakeVolumeMountCommands(container_object, mount_dir))
@@ -255,7 +259,7 @@ class WindowsFilterStorage(BaseStorage):
     layerchain_path = os.path.join(
       windowsfilter_path, container_object.mount_id, 'layerchain.json')
 
-    with open(layerchain_path) as layerchain_fd:
+    with open(layerchain_path, encoding='utf-8') as layerchain_fd:
       layerchain_json = json.loads(layerchain_fd.read())
     # The top layer always contains the parent blank-base.vhdx disk
     parent_mount_id = layerchain_json[-1].split('\\')[-1]
@@ -268,6 +272,5 @@ class WindowsFilterStorage(BaseStorage):
     commands = []
     commands.append(
       ['merge_vhdx.py', '--parent_disk', blank_base_path, '--child_disk',
-      sandbox_path, '--out_image', '{0:s}.raw'.format(
-        container_object.mount_id)])
+      sandbox_path, '--out_image', f'{container_object.mount_id}.raw'])
     return commands

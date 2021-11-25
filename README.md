@@ -4,6 +4,9 @@ This project helps a forensics analyst explore offline Docker filesystems.
 
 This is not an officially supported Google product.
 
+If you're looking for similar capabilities on [Containerd](https://containerd.io/)
+systems, feel free to check [https://github.com/google/container-explorer](https://github.com/google/container-explorer).
+
 ## Overview
 
 When analyzing a system where a Docker container has been compromised, it can
