@@ -119,8 +119,6 @@ disable=assignment-from-none,
 # it should appear only once). See also the "--disable" option for examples.
 enable=c-extension-no-member
 
-
-
 [REPORTS]
 
 # Python expression which should return a score less than or equal to 10. You
