@@ -105,6 +105,8 @@ class BlockAllocationTableEntry:
 
     Args:
       bat_bytes (bytes): a bytes object with length of 8 representing the entry
+    Returns:
+      int: the offset.
     """
     # Offset is a 44 bit wide field, so use a bitmask for lead 4 bits.
     offset_lead_byte = bat_bytes[2] & BAT_ENTRY_OFFSET_LEAD_BYTE_BITMASK
@@ -128,14 +130,16 @@ class SectorBitmapBATEntry(BlockAllocationTableEntry):
     Args:
       bat_bytes (bytes): a bytes object representing the BAT entry
 
+    Returns:
+      str: the parsed state.
+
     Raises:
       ValueError: if the state field is invalid
     """
     state_int = bat_bytes[0] & BAT_ENTRY_STATE_BITMASK
     state = SB_BLOCK_STATES[state_int]
     if state == 'INVALID':
-      raise ValueError(
-          'Invalid state {} for sector bitmap entry'.format(state_int))
+      raise ValueError(f'Invalid state {state_int} for sector bitmap entry')
     return state
 
 
@@ -153,14 +157,16 @@ class PayloadBlockBATEntry(BlockAllocationTableEntry):
     Args:
       bat_bytes (bytes): a bytes object representing the BAT entry
 
+    Returns:
+      str: the parsed state.
+
     Raises:
       ValueError: if the state field is invalid
     """
     state_int = bat_bytes[0] & BAT_ENTRY_STATE_BITMASK
     state = PAYLOAD_BLOCK_STATES[state_int]
     if state == 'INVALID':
-      raise ValueError(
-          'Invalid state {} for payload block entry'.format(state_int))
+      raise ValueError(f'Invalid state {state_int} for payload block entry')
     return state
 
 
@@ -172,9 +178,9 @@ class BlockAllocationTable:
   indexes into the sector bitmap entries list represent chunks numbers.
 
   Attributes:
-    payload_blocks (list(PayloadBlockBitmapBATEntry)): a list of BAT payload
+    payload_entries (list(PayloadBlockBitmapBATEntry)): a list of BAT payload
       entries
-    sector_bitmap_blocks (list(SectorBitmapBATEntry)): a list of sector
+    sector_bitmap_entries (list(SectorBitmapBATEntry)): a list of sector
       bitmap entries
   """
   def __init__(self, bat_bytes, bat_params):
@@ -219,12 +225,12 @@ class BlockAllocationTable:
     total_entries = len(payload_entries) + len(sector_bitmap_entries)
     if total_entries != bat_params.total_entries:
       raise ValueError(
-          'Incorrect number of entries parsed expected {} parsed {}'.format(
-              bat_params.total_entries, total_entries))
+          'Incorrect number of entries parsed expected '
+          f'{bat_params.total_entries} parsed {total_entries}')
 
     logger.debug(
-        'Parsed {} payload entries and {} sector bitmap entries'.format(
-            len(payload_entries), len(sector_bitmap_entries)))
+        f'Parsed {len(payload_entries)} payload entries and '
+        f'{len(sector_bitmap_entries)} sector bitmap entries')
     return (payload_entries, sector_bitmap_entries)
 
   def GetPayloadBATEntry(self, block_number):
@@ -232,6 +238,9 @@ class BlockAllocationTable:
 
     Args:
       block_number (int): the block number to retrieve an entry for
+
+    Returns:
+      PayloadBlockBitmapBATEntry: the PayloadBlockBitmapBATEntry object.
     """
     return self.payload_entries[block_number]
 
@@ -240,6 +249,9 @@ class BlockAllocationTable:
 
     Args:
       chunk_number (int): the chunk number to retrieve an entry for
+
+    Returns:
+      SectorBitmapBATEntry: the SectorBitmapBATEntry object.
     """
     return self.sector_bitmap_entries[chunk_number]
 
@@ -269,7 +281,7 @@ class VHDXDisk:
       parent_disk (VHDXDisk) Optional: the parent disk if this is a child disk
     """
     self.vhdx_name = vhdx_name
-    self.vhdx_fd = open(vhdx_name, 'rb')
+    self.vhdx_fd = open(vhdx_name, 'rb')  #pylint: disable=consider-using-with
     self.parent_disk = parent_disk
     self.region_table = self._ParseRegionTable()
     self.metadata_table = self._ParseMetadataTable()
@@ -372,7 +384,7 @@ class VHDXDisk:
 
     disk_params = DiskParams(block_size, logical_sector_size,
         virtual_disk_size, has_parent, sector_count)
-    logger.debug('Parsed disk params: {}'.format(disk_params))
+    logger.debug('Parsed disk params: {disk_params}')
     return disk_params
 
   def _CalculateBATParams(self):
@@ -394,7 +406,7 @@ class VHDXDisk:
 
     bat_params = BATParams(chunk_ratio, total_entries, payload_entries,
         sector_bitmap_entries)
-    logger.debug('Parsed BAT params: {}'.format(bat_params))
+    logger.debug('Parsed BAT params: {bat_params}')
     return bat_params
 
   def _ParseBAT(self):
@@ -530,8 +542,8 @@ class MergeVHDXTool:
     """Adds the global options to the argument_parser.
 
     Args:
-      argument_parser (argparse.ArgumentParser):
-        the argument parser to add the command to.
+      argument_parser(argparse.ArgumentParser): the argument parser to add the
+        command to.
     """
     argument_parser.add_argument(
       '-p', '--parent_disk', dest='parent_disk_name', action='store',
@@ -553,7 +565,7 @@ class MergeVHDXTool:
     """Parses the command line arguments.
 
     Returns:
-      argparse.ArgumentParser : the argument parser object.
+      argparse.ArgumentParser: the argument parser object.
     """
     self._argument_parser = argparse.ArgumentParser()
     self.AddBasicOptions(self._argument_parser)
@@ -593,19 +605,18 @@ class MergeVHDXTool:
     parent_disk = VHDXDisk(options.parent_disk_name)
     child_disk = VHDXDisk(
         options.child_disk_name, parent_disk=parent_disk)
-    out_image_fd = open(options.out_image_name, 'wb')
 
-    if not options.yes:
-      print('This command will create a new disk image of size'
-          ' {0:d}MiB.\nPlease confirm (y/n): '.format(
-              child_disk.disk_params.virtual_disk_size//1024**2), end='')
-      confirm = input()
-      if confirm.lower() != 'y':
-        sys.exit()
+    with open(options.out_image_name, 'wb') as out_image_fd:
+      if not options.yes:
+        image_size = child_disk.disk_params.virtual_disk_size//1024**2
+        print('This command will create a new disk image of size '
+              f'{image_size}MiB.\nPlease confirm (y/n): ', end='')
+        confirm = input()
+        if confirm.lower() != 'y':
+          sys.exit()
 
-    for sector in range(0, child_disk.disk_params.sector_count):
-      out_image_fd.write(child_disk.ReadSector(sector))
-    out_image_fd.close()
+      for sector in range(0, child_disk.disk_params.sector_count):
+        out_image_fd.write(child_disk.ReadSector(sector))
 
 
 if __name__ == '__main__':
