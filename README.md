@@ -234,7 +234,7 @@ release.
 Start the build:
 
 ```
-PYTHONPATH=. python tools/build.py --build-directory=/tmp/build/  --project docker-explorer dpkg-source --distributions bionic
+PYTHONPATH=. python tools/build.py --build-directory=/tmp/build/  --project docker-explorer dpkg-source --distributions bionic,focal,jammy
 ```
 
 Then upload the packages to the PPA:
