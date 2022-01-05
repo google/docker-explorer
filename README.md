@@ -168,6 +168,15 @@ sudo apt-get install linux-image-extra-$(uname -r)
 
 ### Gift PPA push
 
+Make sure the following is installed:
+```
+sudo apt install dh-python
+```
+
+For the GPG signing part, running over SSH with a gpg-agent running might
+confuse gpg and ask for the passphrase on the $DISPLAY. To prevent this, you can
+run `gpgconf --kill gpg-agent`.
+
 Make a new version tag:
 ```
 DATE="$(date +%Y%m%d)"
@@ -190,30 +199,37 @@ mkdir /tmp/build
 
 First we need 2 files, `post-dpkg-source.sh`:
 ```
-PROJECT=$1;
-VERSION=$2;
-VERSION_SUFFIX=$3;
-DISTRIBUTION=$4;
-ARCHITECTURE=$5;
+cat <<EOF >post-dpkg-source.sh
+PROJECT=\$1;
+VERSION=\$2;
+VERSION_SUFFIX=\$3;
+DISTRIBUTION=\$4;
+ARCHITECTURE=\$5;
 
-dput ppa:docker-explorer-dev-team_staging ../${PROJECT}_${VERSION}-1${VERSION_SUFFIX}~${DISTRIBUTION}_${ARCHITECTURE}.changes
+dput ppa:docker-explorer-dev-team_staging ../\${PROJECT}_\${VERSION}-1\${VERSION_SUFFIX}~\${DISTRIBUTION}_\${ARCHITECTURE}.changes
+EOF
 ```
 
 and `prep-dpkg-source.sh`:
 ```
+cat <<EOF >prep-dpkg-source.sh
 export NAME="Docker-Explorer devs";
 export EMAIL="docker-explorer-devs@google.com";
 
-PROJECT=$1;
-VERSION=$2;
-VERSION_SUFFIX=$3;
-DISTRIBUTION=$4;
-ARCHITECTURE=$5;
+PROJECT=\$1;
+VERSION=\$2;
+VERSION_SUFFIX=\$3;
+DISTRIBUTION=\$4;
+ARCHITECTURE=\$5;
 
-dch --preserve -v ${VERSION}-1${VERSION_SUFFIX}~${DISTRIBUTION} --distribution ${DISTRIBUTION} --urgency low "Modifications for PPA release."
+dch --preserve -v \${VERSION}-1\${VERSION_SUFFIX}~\${DISTRIBUTION} --distribution \${DISTRIBUTION} --urgency low "Modifications for PPA release."
+EOF
 ```
 
 These are also stored in `/tmp/build`
+
+Then go to https://github.com/google/docker-explorer/releases and create a new
+release.
 
 Start the build:
 
