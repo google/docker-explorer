@@ -159,11 +159,14 @@ class Explorer:
         print(f'WARNING: Error loading container {cid}: {e}')
     return containers_list
 
-  def GetContainersList(self, only_running=False):
+  def GetContainersList(self, only_running=False, filter_repositories=None):
     """Returns a list of Container objects, sorted by start time.
 
     Args:
       only_running (bool): Whether we return only running Containers.
+      filter_repositories (list(str)): Filter out containers where the
+        repository domain is included in the list.
+        Example: ['k8s.gcr.io', 'gke.gcr.io']
 
     Returns:
       list(Container): list of Containers information objects.
@@ -172,19 +175,27 @@ class Explorer:
         self.GetAllContainers(), key=lambda x: x.start_timestamp)
     if only_running:
       containers_list = [x for x in containers_list if x.running]
+    if filter_repositories:
+      containers_list = [
+          c for c in containers_list
+          if c.config_image_name.split('/')[0] not in filter_repositories]
     return containers_list
 
-  def GetContainersJson(self, only_running=False):
+  def GetContainersJson(self, only_running=False, filter_repositories=None):
     """Returns a dict describing the running containers.
 
     Args:
       only_running (bool): Whether we display only running Containers.
+      filter_repositories (list(str)): Filter out containers running an image
+        from a repository which domain is included in the list.
+        Example: ['k8s.gcr.io', 'gke.gcr.io']
 
     Returns:
       dict: A dict object representing the containers.
     """
     result = []
-    for container_object in self.GetContainersList(only_running=only_running):
+    for container_object in self.GetContainersList(
+        only_running=only_running, filter_repositories=filter_repositories):
       image_id = container_object.image_id
       if self.docker_version == 2:
         image_id = image_id.split(':')[1]

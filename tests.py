@@ -683,11 +683,35 @@ class TestOverlay2Storage(DockerTestCase):
         '2018-05-16T10:51:39.271019533Z', container_obj.creation_timestamp)
     self.assertEqual('busybox', container_obj.config_image_name)
     self.assertTrue(container_obj.running)
-
     self.assertEqual(
         '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206',
         container_obj.container_id)
-    self.assertEqual({'12345/tcp': {}}, container_obj.exposed_ports)
+
+    container_obj = containers_list[3]
+    self.assertEqual('/reverent_wing', container_obj.name)
+    self.assertEqual(
+        '2018-05-16T10:51:28.695738065Z', container_obj.creation_timestamp)
+    self.assertEqual('busybox', container_obj.config_image_name)
+    self.assertFalse(container_obj.running)
+    self.assertEqual(
+        '10acac0b3466813c9e1f85e2aa7d06298e51fbfe86bbcb6b7a19dd33d3798f6a',
+        container_obj.container_id)
+    self.assertEqual(
+        {'12345/tcp': {}, '27017/tcp': {}}, container_obj.exposed_ports)
+
+  def testGetAllContainersFiltered(self):
+    """Tests the filter function of GetContainersList()."""
+    containers_list = self.explorer_object.GetContainersList(
+        filter_repositories=['gcr.io'])
+    containers_list = sorted(containers_list, key=lambda ci: ci.name)
+    self.assertEqual(4, len(containers_list))
+    expected_containers = [
+        '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206',
+        '9949fa153b778e39d6cab0a4e0ba60fa34a13fedb1f256d613a2f88c0c98408a',
+        '10acac0b3466813c9e1f85e2aa7d06298e51fbfe86bbcb6b7a19dd33d3798f6a',
+        '61ba4e6c012c782186c649466157e05adfd7caa5b551432de51043893cae5353']
+    found_containers = [c.container_id for c in containers_list]
+    self.assertEqual(expected_containers, found_containers)
 
   def testGetOrderedLayers(self):
     """Tests the BaseStorage.GetOrderedLayers function on a Overlay2 storage."""
@@ -727,8 +751,6 @@ class TestOverlay2Storage(DockerTestCase):
     expected['mount_id'] = '92fd3b3e7d6101bb701743c9518c45b0d036b898c8a3d7cae84e1a06e6829b53'
     expected['upper_dir'] = 'test_data/docker/overlay2/92fd3b3e7d6101bb701743c9518c45b0d036b898c8a3d7cae84e1a06e6829b53/diff'
     expected['log_path'] = '/var/lib/docker/containers/8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206/8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206-json.log'
-    expected['exposed_ports'] = {'12345/tcp': {}}
-
 
     self.assertEqual([expected], result)
 
