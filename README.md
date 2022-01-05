@@ -171,8 +171,8 @@ sudo apt-get install linux-image-extra-$(uname -r)
 Make a new version tag:
 ```
 DATE="$(date +%Y%m%d)"
-git checkout master
-git pull upstream master
+git checkout main
+git pull upstream main
 git tag "${DATE}"
 git push upstream "${DATE}"
 ```
