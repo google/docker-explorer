@@ -13,6 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """docker-explorer tool."""
-__version__ = '20211125'
+__version__ = '20220106'
 
 DEFAULT_DOCKER_DIRECTORY = '/var/lib/docker'
