@@ -949,9 +949,11 @@ class TestDEVolumes(unittest.TestCase):
     commands = container_obj.storage_object._MakeVolumeMountCommands(
         container_obj, '/mnt')
     commands = [' '.join(x) for x in commands]
-    mount_point = os.path.abspath('test_data')
     expected_commands = [
-        f'/bin/mount --bind -o ro {mount_point}/opt/vols/bind /mnt/opt']
+        ('/bin/mount --bind -o ro '
+         'test_data/docker/volumes/eda9ee495beccf988d963bf91de0276847e838b9531ab9118caef38a33894bb4/_data '
+         '/mnt/var/jenkins_home'),
+        '/bin/mount --bind -o ro test_data/docker/opt/vols/bind /mnt/opt']
     self.assertEqual(expected_commands, commands)
 
   def testGenerateVolumesMountpoints(self):
@@ -965,11 +967,10 @@ class TestDEVolumes(unittest.TestCase):
     commands = container_obj.storage_object._MakeVolumeMountCommands(
         container_obj, '/mnt')
     commands = [' '.join(x) for x in commands]
-    mount_point = os.path.abspath('test_data')
-    expected_commands = [
-        (f'/bin/mount --bind -o ro {mount_point}/volumes/'
-         'f5479c534bbc6e2b9861973c2fbb4863ff5b7b5843c098d7fb1a027fe730a4dc/'
-         '_data /mnt/opt/vols/volume')]
+    expected_commands = [(
+        '/bin/mount --bind -o ro '
+        'test_data/docker/volumes/f5479c534bbc6e2b9861973c2fbb4863ff5b7b5843c098d7fb1a027fe730a4dc/_data '
+        '/mnt/opt/vols/volume')]
     self.assertEqual(expected_commands, commands)
 
 del DockerTestCase
