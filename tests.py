@@ -299,7 +299,7 @@ class TestAufsStorage(DockerTestCase):
             'd1c54c46d331de21587a16397e8bd95bdbb1015e1a04797c76de128107da83ae'
             '=ro+wh none /mnt'),
         (
-            f'/bin/mount --bind -o ro test_data/docker/volumes/'
+            '/bin/mount --bind -o ro test_data/docker/volumes/'
             '28297de547b5473a9aff90aaab45ed108ebf019981b40c3c35c226f54c13ac0d/'
             '_data /mnt/var/jenkins_home')
     ]
