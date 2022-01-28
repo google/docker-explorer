@@ -284,7 +284,6 @@ class TestAufsStorage(DockerTestCase):
     commands = container_obj.storage_object.MakeMountCommands(
         container_obj, '/mnt')
     commands = [' '.join(x) for x in commands]
-    mount_point = os.path.abspath('test_data')
     expected_commands = [
         (
             '/bin/mount -t aufs -o ro,br=test_data/docker/aufs/diff/test_data/'
@@ -300,7 +299,7 @@ class TestAufsStorage(DockerTestCase):
             'd1c54c46d331de21587a16397e8bd95bdbb1015e1a04797c76de128107da83ae'
             '=ro+wh none /mnt'),
         (
-            f'/bin/mount --bind -o ro {mount_point}/volumes/'
+            '/bin/mount --bind -o ro test_data/docker/volumes/'
             '28297de547b5473a9aff90aaab45ed108ebf019981b40c3c35c226f54c13ac0d/'
             '_data /mnt/var/jenkins_home')
     ]
@@ -949,9 +948,11 @@ class TestDEVolumes(unittest.TestCase):
     commands = container_obj.storage_object._MakeVolumeMountCommands(
         container_obj, '/mnt')
     commands = [' '.join(x) for x in commands]
-    mount_point = os.path.abspath('test_data')
     expected_commands = [
-        f'/bin/mount --bind -o ro {mount_point}/opt/vols/bind /mnt/opt']
+        ('/bin/mount --bind -o ro '
+         'test_data/docker/volumes/eda9ee495beccf988d963bf91de0276847e838b9531ab9118caef38a33894bb4/_data '
+         '/mnt/var/jenkins_home'),
+        '/bin/mount --bind -o ro test_data/docker/opt/vols/bind /mnt/opt']
     self.assertEqual(expected_commands, commands)
 
   def testGenerateVolumesMountpoints(self):
@@ -965,11 +966,10 @@ class TestDEVolumes(unittest.TestCase):
     commands = container_obj.storage_object._MakeVolumeMountCommands(
         container_obj, '/mnt')
     commands = [' '.join(x) for x in commands]
-    mount_point = os.path.abspath('test_data')
-    expected_commands = [
-        (f'/bin/mount --bind -o ro {mount_point}/volumes/'
-         'f5479c534bbc6e2b9861973c2fbb4863ff5b7b5843c098d7fb1a027fe730a4dc/'
-         '_data /mnt/opt/vols/volume')]
+    expected_commands = [(
+        '/bin/mount --bind -o ro '
+        'test_data/docker/volumes/f5479c534bbc6e2b9861973c2fbb4863ff5b7b5843c098d7fb1a027fe730a4dc/_data '
+        '/mnt/opt/vols/volume')]
     self.assertEqual(expected_commands, commands)
 
 del DockerTestCase

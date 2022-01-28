@@ -90,7 +90,7 @@ class BaseStorage:
         )
     elif self.docker_version == 2:
       for source, destination in mount_points:
-        storage_path = os.path.join(self.root_directory, source)
+        storage_path = os.path.join(self.docker_directory, source)
         volume_mountpoint = os.path.join(mount_dir, destination)
         extra_commands.append(
             ['/bin/mount', '--bind', '-o', 'ro', storage_path,
