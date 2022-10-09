@@ -75,7 +75,26 @@ class TestDEMain(unittest.TestCase):
     if not os.path.isdir(cls.docker_directory_path):
       docker_tar = os.path.join('test_data', 'overlay2.v2.tgz')
       with tarfile.open(docker_tar, 'r:gz') as tar:
-        tar.extractall('test_data')
+        def is_within_directory(directory, target):
+            
+            abs_directory = os.path.abspath(directory)
+            abs_target = os.path.abspath(target)
+        
+            prefix = os.path.commonprefix([abs_directory, abs_target])
+            
+            return prefix == abs_directory
+        
+        def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+        
+            for member in tar.getmembers():
+                member_path = os.path.join(path, member.name)
+                if not is_within_directory(path, member_path):
+                    raise Exception("Attempted Path Traversal in Tar File")
+        
+            tar.extractall(path, members, numeric_owner=numeric_owner) 
+            
+        
+        safe_extract(tar, "test_data")
     cls.explorer_object = explorer.Explorer()
     cls.explorer_object.SetDockerDirectory(cls.docker_directory_path)
     cls.explorer_object.DetectDockerStorageVersion()
@@ -149,7 +168,26 @@ class DockerTestCase(unittest.TestCase):
     if not os.path.isdir(docker_directory_path):
       docker_tar = os.path.join('test_data', f'{driver}.v{storage_version}.tgz')
       with tarfile.open(docker_tar, 'r:gz') as tar:
-        tar.extractall('test_data')
+        def is_within_directory(directory, target):
+            
+            abs_directory = os.path.abspath(directory)
+            abs_target = os.path.abspath(target)
+        
+            prefix = os.path.commonprefix([abs_directory, abs_target])
+            
+            return prefix == abs_directory
+        
+        def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+        
+            for member in tar.getmembers():
+                member_path = os.path.join(path, member.name)
+                if not is_within_directory(path, member_path):
+                    raise Exception("Attempted Path Traversal in Tar File")
+        
+            tar.extractall(path, members, numeric_owner=numeric_owner) 
+            
+        
+        safe_extract(tar, "test_data")
         tar.close()
 
     cls.explorer_object = explorer.Explorer()
@@ -925,7 +963,26 @@ class TestDEVolumes(unittest.TestCase):
     if not os.path.isdir(cls.docker_directory_path):
       docker_tar = os.path.join('test_data', 'vols.v2.tgz')
       with tarfile.open(docker_tar, 'r:gz') as tar:
-        tar.extractall('test_data')
+        def is_within_directory(directory, target):
+            
+            abs_directory = os.path.abspath(directory)
+            abs_target = os.path.abspath(target)
+        
+            prefix = os.path.commonprefix([abs_directory, abs_target])
+            
+            return prefix == abs_directory
+        
+        def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+        
+            for member in tar.getmembers():
+                member_path = os.path.join(path, member.name)
+                if not is_within_directory(path, member_path):
+                    raise Exception("Attempted Path Traversal in Tar File")
+        
+            tar.extractall(path, members, numeric_owner=numeric_owner) 
+            
+        
+        safe_extract(tar, "test_data")
         tar.close()
     cls.explorer_object = explorer.Explorer()
     cls.explorer_object.SetDockerDirectory(cls.docker_directory_path)
