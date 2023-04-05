@@ -32,7 +32,7 @@ function assert_equal {
 
 # Cleans up the environment
 function cleanup {
-  umount "${TMP_MOUNTPOINT}" || true
+  umount -fl "${TMP_MOUNTPOINT}" || true
   rm -rf "${TMP_MOUNTPOINT}"
 
   # Killing all containers
