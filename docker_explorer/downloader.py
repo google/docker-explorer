@@ -70,7 +70,7 @@ class DockerImageDownloader:
     auth_url = (
         'https://auth.docker.io/token?service=registry.docker.io'
         f'&scope=repository:{self.repository}:pull')
-    response = requests.get(auth_url)
+    response = requests.get(auth_url, timeout=60)
     self._access_token = response.json().get('access_token', None)
 
   def _RegistryAPIGet(self, url):
@@ -90,7 +90,8 @@ class DockerImageDownloader:
     headers = {
         'Authorization':'Bearer '+ self._access_token,
         'Accept':'application/vnd.docker.distribution.manifest.v2+json'}
-    response = requests.get(self.repository_url+url, headers=headers)
+    response = requests.get(
+        self.repository_url+url, headers=headers, timeout=60)
     if response.status_code != 200:
       api_error = errors.DownloaderException(
           f'Error querying Docker Hub API: "{self.repository_url+url}"')
