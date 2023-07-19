@@ -31,10 +31,6 @@ def FormatDatetime(timestamp):
   """
   try:
     time = datetime.datetime.fromisoformat(timestamp)
-  except AttributeError:
-    # datetime.fromisoformat() is only present in python >= 3.6
-    timestamp = timestamp[:26]
-    time = datetime.datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S.%f')
   except ValueError:
     # Strip non-ISO compliant precision and time zone designator.
     timestamp = timestamp[:26]
