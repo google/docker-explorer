@@ -118,7 +118,7 @@ class Container:
         container_info_json_path, encoding='utf-8') as container_info_json_file:
       try:
         container_info_dict = json.load(container_info_json_file)
-      except json.decoder.JSONDecodeError as error:
+      except (json.decoder.JSONDecodeError, OSError) as error:
         raise errors.BadContainerException(
             'Could not parse JSON configuration file '
             f'{container_info_json_path}: {error}')
