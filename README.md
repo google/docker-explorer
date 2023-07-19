@@ -170,7 +170,7 @@ sudo apt-get install linux-image-extra-$(uname -r)
 
 Make sure the following is installed:
 ```
-sudo apt install dh-python
+sudo apt install dh-python flex byacc quilt
 ```
 
 For the GPG signing part, running over SSH with a gpg-agent running might
@@ -194,7 +194,7 @@ git clone https://github.com/log2timeline/l2tdevtools
 
 Make the build environment:
 ```
-mkdir /tmp/build
+mkdir /tmp/build ; cd /tmp/build
 ```
 
 First we need 2 files, `post-dpkg-source.sh`:
@@ -234,12 +234,13 @@ release.
 Start the build:
 
 ```
-PYTHONPATH=. python tools/build.py --build-directory=/tmp/build/  --project docker-explorer dpkg-source --distributions bionic,focal,jammy
+PYTHONPATH=. python3 tools/build.py --build-directory=/tmp/build/  --project docker-explorer dpkg-source --distributions focal,jammy,kinetic
 ```
 
 Then upload the packages to the PPA:
 
 ```
+cd /tmp/build/
 dput ppa:docker-explorer-devs_staging docker-explorer_<VERSION>_source.changes
 ```
 
@@ -257,6 +258,7 @@ First make sure the proper version is set in `docker-explorer/__init__.py`.
 Then run
 
 ```
+sudo apt install twine
 python3 setup.py sdist
 python3 -m twine upload  dist/*
 ```
