@@ -95,8 +95,8 @@ class TestDEMain(unittest.TestCase):
     usage_string = de_object._argument_parser.format_usage()
     expected_usage = '[-h] [-d] [-r DOCKER_DIRECTORY] [-V]'
     expected_usage_commands = '{download,mount,list,history}'
-    self.assertTrue(expected_usage in usage_string)
-    self.assertTrue(expected_usage_commands in usage_string)
+    self.assertIn(expected_usage, usage_string)
+    self.assertIn(expected_usage_commands, usage_string)
     self.assertEqual(expected_docker_root, options.docker_directory)
 
   def testShowHistory(self):
@@ -111,7 +111,7 @@ class TestDEMain(unittest.TestCase):
       de_object.ShowHistory(container_id)
       expected_string = """{
     "sha256:8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7": {
-        "created_at": "2018-04-05T10:41:28.876407", 
+        "created_at": "2018-04-05T10:41:28.876407+00:00", 
         "container_cmd": "/bin/sh -c #(nop)  CMD [\\"sh\\"]", 
         "size": 0
     }
@@ -240,7 +240,7 @@ class TestAufsStorage(DockerTestCase):
     expected['image_name'] = 'busybox'
     expected['container_id'] = '7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966'
     expected['image_id'] = '7968321274dc6b6171697c33df7815310468e694ac5be0ec03ff053bb135e768'
-    expected['start_date'] = '2017-02-13T16:45:05.785658'
+    expected['start_date'] = '2017-02-13T16:45:05.785658+00:00'
     expected['mount_id'] = 'b16a494082bba0091e572b58ff80af1b7b5d28737a3eedbe01e73cd7f4e01d23'
     expected['mount_points'] = [mount_point]
     expected['log_path'] = '/tmp/docker/containers/7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966/7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966-json.log'
@@ -310,14 +310,14 @@ class TestAufsStorage(DockerTestCase):
     self.maxDiff = None
     container_obj = self.explorer_object.GetContainer(
         '7b02fb3e8a665a63e32b909af5babb7d6ba0b64e10003b2d9534c7d5f2af8966')
-    expected = {
+    expected = collections.OrderedDict({
         'sha256:'
         '7968321274dc6b6171697c33df7815310468e694ac5be0ec03ff053bb135e768': {
-            'created_at': '2017-01-13T22:13:54.401355',
+            'created_at': '2017-01-13T22:13:54.401355+00:00',
             'container_cmd': '/bin/sh -c #(nop)  CMD ["sh"]',
             'size': 0
         }
-    }
+    })
 
     self.assertEqual(expected, container_obj.GetHistory())
 
@@ -404,7 +404,7 @@ class TestAufsV1Storage(DockerTestCase):
     expected['image_name'] = 'busybox'
     expected['container_id'] = 'de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c'
     expected['image_id'] = '1cee97b18f87b5fa91633db35f587e2c65c093facfa2cbbe83d5ebe06e1d9125'
-    expected['start_date'] = '2018-12-27T10:53:17.409426'
+    expected['start_date'] = '2018-12-27T10:53:17.409426+00:00'
     expected['log_path'] = '/var/lib/docker/containers/de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c/de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c-json.log'
 
     self.assertEqual([expected], result)
@@ -471,18 +471,17 @@ class TestAufsV1Storage(DockerTestCase):
     container_obj = self.explorer_object.GetContainer(
         'de44dd97cfd1c8d1c1aad7f75a435603991a7a39fa4f6b20a69bf4458809209c')
     expected = {
-        '1cee97b18f87b5fa91633db35f587e2c65c093facfa2cbbe83d5ebe06e1d9125': {
-            'size': 0
-        },
-        'df557f39d413a1408f5c28d8aab2892f927237ec22e903ef04b331305130ab38': {
-            'created_at':
-                '2018-12-26T08:20:42.687925',
-            'container_cmd': (
-                '/bin/sh -c #(nop) ADD file:ce026b62356eec3ad1214f92be2c'
-                '9dc063fe205bd5e600be3492c4dfb17148bd in / '),
-            'size':
-                1154361
-        }
+        '1cee97b18f87b5fa91633db35f587e2c65c093facfa2cbbe83d5ebe06e1d9125':
+           collections.OrderedDict({
+               'size': 0
+           }),
+        'df557f39d413a1408f5c28d8aab2892f927237ec22e903ef04b331305130ab38':
+           collections.OrderedDict({
+               'created_at':
+               '2018-12-26T08:20:42.687925+00:00',
+               'container_cmd': '/bin/sh -c #(nop) ADD file:ce026b62356eec3ad1214f92be2c9dc063fe205bd5e600be3492c4dfb17148bd in / ',
+               'size': 1154361
+           })
     }
 
     self.assertEqual(expected, container_obj.GetHistory())
@@ -569,7 +568,7 @@ class TestOverlayStorage(DockerTestCase):
     expected['image_name'] = 'busybox:latest'
     expected['container_id'] = '5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a'
     expected['image_id'] = '5b0d59026729b68570d99bc4f3f7c31a2e4f2a5736435641565d93e7c25bd2c3'
-    expected['start_date'] = '2018-01-26T14:55:56.574924'
+    expected['start_date'] = '2018-01-26T14:55:56.574924+00:00'
     expected['mount_id'] = '974e2b994f9db74e1ddd6fc546843bc65920e786612a388f25685acf84b3fed1'
     expected['upper_dir'] = 'test_data/docker/overlay/974e2b994f9db74e1ddd6fc546843bc65920e786612a388f25685acf84b3fed1/upper'
     expected['log_path'] = '/var/lib/docker/containers/5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a/5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a-json.log'
@@ -631,14 +630,14 @@ class TestOverlayStorage(DockerTestCase):
     self.maxDiff = None
     container_obj = self.explorer_object.GetContainer(
         '5dc287aa80b460652a5584e80a5c8c1233b0c0691972d75424cf5250b917600a')
-    expected = {
+    expected = collections.OrderedDict({
         'sha256:'
         '5b0d59026729b68570d99bc4f3f7c31a2e4f2a5736435641565d93e7c25bd2c3': {
-            'created_at': '2018-01-24T04:29:35.590938',
+            'created_at': '2018-01-24T04:29:35.590938+00:00',
             'container_cmd': '/bin/sh -c #(nop)  CMD ["sh"]',
             'size': 0
         }
-    }
+    })
     self.assertEqual(expected, container_obj.GetHistory())
 
   def testGetFullContainerID(self):
@@ -746,7 +745,7 @@ class TestOverlay2Storage(DockerTestCase):
     expected['image_name'] = 'busybox'
     expected['container_id'] = '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206'
     expected['image_id'] = '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7'
-    expected['start_date'] = '2018-05-16T10:51:39.625989'
+    expected['start_date'] = '2018-05-16T10:51:39.625989+00:00'
     expected['mount_id'] = '92fd3b3e7d6101bb701743c9518c45b0d036b898c8a3d7cae84e1a06e6829b53'
     expected['upper_dir'] = 'test_data/docker/overlay2/92fd3b3e7d6101bb701743c9518c45b0d036b898c8a3d7cae84e1a06e6829b53/diff'
     expected['log_path'] = '/var/lib/docker/containers/8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206/8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206-json.log'
@@ -812,12 +811,12 @@ class TestOverlay2Storage(DockerTestCase):
     container_obj = self.explorer_object.GetContainer(
         '8e8b7f23eb7cbd4dfe7e91646ddd0e0f524218e25d50113559f078dfb2690206')
     expected = {
-        'sha256:'
-        '8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7': {
-            'created_at': '2018-04-05T10:41:28.876407',
-            'container_cmd': '/bin/sh -c #(nop)  CMD ["sh"]',
-            'size': 0
-        }
+        'sha256:8ac48589692a53a9b8c2d1ceaa6b402665aa7fe667ba51ccc03002300856d8c7':
+            collections.OrderedDict({
+                'created_at': '2018-04-05T10:41:28.876407+00:00',
+                'container_cmd': '/bin/sh -c #(nop)  CMD ["sh"]',
+                'size': 0
+            })
     }
     self.assertEqual(expected, container_obj.GetHistory(container_obj))
 
@@ -893,18 +892,17 @@ class TestDownloader(unittest.TestCase):
   def testGetManifest(self):
     """Tests the GetManifest method"""
     manifest = self.dl_object._GetManifest()
-    self.assertTrue(
-        manifest.get('mediaType') ==
-        'application/vnd.docker.distribution.manifest.v2+json')
-    self.assertTrue('layers' in manifest)
+    self.assertEqual(manifest.get('mediaType'),
+                     'application/vnd.docker.distribution.manifest.v2+json')
+    self.assertIn('layers', manifest)
 
   def testDownloadDockerFile(self):
-    """Tests a Dockerfile is properly downloaded"""
+    """Tests that a Dockerfile is properly downloaded."""
     expected_dockerfile = (
         '# Pseudo Dockerfile\n'
         f'# Generated by de.py ({de_version})\n\n'
-        'COPY file:50563a97010fd7ce1ceebd1fa4f4891ac3decdf428333fb2683696f4358a'
-        'f6c2 in / \n'
+        'COPY file:201f8f1849e89d53be9f6aa76937f5e209d745abfd15a8552fcf2ba45ab267f9'
+        ' in / \n'
         'CMD ["/hello"]')
 
     with tempfile.TemporaryDirectory() as tmp_dir:
