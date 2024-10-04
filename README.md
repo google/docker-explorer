@@ -170,7 +170,7 @@ sudo apt-get install linux-image-extra-$(uname -r)
 
 Make sure the following is installed:
 ```
-sudo apt install dh-python flex byacc quilt
+sudo apt install dh-python flex byacc quilt python3-all-dev libdistro-info-perl
 ```
 
 For the GPG signing part, running over SSH with a gpg-agent running might
@@ -234,7 +234,7 @@ release.
 Start the build:
 
 ```
-PYTHONPATH=. python3 tools/build.py --build-directory=/tmp/build/  --project docker-explorer dpkg-source --distributions focal,jammy,kinetic
+PYTHONPATH=. python3 tools/build.py --build-directory=/tmp/build/  --project docker-explorer dpkg-source --distributions focal,jammy,noble
 ```
 
 Then upload the packages to the PPA:
